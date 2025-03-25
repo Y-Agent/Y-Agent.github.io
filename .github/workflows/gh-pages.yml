@@ -27,5 +27,4 @@ jobs:
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./public
-        # For a user/organization site, ensure you're deploying to the branch expected by GitHub Pages.
-        # For example, if using the default branch (main), you might need to configure GitHub Pages to serve from main.
+        publish_branch: main  # Deploy to main instead of gh-pages
