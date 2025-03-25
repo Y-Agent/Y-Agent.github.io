@@ -39,8 +39,8 @@ Yale University and Nanjing University.
     
 <strong style="font-size: 0.8em; letter-spacing:1px;">LINKS.</strong>
 <small>
-  <strong>ArXiv:</strong> <a href="https://arxiv.org/abs/2503.12734" target="_blank">arxiv.org/abs/2503.12734</a>,
-  <strong>Github:</strong> <a href="https://github.com/XintianPan/ICL_linear" target="_blank">github.com/XintianPan/ICL_linear</a>.
+  <strong>ArXiv:</strong> <a href="arxiv.org/abs/2503.12734" target="_blank">arxiv.org/abs/2503.12734</a>,
+  <strong>Github:</strong> <a href="github.com/Y-Agent/ICL_linear" target="_blank">https://github.com/Y-Agent/ICL_linear</a>.
 </small>
 
 
