@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en-US"
+  x-data
+  :class="$store.darkMode.class()"
+  :data-theme="$store.darkMode.theme()">
+  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>In-Context Linear Regression Demystified | Y-Agent Research Blog</title>
+
+    
+  
+    <link href="/images/rocket_fovicon.png" rel="icon" type="image/x-icon" />
+  
+
+
+<link rel="canonical" href="http://localhost:1313/posts/in_context_regression/" />
+
+
+
+<meta name="author" content="Jianliang He, Xintian Pan, Siyu Chen, and Zhuoran Yang" />
+<meta name="description" content=" Paper: In-Context Linear Regression Demystified: Training Dynamics and Mechanistic Interpretability of Multi-Head Softmax Attention
+AUTHORS: Jianliang He, Xintian Pan, Siyu Chen, and Zhuoran Yang. LINKS. ArXiv: arxiv.org/abs/2503.12734, Github: github.com/XintianPan/ICL_linear. TAKEAWAYS. We study how multi-head softmax attention models are trained to perform in-context learning on linear data. Through extensive empirical experiments and rigorous theoretical analysis, we demystify how trained multi-head attention solves in-context linear regression:
+" />
+
+
+<meta name="keywords" content="In-Context Learning,Transformers">
+
+
+
+<meta name="generator" content="Hugo 0.145.0">
+
+
+<meta property="og:url" content="http://localhost:1313/posts/in_context_regression/">
+  <meta property="og:site_name" content="Y-Agent Research Blog">
+  <meta property="og:title" content="In-Context Linear Regression Demystified">
+  <meta property="og:description" content="Paper: In-Context Linear Regression Demystified: Training Dynamics and Mechanistic Interpretability of Multi-Head Softmax Attention
+AUTHORS: Jianliang He, Xintian Pan, Siyu Chen, and Zhuoran Yang. LINKS. ArXiv: arxiv.org/abs/2503.12734, Github: github.com/XintianPan/ICL_linear. TAKEAWAYS. We study how multi-head softmax attention models are trained to perform in-context learning on linear data. Through extensive empirical experiments and rigorous theoretical analysis, we demystify how trained multi-head attention solves in-context linear regression:">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2025-03-24T00:00:00+00:00">
+    <meta property="article:modified_time" content="2025-03-24T00:00:00+00:00">
+    <meta property="article:tag" content="In-Context Learning">
+    <meta property="article:tag" content="Transformers">
+
+
+
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="In-Context Linear Regression Demystified">
+  <meta name="twitter:description" content="Paper: In-Context Linear Regression Demystified: Training Dynamics and Mechanistic Interpretability of Multi-Head Softmax Attention
+AUTHORS: Jianliang He, Xintian Pan, Siyu Chen, and Zhuoran Yang. LINKS. ArXiv: arxiv.org/abs/2503.12734, Github: github.com/XintianPan/ICL_linear. TAKEAWAYS. We study how multi-head softmax attention models are trained to perform in-context learning on linear data. Through extensive empirical experiments and rigorous theoretical analysis, we demystify how trained multi-head attention solves in-context linear regression:">
+
+
+
+
+<link rel="stylesheet" href="/css/output.css" />
+
+
+
+
+    
+
+
+<style>
+    pre {
+        padding: 1em;
+        overflow: auto;
+    }
+</style>
+
+
+
+
+
+
+
+
+
+    
+
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  </head>
+
+  <body x-data="{
+    flip: false,
+  }">
+    
+    <div id="dream-global-bg"></div>
+
+    
+<nav x-data="{ isSticky: false }"
+  x-init="window.addEventListener('scroll', () => { isSticky = window.scrollY > 30 })"
+  class="sticky top-0 z-30 mt-4 lg:mt-8 py-4"
+  :class="{ 'bg-base-100 shadow-lg dark:border-b dark:border-base-content/30': isSticky }">
+
+  
+  <div class="container flex justify-between px-4">
+  
+    <section class="flex items-center gap-4">
+      <div class="avatar cursor-pointer hover:avatar-online" @click="flip = !flip" title="Flip it!">
+        <div class="h-10 rounded-full">
+          <img src="/images/agent.jpeg" alt="Y-Agent Research Blog" />
+        </div>
+      </div>
+
+      
+      <div>
+        
+        <a href="http://localhost:1313/" class="text-lg font-semibold cursor-pointer">
+          Y-Agent Research Blog
+        </a>
+        
+        
+        <div class="text-base-content/60 text-sm">Zhuoran Yang and Research Group</div>
+        
+      </div>
+      
+    </section>
+
+    <div class="dropdown dropdown-end sm:hidden">
+      <div tabindex="0" role="button" class="btn btn-ghost btn-square" aria-label="Select an option">
+        <ion-icon name="menu" class="text-2xl"></ion-icon>
+      </div>
+      <ul tabindex="0" class="dropdown-content menu w-36 bg-base-100 rounded-box z-1 shadow-md">
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li>
+  <a class="inline-flex items-center p-2 cursor-pointer" href="/posts" title="Archives">
+    <ion-icon name="archive"></ion-icon>
+    Archives
+  </a>
+</li>
+
+
+
+
+<li>
+  <a class="inline-flex items-center p-2 cursor-pointer" href="/categories" title="All Categories">
+    <ion-icon name="grid"></ion-icon>
+    All Categories
+  </a>
+</li>
+
+
+
+
+<li>
+  <a class="inline-flex items-center p-2 cursor-pointer" href="/tags" title="All Tags">
+    <ion-icon name="pricetags"></ion-icon>
+    All Tags
+  </a>
+</li>
+
+
+
+
+
+
+      </ul>
+    </div>
+    <section class="hidden sm:flex sm:items-center sm:gap-2 md:gap-4">
+      
+      
+
+      
+
+      
+      
+
+
+
+
+
+      
+      
+
+
+
+
+
+      
+      
+
+
+
+
+
+      
+      
+<a class="group inline-flex items-center p-2 rounded-full cursor-pointer hover:bg-primary" href="/posts" title="Archives">
+  <ion-icon class="group-hover:text-primary-content" name="archive"></ion-icon>
+</a>
+
+
+      
+      
+<a class="group inline-flex items-center p-2 rounded-full cursor-pointer hover:bg-primary" href="/categories" title="All Categories">
+  <ion-icon class="group-hover:text-primary-content" name="grid"></ion-icon>
+</a>
+
+
+      
+      
+<a class="group inline-flex items-center p-2 rounded-full cursor-pointer hover:bg-primary" href="/tags" title="All Tags">
+  <ion-icon class="group-hover:text-primary-content" name="pricetags"></ion-icon>
+</a>
+
+
+      
+
+      
+
+      
+    </section>
+  </div>
+</nav>
+
+
+    <div class="flip-container" :class="{ 'flip-it': flip }">
+      <div class="flipper">
+        <div class="front">
+          <div class="container">
+            
+
+
+
+
+
+<div class="lg:grid lg:grid-cols-4 gap-4 mt-4 px-4">
+    <div class="hidden lg:block">
+        
+    </div>
+
+    <div class="lg:col-span-2">
+        <article class="mx-auto prose prose-quoteless dark:prose-invert" id="dream-single-post-main" itemscope
+            itemtype="http://schema.org/Article">
+            
+  <meta itemprop="name" content="In-Context Linear Regression Demystified">
+  <meta itemprop="description" content="Paper: In-Context Linear Regression Demystified: Training Dynamics and Mechanistic Interpretability of Multi-Head Softmax Attention
+AUTHORS: Jianliang He, Xintian Pan, Siyu Chen, and Zhuoran Yang. LINKS. ArXiv: arxiv.org/abs/2503.12734, Github: github.com/XintianPan/ICL_linear. TAKEAWAYS. We study how multi-head softmax attention models are trained to perform in-context learning on linear data. Through extensive empirical experiments and rigorous theoretical analysis, we demystify how trained multi-head attention solves in-context linear regression:">
+  <meta itemprop="datePublished" content="2025-03-24T00:00:00+00:00">
+  <meta itemprop="dateModified" content="2025-03-24T00:00:00+00:00">
+  <meta itemprop="wordCount" content="5820">
+  <meta itemprop="keywords" content="In-Context Learning,Transformers">
+
+            <header>
+                <h1 itemprop="headline">In-Context Linear Regression Demystified</h1>
+                <p class="text-sm">
+                    
+                    Monday, Mar 24, 2025
+                    
+
+                    | <span>28 minute read</span>
+
+                    
+                    | <span>Updated at
+                        
+                        Monday, Mar 24, 2025
+                        </span>
+                    
+                </p>
+
+                
+                <div class="flex justify-between">
+                    
+                    <div class="flex items-center">
+  
+  <span>@</span>
+  
+
+  <span itemprop="author" itemscope itemtype="https://schema.org/Person">
+  
+    
+      <span itemprop="name">Jianliang He, Xintian Pan, Siyu Chen, and Zhuoran Yang</span>
+    
+  
+  </span>
+</div>
+
+                    
+
+                    
+
+
+                </div>
+            </header>
+
+            <section id="dream-single-post-content" itemprop="articleBody">
+                
+                <img class="w-full z-30" src="/images/03_25_in_context_regression/cover.png" alt="In-Context Linear Regression Demystified" />
+                
+
+                <!-- Paper title -->
+<p><strong style="font-size: 0.8em; letter-spacing: 1px;">Paper:</strong> In-Context Linear Regression Demystified: Training Dynamics and Mechanistic Interpretability of Multi-Head Softmax Attention</p>
+<!-- Authors Section -->
+<p><strong style="font-size: 0.8em; letter-spacing: 1px;">AUTHORS:</strong>
+<small>
+Jianliang He, Xintian Pan, Siyu Chen, and Zhuoran Yang.
+</small></p>
+<!--
+  <strong style="font-size: 0.8em; letter-spacing:1px;">AFFILIATIONS.</strong>
+      <small>
+Yale University and Nanjing University.
+</small>
+-->
+<p><strong style="font-size: 0.8em; letter-spacing:1px;">LINKS.</strong>
+<small>
+<strong>ArXiv:</strong> <a href="https://arxiv.org/abs/2503.12734" target="_blank">arxiv.org/abs/2503.12734</a>,
+<strong>Github:</strong> <a href="https://github.com/XintianPan/ICL_linear" target="_blank">github.com/XintianPan/ICL_linear</a>.
+</small></p>
+<p><strong style="font-size: 0.8em; letter-spacing:1px;">TAKEAWAYS.</strong>
+We study how multi-head softmax attention models are trained to perform <u>in-context learning on linear data</u>.
+Through extensive empirical experiments and rigorous theoretical analysis, we demystify how <strong>trained</strong> multi-head attention solves in-context linear regression:</p>
+<ol>
+<li><strong>Emergent Attention Patterns:</strong> Training reveals consistent patterns in attention matrices &ndash; <span style="color: fuchsia;">diagonal</span> and <span style="color: fuchsia;">homogeneous</span> structures in key-query (KQ) weights, and <span style="color: fuchsia;">last-entry-only</span> with <span style="color: fuchsia;">zero-sum</span> patterns in output-value (OV) weights. These patterns consistently appear from gradient-based training starting from random initialization.</li>
+<li><strong>Debiased Gradient Descent:</strong> These emergent structures enable multi-head attention to implement a <span style="color: fuchsia;">debiased gradient descent predictor</span> that outperforms single-head attention and approaches Bayesian optimality.</li>
+<li><strong>Length Generalization:</strong> Softmax attention demonstrates superior generalization to longer sequences compared to linear transformers, maintaining effectiveness beyond training sequence lengths.</li>
+<li><strong>Advanced Applications:</strong> With <u>non-isotropic covariates</u>, multi-head attention implements <span style="color: fuchsia;">pre-conditioned gradient descent</span>. For <u>multi-task scenarios</u>, a <span style="color: fuchsia;">superposition</span> phenomenon emerges at the intersection of head count and task count, efficiently resolving multi-task in-context learning.</li>
+</ol>
+<!--The attention weight matrices exhibit elegant patterns during training: a <span style="color: fuchsia;">diagonal</span>
+ and <span style="color: fuchsia;">homogeneous</span> pattern in the key-query (KQ) weights; a <span style="color: fuchsia;">last-entry-only</span> and <span style="color: fuchsia;">zero-sum </span> pattern in the output-value (OV) weights. 
+Our analysis reveals that such emergent structures enable multi-head attention to approximately implement a <span style="color: fuchsia;">debiased gradient descent predictor</span> ---- one that outperforms single-head attention and nearly achieves Bayesian optimality up to proportional factor. 
+Furthermore, compared to linear transformers, the softmax attention readily generalizes to sequences longer than those seen during training. 
+We also extend our study to scenarios with <u>non-isotropic covariates</u> and <u>multi-task linear regression</u>. 
+In the former, multi-head attention learns to implement a form of <span style="color: fuchsia;">pre-conditioned gradient descent</span>. 
+In the latter, we uncover an intriguing regime where the interplay between head number and task number triggers a <span style="color: fuchsia;">superposition</span> phenomenon that efficiently resolves multi-task in-context learning. --->
+<h2 id="beginner-setups-data-distribution-and-multi-head-attention">🔰 Setups: Data Distribution and Multi-Head Attention</h2>
+<p><strong>Data Distribution.</strong> Consider a linear regression problem where each covariate $x_\ell \in \mathbb{R}^d$ is drawn i.i.d. from $\mathsf{P}_x$,
+and the regression parameter $\beta \in \mathbb{R}^d$ is drawn from $\mathsf{P}_\beta$.
+Here, $\mathsf{P}_x$ and $\mathsf{P}_{\beta}$ are distributions over $\mathbb{R}^d$.  A response $y_\ell$ is generated by $y_\ell = \beta^\top x_\ell + \epsilon_\ell$, where $\epsilon_\ell$ is Gaussian noise. We then take a test input $x_q \sim \mathsf{P}_x$ and embed it together with the training samples $\{(x_\ell, y_\ell)\}_{\ell=1}^L$ into a matrix</p>
+<p>$$
+\begin{align}
+Z_\mathsf{ebd}=\begin{bmatrix}Z &amp; z_q\end{bmatrix} =
+\begin{bmatrix}
+x_1 &amp; \dots &amp; x_L &amp; x_q \\
+y_1 &amp; \dots &amp; y_L &amp; 0
+\end{bmatrix}.
+\end{align}
+$$
+Here, each column of $Z_\mathsf{ebd}$  is a $(d+1)$-dimensional vector, whose first $d$ entries corresponds to the covariate and the last entry is the response. We put the query in the last column. Since we do not have the resposne $y_q = \beta^\top x_q + \epsilon$, we put a zero at the $(d+1, L+1)$-th entry at  $Z_\mathsf{ebd}$. Such setup is widely considered in literature (e.g., <a href="http://arxiv.org/abs/2208.01066" target="_blank">Garg et al., 2022</a>
+, <a href="https://arxiv.org/abs/2306.00297" target="_blank">Ahn et al., 2023</a>
+, <a href="https://arxiv.org/abs/2306.09927" target="_blank">Zhang et al., 2024</a>
+).</p>
+<p>For now, we focus mainly on the <u>isotropic case</u> where $\mathsf{P}_x=\mathcal{N} (0,I_d)$ and $\mathsf{P}_\beta=\mathcal{N}(0,I_d/d)$. Later we will also consider  the <u>non-isometric cases</u>, i.e., $\mathsf{P}_x=\mathcal{N}(0,\Sigma)$ for some general $\Sigma\in\mathbb{R}^{d\times d}$. Here $\mathcal{N} (\mu, \Sigma)$ is the multivariate Gaussian distribution.</p>
+<p><strong>In-Context Learning.</strong> In-context learning refers to a model&rsquo;s ability to adapt to new tasks using only examples within its input context, <u> without updating its parameters</u>. In the context of regression, this means that, when a new regression task $\beta$ is generated, the model can predict $y_q$ accurately based on the data $Z_\mathsf{ebd}$.
+We train a <u> one-layer transformer </u> to solve this task.</p>
+<p><strong>Multi-Head Softmax Attention.</strong> A single-layer, multi-head attention model with parameters $\theta={O^{(h)},V^{(h)},K^{(h)},Q^{(h)}}_{h\in[H]}\subseteq\mathbb{R}^{(d+1)\times(d+1)}$:</p>
+<p>$$\mathrm{TF}_\theta(Z_\mathsf{ebd})=Z_\mathsf{ebd}+\sum_{h=1}^HO^{(h)}V^{(h)}Z_\mathsf{ebd}\cdot\mathrm{smax}\circ{\rm msk}\big(Z_\mathsf{ebd}^\top K^{(h)^\top}Q^{(h)}Z_\mathsf{ebd}\big)\in\mathbb{R}^{(d+1)\times(L+1)}.
+$$</p>
+<p>where $\mathrm{smax}(\cdot)$ is the column-wise softmax operation, and ${\rm msk}(\cdot)$ applies a causal mask.
+We denote $KQ^{(h)} = K^{(h)\top}Q^{(h)}$ and $OV^{(h)} = O^{(h)}V^{(h)}$, referred to as KQ and OV circuits, which are all $(d+1)\times (d+1)$-dimensional square matrices. These matrices determine how query tokens attend to keys and how attended tokens contribute to output.</p>
+<p>Based on the output matrix of the transformer, we extract the prediction $\hat{y}_q$ from its $(d+1,L+1)$-th entry.
+That is, we let</p>
+<p>$$
+\hat{y}_q:=\hat{y}_q(x_q;{(x_\ell,y_\ell)}_{\ell\in[L]})={\rm TF}_\theta(Z_\mathsf{ebd})_{d+1,L+1}\in\mathbb{R}.
+$$</p>
+<p>Using the definition of the input data $Z_\mathsf{ebd}$ and the definitions of KQ and OV circuits, we can write $\hat y_q$ in closed form:
+\begin{align}
+\hat y_q = \sum_{h=1}^H (OV^{(h)})_{d+1} Z \cdot \mathrm{smax} \big(Z ^\top KQ^{(h)} x_q \big)\in\mathbb{R}
+\end{align}
+Here, $(OV^{(h)})_{d+1}$ is the last row of $OV^{(h)}$.</p>
+<figure style="text-align: center;">
+  <img src=/images/03_25_in_context_regression/img/TF_architecture_illusrtrate-1.jpg alt="TF_architecture_illusrtrate-1">
+  <figcaption>Figure 1. Illustration of Multi-head Attention Architecture. In the graph, we show how the predictor is generated by the transformer, based on the token embeddings, consolidated KQ and OV circuits, and the read-out function. 
+  We use * to denote the ineffective parameters due to the read-out function or the zero value in the query token. </figcaption>
+</figure>
+<p><strong>Interpretation of the Transformer Model.</strong> To get the output, we use $Q^{(h)}x_q$ as the query, which attends to the keys $\{ K^{(h)} x_{\ell}\}_{\ell\in[:L]}$. After applying softmax, we get a probability distribution over $[L] = \{1, \ldots, L\}$. This probability is used to aggregate the corresponding values $\{ V^{(h)} x_{\ell}\}_{\ell\in[:L]}$ to get the output. We use the term <em>circuits</em> to refer to the KQ and OV matrices, i.e., $KQ^{(h)}$ and $OV^{(h)}$, which are the key components of the attention mechanism. This follows from the same terminology as in <a href="https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html" target="_blank">Olsson et al. (2022)</a>
+.</p>
+<p><strong>Training Setup.</strong>
+To investigate how the model learns to solve linear regression in context, we train by minimizing the mean-squared error (MSE). The population loss follows</p>
+<p>$$
+\mathcal{L}(\theta)=\mathcal{E}(\hat{y}_q)=\mathbb{E}[(y_q-\hat{y}_q)^2]=\mathbb{E}[(y_q-{\rm TF}_\theta(Z_\mathsf{ebd})_{d+1,L+1})^2].
+$$</p>
+<p>Here, the expectation is over the random draw of $\beta \sim \mathsf{P}_\beta$ and the samples $\{(x_\ell, y_\ell)\}_{\ell\in[L]}$ drawn i.i.d. from $\mathsf{P}_x \otimes \mathsf{P}_{y|x}(\cdot;\beta)$. Training proceeds via mini-batch stochastic gradient methods: at iteration $t$, we sample $n_{\text{batch}}$ regression parameters from $\mathsf{P}_\beta$ and generate an equal number of embedded sequences $Z_{\text{ebd}}$. We then approximate $\nabla \mathcal{L}(\theta_t)$ and update $\theta_t$ as
+$$
+\theta_{t+1}
+;\leftarrow;
+\mathsf{UpdateMethod}\bigl(\theta_t,;\widehat{\nabla}\mathcal{L}(\theta_t)\bigr),
+$$
+where the update method can be gradient descent, Adam, or another optimizer.</p>
+<h2 id="-empirical-insights-emerged-patterns-and-dynamics">📚 Empirical Insights: Emerged Patterns and Dynamics</h2>
+<p>We performed experiments to understand how multi-head softmax attention learns linear regression tasks through in-context learning (ICL).
+We consider the setting with isotropic covariates, i.e., $\mathsf{P}_x = \mathcal{N} (0,I_d)$ and vary $H$ (the number of heads) in our experiments.
+All experiments use a data setup with $L = 40$, $d = 5$, and noise variance $\sigma^2 = 0.1$. Models are trained using Adam with learning rate $\eta = 10^{-3}$, batch size $256$ for $5 \times 10^5$ steps, starting from PyTorch’s default random initialization. We remark that variations in optimization algorithm, hyperparameters, or the data-generating process do not significantly affect the results.</p>
+<h3 id="small_blue_diamond-key-finding-1-global-kqov-patterns">🔹 Key Finding 1: Global KQ/OV Patterns.</h3>
+<p>For any number of heads with $H \geq 1$, in the trained one-layer multi-head attention  model, the KQ and OV circuits take the following form: for all $h\in[H]$, we have</p>
+<p>$$
+KQ^{(h)} =
+\begin{bmatrix}
+\omega^{(h)} \cdot I_d &amp; \ast \\
+\mathbf{0}_d^\top &amp; \ast
+\end{bmatrix}
+\in \mathbb{R}^{(d+1)\times(d+1)},
+\quad
+OV^{(h)} =
+\begin{bmatrix}
+\ast &amp; \ast \\
+\mathbf{0}_d^\top &amp; \mu^{(h)}
+\end{bmatrix}
+\in \mathbb{R}^{(d+1)\times(d+1)}.
+$$</p>
+<p>Here $\omega^{(h)}$ and $\mu^{(h)}$ are two numbers.
+That is, the top $d$-by-$d$ submtraix of each KQ circuit is a <span style="color: fuchsia;">diagonal</span> matrix (in the case $\mathsf{P}_x = \mathcal{N} (0,I_d)$, the diagonal matrix is proportional to an identity matrix), and the rest of the entries are ineffective. The bottem-right entry of each OV circuit is the only effective entry, and it is denoted by $\mu^{(h)}$.</p>
+<p>Moreover, the KQ and OV circuits share the same signs within each head, i.e.,
+$\mathrm{sign}(\omega^{(h)}) =  \mathrm{sign}(\mu^{(h)})$.
+We refer to this property as <span style="color: fuchsia;">sign-matching</span>.
+Thus, each head can be categorized into either a <span style="color: fuchsia;">positive</span> or <span style="color: fuchsia;">negative</span> head depending on the sign of  $\omega^{(h)}$, defined by $\mathcal{H}_+=\{h:\omega^{(h) }&gt; 0\}$ and  $\mathcal{H}_-=\{h:\omega^{(h)}&lt; 0\}$.
+In some cases, <span style="color: fuchsia;">dummy heads</span> may emerge, where $\omega^{(h)}\approx0$ and $\mu^{(h)}\approx0$. Remarkably, these patterns develop early in training and remain consistent throughout the optimization process.</p>
+<p><strong>These global patterns appear in all attention models with $H \geq 1$.</strong></p>
+<p>The global patterns of KQ and OV circuits show that the weight matrices of the learned transformer essentially are governed by $2H$ numbers $\{ \omega^{(h)}\}_{h\in[H]}$ and $\{\mu^{(h)} \}_{h\in[H]}$, denoted by $\mu = (\mu^{(1)}, \dots, \mu^{(H)})^\top$ and $\omega = (\omega^{(1)}, \dots, \omega^{(H)})^\top$.
+Under such a structure, the transformer predictor takes the form:</p>
+<p>\begin{align}
+\hat{y}_q &amp;=\sum_{h=1}^H\mu^{(h)}\cdot\bigl\langle y,{\rm smax}(\omega^{(h)}\cdot Xx_q)\bigr\rangle=\sum_{h=1}^H\mu^{(h)}\cdot\sum_{\ell=1}^L\frac{y_\ell\cdot\exp(\omega^{(h)}\cdot x_\ell^\top x_q)}{\sum_{\ell=1}^L\exp(\omega^{(h)}\cdot x_\ell^\top x_q)}\in\mathbb{R}.
+\end{align}</p>
+<p>Thus, each head acts as a separate kernel regressor, and thus the attention model can be interpreted as the <span style="color: fuchsia;">sum of kernel regressors</span>.</p>
+<figure style="text-align: center;">
+  <img src=/images/03_25_in_context_regression/img/Layer_1_Head_1_d_5_attnmtrx_HeadId1-1.jpg style="width: 55%;">
+  <figcaption>Figure 2.1. Learned Pattern of Single-Head Softmax Attention. In this case, we observe the global pattern of the KQ and OV circuits. </figcaption>
+</figure>
+<figure style="text-align: center;">
+  <div style="display: flex; justify-content: center; gap: 20px;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_2_d_5_attnmtrx_HeadId1-1.jpg  style="max-width: 55%;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_2_d_5_attnmtrx_HeadId2-1.jpg style="max-width: 55%;">
+  </div>
+  <figcaption>Figure 2.2. Learned Pattern of Two-Head Softmax Attention. The trained model learns one positive and one negative head. 
+    KQ and OV share the same sign for each head, while the parameter scaling is homogeneous across heads. </figcaption>
+</figure>
+<h3 id="small_blue_diamond-key-finding-2-learned-values-of-omegamu">🔹 Key Finding 2: Learned Values of $(\omega,\mu)$.</h3>
+<p>Note that the model is effectively governed by parameters $(\omega,\mu) \in \mathbb{R}^{2H}$. For each head $h$, $\omega^{(h)}$ scales its key-query block and $\mu^{(h)}$ sets the output weight in the OV circuit. Two main observations emerge when $H \ge 2$ (see Figure 2.2):</p>
+<ol>
+<li><strong>Homogeneous KQ Scaling.</strong> The scaling of the top-left diagonal submatrix of each $KQ^{(h)}$ of non-dummy heads is nearly identical across all positive and negative heads, $\omega^{(h)}$, meaning $\lvert \omega^{(h)} \rvert \approx \gamma$ for all $h\in\mathcal{H}_+\cup\mathcal{H}_-$.</li>
+<li><strong>Zero-Sum OV.</strong> The sum of all $\mu^{(h)}$ across heads is approximately zero, implying positive and negative heads balance each other out $\sum_{h\in\mathcal{H}_{+}} \mu^{(h)} \approx -\sum_{h\in\mathcal{H}_{-}} \mu^{(h)}$.</li>
+</ol>
+<figure style="text-align: center;">
+  <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_2_d_5_kq_dynamic_main-1.jpg alt="Image 1" style="width: 100%;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_2_d_5_ov_dynamic_main-1.jpg alt="Image 2" style="width: 100%;">
+  </div>
+  <figcaption>
+    Figure 2.3. Dynamics of average diagonal values in KQ matrices and the last entry of OV vectors for a two-head attention model along the training, zooming into the opposite pattern.
+  </figcaption>
+</figure>
+<p>Thus, multi-head attention models typically have at least one positive head and one negative head, unlike the single-head case which is always purely positive or negative (see Figure 2.1). When $H&gt;2$, similar patterns persist, although dummy heads may emerge. See Figure 2.8.</p>
+<h3 id="small_blue_diamond-key-finding-3-multi-head-outperforms-single-head-approximates-gradient-descent">🔹 Key Finding 3: Multi-Head Outperforms Single-Head, Approximates Gradient Descent</h3>
+<ol>
+<li><strong>Performance</strong>: In terms of the ICL prediction error, the two-head attention model <span style="color: fuchsia;">outperforms</span> single-head model.  Surprisingly, all multi-head configurations $H=2, 3, 4, \dots$ attains nearly the <strong>same</strong> performance, indicating that the <span style="color: fuchsia;"> multi-head attention models all learn the same predictor</span> when $H \geq 2$.</li>
+</ol>
+<figure style="text-align: center;">
+  <img src=/images/03_25_in_context_regression/img/Head_num_comparison-1.jpg
+  style="width: 45%;">
+  <figcaption>Figure 2.4. ICL Prediction Errors of Attention Models with Varying Head Numbers. The figure shows that the transformer models generalize in length. Moreover, the single-head model is inferior to multi-head models, while all the multi-head models have an identical  error curve, which shows that all multi-head attention models learn nearly identical predictors.</figcaption>
+</figure>
+<ol start="2">
+<li>
+<p><strong>Comparison to Gradient Descent</strong>: The learned multi-head predictors closely match the vanilla one-step <span style="color: fuchsia;">gradient descent (GD)</span> solution on $\{(x_\ell,y_\ell)\}_{\ell\in[L]}$. Empirically, the error curves of multi-head models track GD and outperform single-head attention. They also generalize to longer sequences $L$ than those seen in training. In fact, the attention model learns to implement a <span style="color: fuchsia;">debiased GD</span>:
+$$
+\eta /L \cdot \bar x_{\ell}^\top x_q \cdot y_{\ell}, \qquad \textrm{where} \quad\bar x_\ell=x_\ell-{L}^{-1}\cdot \sum_{\ell=1}^Lx_\ell.
+$$
+Here the learning rate $\eta$ is determined by the learned values of the KQ and OV circuits, and is close to one when $L$ is large.
+Furthermore, since $\mathbb{E}[x_\ell]=0$, when $L$ is large, the debiased GD predictoir coincides with the vanilla GD predictor $\eta /L \cdot x_{\ell}^\top x_q \cdot y_{\ell}$</p>
+</li>
+<li>
+<p><strong>Single-Head Attention vs. Multi-Head Attention</strong> The multi-head attention models learn a different predictor from the single-head attention model. In terms of the values of the parameters, As proven in <a href="https://arxiv.org/abs/2402.19442" target="_blank">Chen et al. (2024a)</a>
+
+, in a single-head attention model, we have $\omega^{(1)} = 1/\sqrt{d}$ and $\mu^{(1)} = \Theta(\sqrt{d})$. In the multi-head attention models, the magnitude of the KQ circuits, $|\omega^{(h)}|$, is much smaller than $1/\sqrt{d}$. Qualitatively speaking,  single-head attention learns  a <span style="color: fuchsia;"> Nataraya-Watson (nonparametric) predictor</span>, whereas multi-head attention learns a  <span style="color: fuchsia;"> GD (parametric) predictor</span>.</p>
+</li>
+<li>
+<p><strong>Near-Bayes Performance</strong>: While the optimally tuned ridge estimator remains the theoretical Bayes-optimal for isotropic Gaussian data, multi-head attention’s mean-squared error nearly achieves Bayesian optimality up to a proportional factor.</p>
+</li>
+</ol>
+<figure style="text-align: center;">
+  <img src=/images/03_25_in_context_regression/img/Lin_smax_comparison-1.jpg style="width: 45%;">
+  <figcaption>Figure 2.5. ICL Prediction Errors of Attention Models and Canonical Estimators. The figure shows that the ICL prediction error of multi-head attention coincides with those of the vanilla GD as well as debiased GD algorithms. Moreover, multi-head attention is inferior to the Bayes estimator, i.e., optimally tuned ridge estimator, but the error is comparable up to a constant factor.</figcaption>
+</figure>
+<h3 id="small_blue_diamond-key-finding-4-consistent-training-dynamics">🔹 Key Finding 4: Consistent Training Dynamics</h3>
+<ul>
+<li><strong>Emergence of Patterns</strong>: Despite random initializations, the parameter evolution follows a highly consistent trajectory throughout training.
+As shown in Figure 2.5, the attention model quickly develops the pattern identified in <strong>Key Finding 1</strong>, during the early stages of training.
+The attention model continues to optimize the loss function with this pattern preserved throughout the training process.</li>
+</ul>
+<figure style="text-align: center;">
+  <img src=/images/03_25_in_context_regression/img/Layer_1_Head_2_d_5_attnmtrx_dynamic-1.jpg style="width: 105%;">
+</figure>
+<figure style="text-align: center;">
+  <div style="display: flex; justify-content: center; gap: 20px;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_2_d_5_attnmtrx_dynamic_HeadId1-1.jpg style="max-width: 50%;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_2_d_5_attnmtrx_dynamic_HeadId2-1.jpg style="max-width: 50%;">
+  </div>
+  <figcaption>Figure 2.6. Heatmaps of the KQ matrices and OV vectors along training epochs with random initialization. KQ matrices (top) and OV vectors (bottom) form the diagonal and the last-entry-only patterns during the early stages of training and then optimize within the simplified regime.
+    These heatmaps show that the pattern of KQ and OV circuits evolve early during the optimization process, starting from random initialization. The pattern is preserved during training. Here we have one positive head (Head 2) and one negative head (Head 1)
+</figcaption>
+</figure>
+<figure style="text-align: center;">
+  <img src=/images/03_25_in_context_regression/img/Layer_1_Head_4_d_5_attnmtrx_dynamic-1.jpg style="width: 105%;">
+</figure>
+<figure style="text-align: center;">
+  <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_4_d_5_attnmtrx_dynamic_HeadId1-1.jpg alt="Image 1" style="width: 100%;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_4_d_5_attnmtrx_dynamic_HeadId2-1.jpg  style="width: 100%;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_4_d_5_attnmtrx_dynamic_HeadId3-1.jpg  alt="Image 3" style="width: 100%;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_4_d_5_attnmtrx_dynamic_HeadId4-1.jpg  alt="Image 4" style="width: 100%;">
+  </div>
+  <figcaption>Figure 2.7. Heatmaps of the KQ matrices and OV vectors along training epochs with random initialization. The behaviors of the first three heads are similar to the two-head case as shown in Figure 2.6. The KQ matrix of Head 4 (dummy head) demonstrates a chaotic pattern at the early stage and converges to a zero-matrix. The OV vectors of the dummy heads converge to zero vectors.
+</figcaption>
+</figure>
+<ul>
+<li><strong>Parameter Evolution</strong>: The training dynamics of the KQ circuits are not monotonic. The magnitudes of $\omega^{(h)}$&rsquo;s first increase and then decrease to stabilize. Whereas the magnitude of OV circuits, i.e., $\sum_{h\in \mathcal{H}_+} \mu^{(h)}$, increases steadily throughout training. More importantly, for different model sizes, as long as $H \geq 2$, the <u> limiting values are approximately the same!</u> (0.13 for KQ and 3.5 for OV.)</li>
+</ul>
+<figure style="text-align: center;">
+  <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_2_d_5_kq_dynamic_main-1.jpg alt="Image 1" style="width: 100%;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_2_d_5_ov_dynamic_main-1.jpg alt="Image 2" style="width: 100%;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_3_d_5_kq_dynamic-1.jpg alt="Image 3" style="width: 100%;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_3_d_5_ov_dynamic-1.jpg alt="Image 4" style="width: 100%;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_4_d_5_kq_dynamic-1.jpg alt="Image 5" style="width: 100%;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_4_d_5_ov_dynamic-1.jpg alt="Image 6" style="width: 100%;">
+  </div>
+  <figcaption>
+    Figure 2.8. Dynamics of average diagonal values in KQ matrices and the last entry of OV vectors for a two-head attention model along the training. Comparison of training dynamics under the same setup with the number of heads ranging from 2 to 4. The magnitude of the KQ parameters is the same for all non-dummy heads in all models. This shows that all these multi-head attention models learn to implement the same predictor. Furthermore, in this experiment, we observe an dummy head when H = 4.
+  </figcaption>
+</figure>
+<h2 id="-extentions">🧭 Extentions</h2>
+<h3 id="small_blue_diamond-non-isotropic-covariates">🔹 Non-Isotropic Covariates</h3>
+<p>When covariates are drawn from a centered Gaussian with a general covariance matrix $\Sigma$, softmax attention still learns a <strong>sum of two kernel regressors</strong> &mdash;&mdash; but the KQ blocks need not be diagonal. Here, we consider the two-head model for illustration. Concretely:</p>
+<ul>
+<li><strong>Persistent OV Patterns</strong>: The last-entry-only structure in the OV circuits continues to emerge, splitting heads into a positive and a negative group.</li>
+</ul>
+<p>$$
+O^{(h)}V^{(h)} =
+\begin{bmatrix}
+\ast &amp; \ast \\
+\mathbf{0}_d^\top &amp; (-1)^{h+1} \cdot \mu
+\end{bmatrix},
+\quad \forall h \in [2].
+$$</p>
+<p>Here $\mu$ is a positive scalar.</p>
+<ul>
+<li><strong>KQ as a Preconditioner</strong>: Instead of a diagonal as in the isotropic case, the KQ block becomes a dense matrix with a small magnitude, denoted by $\gamma \cdot \Omega$, where $\gamma$ is a small and positive scalar and $\Omega$ is close to $\Sigma^{-1}$.
+This matrix effectively <strong>preconditions</strong> the regression problem by replacing $x_q^\top x_\ell$ with $x_q^\top \Omega,x_\ell$.</li>
+</ul>
+<p>$$
+(K^{(h)})^\top Q^{(h)}
+=\begin{bmatrix}
+(-1)^{h+1} \cdot \gamma \cdot \Omega &amp; \ast \\
+\mathbf{0}_d^\top &amp; \ast
+\end{bmatrix}, \quad \forall h \in [2].
+$$</p>
+<ul>
+<li><strong>Approximate Preconditioned GD</strong>: For small $\gamma$, the learned transformer approximates a <span style="color: fuchsia;">debiased preconditioned gradient descent</span> predictor</li>
+</ul>
+<p>$$
+\hat{y}_q \approx 2\gamma\mu \cdot L^{-1} \cdot \sum_{\ell=1}^L y_\ell \cdot \bar{x}_\ell^\top , \Omega , x_q
+\qquad\text{with}\quad
+\bar{x}_\ell = x_\ell - L^{-1} \cdot \sum_{\ell=1}^L x_\ell,
+$$</p>
+<p>Empirically, $\Omega$ often appears close to the inverse covariance matrix, i.e., $\Omega\approx\Sigma^{-1}$, especially when $L$ is large. This coincides with the estimator learned by linear transformers.</p>
+<p>In short, <strong>multi-head softmax attention naturally learns to incorporate covariance information</strong> in the KQ circuit, yielding a preconditioned GD predictor that adapts to non-isotropic data.</p>
+<figure style="text-align: center;">
+  <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_2_d_5_attnmtrx_HeadId1_noniso-1.jpg alt="Image 1" style="width: 100%;">
+    <img src=/images/03_25_in_context_regression/img/Inv_cov_noniso-1.jpg alt="Image 2" style="width: 68%;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_2_d_5_attnmtrx_HeadId2_noniso-1.jpg alt="Image 3" style="width: 100%;">
+    <img src=/images/03_25_in_context_regression/img/Opt_KQ_LinTF-1.jpg alt="Image 4" style="width: 68%;">
+  </div>
+  <figcaption>
+    Figure 3.1. Heatmap of KQ matrices and OV vectors trained on non-isotropic covariates. The left two Figures illustrate the patterns of trained two-head attention model, and the right Figures plot the inverse of covariance matrix and the conjectured optimal KQ pattern.
+  </figcaption>
+</figure>
+<h3 id="small_blue_diamond-in-context-multi-task-regression">🔹 In-Context Multi-Task Regression</h3>
+<p>We also consider <strong>multi-task</strong> regression, where each task uses a different subset $\mathcal{S}_n\subseteq [d]$ of features. The transformer is now trained to predict a vector $y_q\in\mathbb{R}^N$ given $L$ demonstrations $\{(x_\ell, y_\ell)\}_{\ell\in[L]}$. The setup is formalized as follows.</p>
+<p><strong>In-Context Multi-Task Regression.</strong> Given $d\in\mathbb{Z}^+$, we assume the covariate $x\in\mathbb{R}^d$ is independently sampled from $\mathsf{P}_x$, and let $\beta\in\mathbb{R}^{d}$ be a fixed signal parameter.
+Let $N\in\mathbb{Z}^+$ denote the number of tasks.
+For each task $n\in [N]$, let $\mathcal{S}_n\subseteq[d]$ denote a nonempty set of indices for task $n\in[N]$.
+Let $\beta_{\mathcal{S}_n}$ and $x_{\mathcal{S}_n}$ denote the subvectors of $\beta$ and $x$ indexed by $\mathcal{S}_n$.
+We define the response vector $y=[y_1,\dots,y_N]^\top\in\mathbb{R}^N$ by letting  $y_n=\beta_{\mathcal{S}_n}^\top x_{\mathcal{S}_n}+\epsilon_n$ for all $n \in [N]$, where $\epsilon_n\overset{\rm i.i.d.}{\sim}\mathcal{N}(0,\sigma^2)$.</p>
+<p>In the ICL setting, we assume that the signal set $\{\mathcal{S}_n\}_{n\in[N]}$ is fixed but unknown.
+To perform ICL, we first generate $\beta \sim  \mathsf{P}_\beta$ and then
+generate $L$ demonstration examples $\{ (x_{\ell}, y_{\ell}) \}_{\ell\in[L]}$ where $x_\ell\overset{\rm i.i.d.}{\sim}\mathsf{P}_x$ and $y_\ell$ is generated by the linear model with parameter $\beta$.
+Moreover, we generate another covariate $x_q \sim \mathsf{P}_x$ and the goal is to predict the response $y_q\in\mathbb{R}^N$ for the query  $x_q$.</p>
+<p><strong>Experimental Setups.</strong> We let $\{(x_\ell, y_\ell)\}_{\ell \in [L]}$ denote the ICL examples, where $x_\ell \in \mathbb{R}^d$ and $y_\ell \in \mathbb{R}^N$.
+We consider the isotropic case with $\mathsf{P}_x = \mathcal{N}(0, I_d)$ and $\mathsf{P}_\beta = \mathcal{N}(0, I_d / d)$. Moreover, in our experiment, we focus on the two-task case with $N=2$, $d=6$, $L=40$, $\sigma^2=0.1$. Moreover, we set $\mathcal{S}_1=\{1, 2, 3, 4\}$ and $\mathcal{S}_2=\{3, 4, 5, 6\}$, i.e., the features of the tasks have overlap $\{ 3, 4\}$. We train multi-head attention models with $H \in\{1,2,3,4\}$, which suffices to represent all potential cases.</p>
+<p>To simplify the notation, we let $\mathcal{S}^{\ast}=\mathcal{S}_1\cap\mathcal{S}_2 = \{3,4\}$ and $\mathcal{S}^c=[d]\backslash\mathcal{S}^{*} = \{ 1,2, 5,6\}$.
+Besides, for each $n \in [N]$, we let $y_{\ell, n}$ denote the $n$-th entry of the response vector $y_\ell$.
+For any subset $\mathcal{S}\subseteq [d]$, we let $x_{\ell, \mathcal{S}}$ denote the subvector of $x_\ell$ with indices in $\mathcal{S}$.</p>
+<p><strong>Our findings.</strong></p>
+<ul>
+<li>
+<p><strong>Global Pattern.</strong>  Despite the output dimension now being $d+N$, the learned model maintains <span style="color: fuchsia;"> a similar global patter </span> as in single-task setting (see Figure 3.2 below).
+$$
+KQ^{(h)} =
+\begin{bmatrix} KQ^{(h)}_{11} &amp; \ast \\
+KQ^{(h)}_{21}  &amp; \ast
+\end{bmatrix} \in \mathbb{R}^{(d+N)\times(d+N)},
+\quad
+OV^{(h)}=
+\begin{bmatrix}
+\ast &amp; \ast \\
+OV^{(h)}_{21} &amp; OV^{(h)}_{22}<br>
+\end{bmatrix}
+\in\mathbb{R}^{(d+N)\times(d+N)}.
+$$</p>
+<ul>
+<li>The KQ circuits have a digonal top $d$-by-$d$ submatrix and the rest of the entries are not effective, which takes the form</li>
+</ul>
+<p>$$
+KQ^{(h)}_{11}=\mathrm{diag}(\omega^{(h)})\in\mathbb{R}^{d\times d},\qquad KQ^{(h)}_{21}=\mathbf{0}_{N\times d},\qquad\forall h\in[H].
+$$</p>
+<ul>
+<li>
+<p>The OV circuits only have nonzero entries in the bottom $N$-by-$N$ submatrix. This is a generalization of the last-entry-only OV pattern in the single-task setting, which takes the form
+$$
+OV^{(h)}_{22}=\mathrm{diag}(\mu^{(h)})\in\mathbb{R}^{N\times N},\qquad OV^{(h)}_{21}=\mathbf{0}_{N\times d},\qquad\forall h\in[H].
+$$</p>
+</li>
+<li>
+<p>This implies that each head essentially computes a softmax-based weighting over the inputs and then aggregates vector-valued responses. Moroever, the aggregation involves the weights of  the OV circuits.</p>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Local Patterns.</strong>  The learned values of the KQ and OV circuits <span style="color: fuchsia;"> exhibit much more complicated patterns </span> than the single-tast setting. The particular pattern learned involves a <span style="color: fuchsia;"> interplay between the number of heads and the number of tasks</span>.  For example, the entries of $\omega^{(h)}$ are not homogeneous. Rather, because we have multiple tasks with different supports, some entry $\omega^{(h)}_j$ has a larger magnitude if the $j$-th feature is shared by more tasks. As another example, when the number of heads is large, we observe that different heads might specialize in different tasks.</p>
+</li>
+<li>
+<p><strong>$H=1$</strong>: A single head lumps all tasks into a <span style="color: fuchsia;">single weighted kernel regressor</span>, often weighting shared features the most. The learned parameters follow that</p>
+<p>$$
+\omega_{\mathcal{S}^\ast}^{(1)}=\breve\omega^\ast\cdot\mathbf{1}_{|\mathcal{S}^\ast|},\quad\breve\omega^{(1)}_{\mathcal{S}^c}=\breve\omega^c\cdot\mathbf{1}_{|\mathcal{S}^c|},\quad\mu^{(1)}=\breve\mu\cdot\mathbf{1}_N.
+$$</p>
+<p>Here, $\breve\omega^\ast$, $\breve\omega^c$, and $\breve\mu$ are positive scalars wih $\breve\omega^\ast &gt; \breve\omega^c$. As a result, the single-head attention models learns a <u>nonparametric kernel predictor</u> for  multi-task regression. Importantly, this predictor uses <u>a same set of weights to aggregate the vector responses</u> for all tasks.
+For each task $n\in[N]$, the predictor learned by the attention takes the following form:</p>
+<p>$$
+\hat{y}_{q,n}=\breve\mu\cdot\sum_{\ell=1}^L \frac{\exp(\breve\omega^\ast\cdot\langle x_{\ell,\mathcal{S}^\ast},x_{q,\mathcal{S}^\ast}\rangle + \breve\omega^c\cdot\langle x_{\ell,\mathcal{S}^c},x_{q,\mathcal{S}^c}\rangle)\cdot y_{\ell,n}}{\sum_{\ell=1}^L\exp(\breve\omega^\ast\cdot\langle x_{\ell,\mathcal{S}^\ast},x_{q,\mathcal{S}^\ast}\rangle+\breve\omega^c\cdot\langle x_{\ell,\mathcal{S}^c},x_{q,\mathcal{S}^c}\rangle)},
+$$</p>
+</li>
+</ul>
+<p>which is a nonparametric Nataraya-Watson estimator.</p>
+  <figure style="text-align: center;">
+  <img src=/images/03_25_in_context_regression/img/Layer_1_Head_1_d_6_attnmtrx_HeadId1_multitask-1.jpg style="width: 50%;">
+  <figcaption>Figure 3.2. Heatmap of KQ and OV matrices trained on multiple tasks with H=1. The trained attention model learns to implement a single weighted kernel regressor.</figcaption>
+</figure>
+<ul>
+<li><strong>$H=2$</strong>: The model can approximate a <span style="color: fuchsia;">single debiased GD predictor</span> for the multi-task objective. The learned parameters follow that</li>
+</ul>
+<p>$$
+\omega_{\mathcal{S}^\ast}^{(1)}=-\omega_{\mathcal{S}^\ast}^{(2)}=\breve\omega^\ast \cdot\mathbf{1}_{|\mathcal{S}_\ast|},\quad\omega_{\mathcal{S}^c}^{(1)}=-\omega_{\mathcal{S}^c}^{(2)}=\breve\omega^c\cdot\mathbf{1}_{|\mathcal{S}^c|},\quad\mu^{(1)}=-\mu^{(2)}=\breve\mu\cdot\mathbf{1}_N,
+$$</p>
+<p>for each task $n\in[N]$.
+Again, $\breve\omega^\ast$, $\breve\omega^c$, and $\breve\mu$ are positive scalars with $\breve\omega^\ast &gt; \breve\omega^c$.
+Moreover, the magnitude of $\breve\omega^\ast$ and  $\breve\omega^c$ are both small, which further implies that the two-head attention approximately learns the following parametric predictor for each task $n \in [N]$:</p>
+<p>$$
+\hat{y}_{q,n}
+\approx\frac{2\breve\mu\breve\omega^\ast}{L}\cdot\sum_{\ell=1}^L\langle \bar{x}_{\ell,\mathcal{S}^\ast},x_{q,\mathcal{S}^\ast}\rangle\cdot y_{\ell,n}+\frac{2\breve\mu\breve\omega^c}{L}\cdot\sum_{\ell=1}^L\langle \bar{x}_{\ell,\mathcal{S}^c},x_{q,\mathcal{S}^c}\rangle\cdot y_{\ell,n}.
+$$</p>
+<p>Thus, the trained attention model solves the multi-task linear regression using weighted debiased GD predictor, which assigns a slightly larger weight to the overlap $\mathcal{S}^*$. Moreover, as in the previous case, this predictor uses <u>a same set of weights to aggregate the vector responses</u> for all tasks.</p>
+   <figure style="text-align: center;">
+  <div style="display: flex; justify-content: center; gap: 20px;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_2_d_6_attnmtrx_HeadId1_multitask-1.jpg style="max-width: 50%;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_2_d_6_attnmtrx_HeadId2_multitask-1.jpg  style="max-width: 50%;">
+  </div>
+  <figcaption>Figure 3.3. Heatmap of KQ and OV matrices trained on multi-task problem with H=2. In the trained model, the KQ matrices exhibits a diagonal-only pattern and the diagonal values have two magnitudes. The small scale if KQ indicates that the learned model approximates a single preconditioned GD predictor. </figcaption>
+</figure>
+<ul>
+<li><strong>$H \ge 2N$</strong>: Each task gets at least two heads, so each is solved by a dedicated positive-negative head pair, yielding <span style="color: fuchsia;">$N$ separate debiased GD predictor</span>.
+In the general case,
+consider $H=2N$ with $(2n-1)$-th and $2n$-th heads solving the $n$-th task together.
+For all $n\in[N]$, the learned pattern satisfies that</li>
+</ul>
+<p>$$
+\omega_{\mathcal{S}_n}^{(2n-1)}=-\omega_{\mathcal{S}_n}^{(2n)}=\breve\omega\cdot\mathbf{1}_{|\mathcal{S}_n|},\quad\omega_{\mathcal{S}^c_n}^{(2n-1)}=-\omega_{\mathcal{S}^c_n}^{(2n)}=\mathbf{0}_{|\mathcal{S}^c_n|},\quad\mu^{(2n-1)}=-\mu^{(2n)}=\breve\mu\cdot \mathbf{e}_n,
+$$</p>
+<p>where we use $\mathbf{e}_n \in \mathbb{R}^N$ to denote a canonical basis whose $n$-th entry is one and the rest of the entries are all zero.
+With this pattern, using the fact that $\breve \omega$ is small, for each task $n\in[N]$, the predictor approximately takes the following form:</p>
+<p>$$
+\hat{y}_{q,n}\approx\frac{2\breve\mu\breve\omega}{L}\cdot\sum_{\ell=1}^L\langle \bar{x}_{\ell,\mathcal{S}_{n}},x_{q,\mathcal{S}_n}\rangle\cdot y_{\ell,n}, \qquad \text{where}~~2 \breve\mu\breve\omega \approx 1.
+$$</p>
+<p>This implements an independent GD predictor (the same as in the single-task case) for each task $n$, using $\{ x_{\ell,\mathcal{S}_{n}}, y_{\ell,n} \}_{\ell\in [L]}$.<br>
+In other words, the model bakes the true supports $\{\mathcal{S}_n\}_{n\in [H]}$ into the learned model weights, and <u>differnt head groups independently solve separate tasks</u>.</p>
+   <figure style="text-align: center;">
+  <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_4_d_6_attnmtrx_HeadId1_multitask-1.jpg  alt="Image 1" style="width: 100%;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_4_d_6_attnmtrx_HeadId2_multitask-1.jpg  alt="Image 2" style="width: 100%;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_4_d_6_attnmtrx_HeadId3_multitask-1.jpg  alt="Image 3" style="width: 100%;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_4_d_6_attnmtrx_HeadId4_multitask-1.jpg  alt="Image 4" style="width: 100%;">
+  </div>
+  <figcaption>
+    Figure 3.4. Heatmap of KQ and OV matrices trained on the multi-task problem with H=4. The trained model learns to implement N separate debiased GD predictors by assigning each task to a unique pair of heads, ensuring that each head is exclusively used for a single task. Task-relevant entry information is encoded in the KQ circuit and OV controls the output task.
+  </figcaption>
+</figure>
+<ul>
+<li><strong>$2 &lt; H &lt; 2N$</strong>: We observe an intriguing <span style="color: fuchsia;">superposition phenomenon</span>.
+In Figure 3.5, we plot the heatmaps of the KQ and OV matrices of a three-head attention model. Head 3 shows an interesting superposition pattern: it is a negative head for Task 1 and a positive head for Task 2.
+Intuitively, superposition requires requires some heads to <span style="color: fuchsia;">solve move than one task simultaneously</span>, which means that we may observe $\omega^{(h)}$ that have both positive and negative values.</li>
+</ul>
+<p>Interestingly, <u>three-head attention learns the same predictor as the four-head attention</u>, i.e., it learns <span style="color: fuchsia;"> $N$ separate debiased GD predictors</span> for the multi-task problem. But superposition enables the transformer model to implement these predictors in a more compact manner, using less heads. Here, <u> each head is used to solve both tasks,  but the aggregated effect is that the model can approximate the performance of the $N$ separate debiased GD predictors</u>! As we detail in the paper, the learned KQ and OV circuits also reflect the structure of the support sets ${ \mathcal{S}<em>n}</em>{n\in[N]}$ and they satisfy certain conditions that enables the more compact implementation.</p>
+<p>We only study a toy case with $H=3$ and $N=2$. We believe that the superposition phenomenon is a general phenomenon that occurs when $2&lt;H&lt;2N$.
+But more a larger $N$, the superposition phenomenon becomes more complex and entangled.
+For the general multi-task setting, characterizing the training dynamics and solution manifold of the multi-head attention with superposition is an important direction for future work.</p>
+<!-- **Further Discussions on Superposition.** The experimental observations lead to a mathematical depiction of $\{\omega^{(h)}, \mu^{(h)}\}_{h\in[H]}$ as follows. 
+ Let $\mathscr{D}$  denote the set of all possible grouped divisions  $\{\mathcal{S}^*,\mathcal{S}_{1,*}^c,\mathcal{S}_{2,*}^c\}$ with $\mathcal{S}_{n,*}^c=\mathcal{S}_n\backslash\mathcal{S}^*$ for $n \in \{1, 2\}$. 
+Under our setup, we have $\mathcal{S}_{1,*}^c=\{1,2\}$, $\mathcal{S}_{2,*}^c=\{5,6\}$, and $\mathcal{S}^*=\{3,4\}$.
+The parameters of the three-head model can be summarized as follows:
+$$
+\sum_{h=1}^H   \mu^{(h)}=\mathbf{0}_N,\quad\omega^{(h)}_\mathcal{S}=\breve\omega_\mathcal{S}^{(h)}\cdot\mathbf{1}_{|\mathcal{S}|},\quad\forall (h,\mathcal{S})\in[H]\times\mathscr{D}.
+$$
+By plugging the values of $\{ \omega^{(h)}, \mu^{(h)} \}_{h\in [H]}$ into the transformer model, for each task $n\in[N]$, its output can be written as
+\begin{align}
+    \hat{y}_{q,n} %&=\sum_{h=1}^H\breve\mu^{(h)}_{n}\cdot\sum_{\ell=1}^L\frac{\exp(\langle x_{\ell},\breve\omega^{(h)}\odot x_{q}\rangle)\cdot y_{\ell,n}}{\sum_{\ell=1}^L\exp(\langle x_{\ell},\breve\omega^{(h)}\odot x_{q}\rangle)}\\
+    &\approx \sum_{h=1}^H \breve\mu^{(h)}_{n} \cdot \sum_{\ell=1}^L \frac{y_{\ell,n}}{L} \cdot \left(1 + \sum_{\mathcal{S}\in\mathscr{D}} \breve\omega^{(h)}_{\mathcal{S}} \cdot \langle \bar x_{\ell,\mathcal{S}}, x_{q,\mathcal{S}}\rangle \right) \notag\\
+    &= \sum_{h=1}^H \sum_{\mathcal{S}\in\mathscr{D}} \frac{\breve\mu^{(h)}_{n} \breve\omega^{(h)}_{\mathcal{S}}}{L} \cdot \sum_{\ell=1}^L \langle \bar x_{\ell,\mathcal{S}}, x_{q,\mathcal{S}}\rangle \cdot y_{\ell,n},
+\end{align}
+where we use the first-order approximation of $\exp(\cdot)$ and the last equality follows from the fact that $\sum_{h=1}^H \breve \mu^{(h)}_{n}=0$. Furthermore, we carefully examine the learned values of $\{\omega^{(h)}, \mu^{(h)}\}_{h\in[H]}$, we observe that the following conditions hold: 
+\begin{align}
+    &\sum_{h=1}^H\breve\mu^{(h)}_{1}\breve\omega^{(h)}_{\mathcal{S}_{1,*}^c}=\sum_{h=1}^H\breve\mu^{(h)}_{1}\breve\omega^{(h)}_{\mathcal{S}^*} \approx 1 ,\qquad \qquad \sum_{h=1}^H\breve\mu^{(h)}_{1}\breve\omega^{(h)}_{\mathcal{S}_{2,*}^c}=0, \\
+    &\sum_{h=1}^H\breve\mu^{(h)}_{2}\breve\omega^{(h)}_{\mathcal{S}_{2,*}^c}=\sum_{h=1}^H\breve\mu^{(h)}_{2}\breve\omega^{(h)}_{\mathcal{S}^*} \approx 1 ,\qquad\qquad   \sum_{h=1}^H\breve\mu^{(h)}_{2}\breve\omega^{(h)}_{\mathcal{S}_{1 ,*}^c}=0. 
+\end{align}
+As a result, for each $n\in[N]$, the predictor $\hat y_{q, n}$ can be simplified as 
+$$
+\hat{y}_{q,n} \approx\sum_{h=1}  \frac{1}{L} \cdot \sum_{\ell=1}^L\langle \bar x_{\ell,\mathcal{S}_{n}},x_{q,\mathcal{S}_{n}}\rangle\cdot y_{\ell,n}.
+$$
+his means that, when $H = 3$ and $N = 2$, the trained transformer model learns the same estimator ---- sum of two independent debiased GD estimator ---- as the case when $H = 2N$. But here the transformer model achieves by exploiting the superposition. That is, each head is used to solve both tasks, and the aggregated effect is that the model can approximate the performance of the $N$ independent debiased GD predictors. Here we only study a toy case with $H=3$ and $N=2$. We believe that the superposition phenomenon is a general phenomenon that occurs when $2<H<2N$.
+But more a larger $N$, the superposition phenomenon becomes more complex and entangled. 
+For the general multi-task setting, characterizing the training dynamics and solution manifold of the multi-head attention with superposition is an important direction for future work.  
+ -->
+<figure style="text-align: center;">
+  <div style="display: flex; justify-content: center; gap: 20px;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_3_d_6_attnmtrx_HeadId1_multitask-1.jpg  style="max-width: 50%;">
+    <img src=/images/03_25_in_context_regression/img/Layer_1_Head_3_d_6_attnmtrx_HeadId2_multitask-1.jpg  style="max-width: 50%;">
+  </div>
+</figure>
+<figure style="text-align: center;">
+  <img src=/images/03_25_in_context_regression/img/Layer_1_Head_3_d_6_attnmtrx_HeadId3_multitask-1.jpg  style="width: 50%;">
+  <figcaption>Figure 3.5. Heatmap of KQ and OV matrices trained on multi-task problem with H=3. 
+    Each head contributes to both tasks, and in particular, Head 3 is a positive head for Task 2 and a negative head for Task 1.
+    The trained model learns to implement N separate debiased GD predictors with superposition.</figcaption>
+</figure>
+<h2 id="-mechanistic-interpretation">🔬 Mechanistic Interpretation</h2>
+<p>In this section, we focus on the the single-task and isotropic case and present the theoretical explanations for the learned multi-head attention model.</p>
+<h3 id="small_blue_diamond-simplification-and-approximate-loss">🔹 Simplification and Approximate Loss</h3>
+<p>Since the transformer’s KQ and OV circuits settle into a diagonal-only and last-entry-only structure early in training, we can reparametrize the model in terms of $(\omega,\mu)$. This simplified view captures the core learning behavior: the final prediction $\hat{y}_q$ can be computed based on the scaling parametrs of the  KQ and OV circuits, namely $\omega$ and $\mu$.</p>
+<p>Now we can regard the population risk of ICL as a function of $\omega$ and $\mu$.
+We derive an approximation loss, which is more amenable for theoretical analysis.</p>
+<!-- **Proposition 1.**  Consider an $H$-head attention model parameterized by $(\omega,\mu)\subseteq\mathbb{R}^{2H}$ with dimension $d\in\mathbb{Z}^+$ and sample size $L\in\mathbb{Z}^+$ Suppose $d>\log L$ and parameters $(\omega,\mu)$ satisfies that $\|\omega\|_\infty\lesssim\sqrt{\log L/d}$ and $\|\mu\|_\infty\lesssim L^{1/5}$, then it holds that   -->
+<p>$$
+\mathcal{L}(\omega,\mu)\approx 1+\sigma^2-2\mu^\top\omega+\mu^\top\Big(\omega\omega^\top+(1+\sigma^2)\cdot L^{-1}\cdot\exp(d\omega\omega^\top)\Big)\mu.
+$$
+In fact, the approximation is accurate when the sample size $L$ is sufficiently large.
+Empirical evidence shows that this approximation closely tracks the true loss landscape even as $\omega$ and $\mu$ change throughout training.</p>
+<!--  Hence, to analyze the parameter evolution of the transformer, it suffices to consider the gradient dynamics of the approximate loss, which is given by
+$$
+\tilde{\mathcal{L}}(\omega,\mu)= 1+\sigma^2-2\mu^\top\omega+\mu^\top\big(\omega\omega^\top+(1+\sigma^2)\cdot L^{-1}\cdot\exp(d\omega\omega^\top)\big)\mu.
+$$
+ -->
+<h3 id="small_blue_diamond-training-dynamics-emerged-patterns-and-solution-manifold">🔹 Training Dynamics, Emerged Patterns, and Solution Manifold</h3>
+<p>Starting from small random initialization, the attention parameters converge in two main stages under gradient descent in terms of the approximate loss where
+$$
+\mu_{t+1}\leftarrow\mu_t-\eta\cdot\nabla_{\mu}\tilde{\mathcal{L}}(\mu_t,\omega_t),\qquad \omega_{t+1}\leftarrow\omega_t-\eta\cdot\nabla_\omega\tilde{\mathcal{L}}(\mu_t,\omega_t).
+$$</p>
+<ul>
+<li><strong>Stage I: Emergence of Sign-Matching and Zero-Sum OV Patterns</strong></li>
+</ul>
+<p>Stage I establishes the <span style="color: fuchsia;">sign-matching</span> and <span style="color: fuchsia;">zero-sum OV</span> pattern such that</p>
+<p>$$
+\langle\mu,\mathbf{1}_H\rangle=0,\qquad\mathrm{sign}(\omega^{(h)})=\mathrm{sign}(\mu^{(h)}),
+$$</p>
+<p>driven by low-order gradient terms by applying the Taylor expansion to $\exp(d\omega\omega^\top)$ in the gradient dynamics. Specifically, we can write the gradient updates as:</p>
+<p>\begin{align*}
+\mu_{t+1}\leftarrow&amp;\mu_t+2\eta\cdot\underbrace{\left(1-\big(1+(1+\sigma^2)\cdot d{L}^{-1}\big)\cdot\langle\mu_t,\omega_t\rangle\right)\cdot{\omega_t}}_{\text{Sign-Matching Term}}\notag\\
+&amp;\qquad -2\eta\cdot(1+\sigma^2)\cdot L^{-1}\cdot\Big(\underbrace{{\langle\mu_t,\mathbf{1}_H\rangle}\cdot\mathbf{1}_H}_{\text{Zero-Sum OV Term}}+\underbrace{\sum_{k=2}^\infty \frac{d^k}{k!}\cdot\langle\mu_t,\omega_t^{\odot k}\rangle\cdot\omega_t^{\odot k}}_{\text{High-Order Terms}}\Big).
+\end{align*}</p>
+<p>\begin{align*}
+\omega_{t+1}\leftarrow&amp;\omega_t+2\eta\cdot\underbrace{\left(1-\big(1+(1+\sigma^2)\cdot d{L}^{-1}\big)\cdot\langle\mu_t,\omega_t\rangle\right)\cdot{\mu_t}}_{\text{Sign-Matching Term}}\notag\\
+&amp;\qquad -2\eta\cdot(1+\sigma^2)\cdot L^{-1}\cdot\underbrace{\sum_{k=2}^\infty \frac{d^k}{(k-1)!}\cdot\langle\mu_t,\omega_t^{\odot k}\rangle\cdot\mu_t\odot\omega_t^{\odot k-1}}_{\text{High-Order Terms}}.
+\end{align*}
+Here $\omega^{\odot k}$ denote the $k$-th order Hadamard product of $\omega$, which produces a vector whose $j$-th entry is $\omega_j^k$ for all $j$.</p>
+<p>In the first stage, the gradient dynamics are driven by the low-order terms. Eventually, gradient descent will move to some $\omega$ and $\mu$ such that the <u>low order terms are approximately zero</u>.</p>
+<p><strong>Zero-Sum OV Term:</strong> The term $\langle\mu_t,\mathbf{1}_H\rangle \cdot\mathbf{1}_H$ promotes the pattern of zero-sum OV. When this pattern emerges, this term is zero.</p>
+<p><strong>Sign-Matching Terms:</strong> The two sign-matching terms leads to the emergence of the sign-matching pattern. Consider the update with these terms:</p>
+<p>\begin{align*}
+\mu_{t+1}\leftarrow&amp;\mu_t+2\eta\cdot\underbrace{\left(1-\big(1+(1+\sigma^2)\cdot d{L}^{-1}\big)\cdot\langle\mu_t,\omega_t\rangle\right)\cdot{\omega_t}}_{\text{Sign-Matching Term}}\\
+\omega_{t+1}\leftarrow&amp;\omega_t + 2\eta\cdot\underbrace{\left(1-\big(1+(1+\sigma^2)\cdot d{L}^{-1}\big)\cdot\langle\mu_t,\omega_t\rangle\right)\cdot{\mu_t}}_{\text{Sign-Matching Term}} .
+\end{align*}
+Here $\omega_t$ and $\mu_t$ update in each other&rsquo;s directions, and thus eventually they will have the same sign.</p>
+<ul>
+<li><strong>Stage II: Emergence of Homogeneous KQ scaling and Solution Manifold</strong></li>
+</ul>
+<p>Once the previous two patterns emerge, in <strong>Stage II</strong> we need to further consider the  high-order terms. The pattern of <span style="color: fuchsia;">homogeneous KQ scaling</span> emerges, which states that
+$$
+\lvert\omega^{(h)}\rvert=\gamma，\quad\text{for all non-dummy heads}.
+$$</p>
+<p>To see this, we apply Taylor expansion to the approximate loss function $\tilde{\mathcal{L}}$ and get<br>
+\begin{align*}
+\tilde{\mathcal{L}}(\omega_t,\mu_t)
+&amp;= \sigma^2+(1-\langle\mu_t,\omega_t\rangle)^2+(1+\sigma^2)\cdot L^{-1}\cdot\langle\mu_t,\mathbf{1}_H\rangle^2\\
+&amp;\qquad+(1+\sigma^2)\cdot L^{-1}\cdot\sum_{k=1}^\infty \frac{d^k}{k!}\cdot\langle\mu_t,\omega_t^{\odot k}\rangle^2.
+\end{align*}
+Using the nonnegativity of even terms and Holder&rsquo;s inequality for odd terms, we have a lower bound for the Taylor series:
+\begin{align}
+\sum_{k=1}^\infty \frac{d^k}{k!}\cdot\langle\mu_t,\omega_t^{\odot k}\rangle^2&amp;=\sum_{k\in{2q:q\in\mathbb{Z}^+}}\frac{d^k}{k!}\cdot\langle\mu_t,|\omega_t|^{\odot k}\rangle^2+\sum_{k\in{2q-1:q\in\mathbb{Z}^+}}\frac{d^k}{k!}\cdot\langle|\mu_t|,|\omega_t|^{\odot k}\rangle^2 \notag \\
+&amp;\geq\sum_{k\in{2q-1:q\in\mathbb{Z}^+}}\frac{d^k}{k!}\cdot|\mu_t|_1^{2(1-k)}\cdot\langle|\mu_t|,|\omega_t|\rangle^{2k},
+\end{align}
+The inequality becomes an equality when the following two conditions are satisfied.
+First, the even terms are all equal to zero. Second, the inequality for the odd terms is actually an equality. <u>Both these two conditions are satisfied when homogeneous KQ is true.</u>.
+Therefore, the pattern of homogeneous KQ naturally emerges froms minimizing $\tilde{ \mathcal{L}}$.</p>
+<!--which holds when .
+Thanks to the property of zero-sum OV, since $\langle\mu_t,|\omega_t|^{\odot k}\rangle=\gamma^k\cdot\langle\mu_t,\mathbf{1}_H\rangle=0$ for all $k\in\{2q:q\in\mathbb{Z}^+\}$. 
+Second, the inequality for the odd terms is actually an equality, which holds if and only if  $|\mu_t|\odot|\omega_t|^{\odot k}\propto|\mu_t|$ for all $k\in\{2q-1:q\in\mathbb{Z}^+\}$. -->
+<p><strong>Solution Manifold:</strong> With these patterns, the heads split into three groups—positive, negative, and dummy—and the resulting parameters $(\omega,\mu)$ lie on a solution manifold where
+\begin{align}
+\mathscr{S}_\gamma &amp; =\Big\{(\omega,\mu)\subseteq\mathbb{R}^H :\omega^{(h)}= \gamma\cdot\mathrm{sign}(\mu^{(h)}),\quad
+\sum_{h\in\mathcal{H}_{+}}\mu^{(h)}=-\sum_{h\in\mathcal{H}_{-}}\mu^{(h)}=\mu_\gamma\Big\}，\\
+&amp;\text{where}\quad\mu_\gamma=\left(\gamma^2+(1+\sigma^2)\cdot L^{-1}\cdot\sinh(d\gamma^2)\right)^{-1}\cdot\gamma/2.
+\end{align}
+The specific scale $\gamma$ is sensitive to optimization details, e.g., learning rate. But theoretically, we can show that the optimal $\gamma$ is $0^{+}$, which gives rise to the debiased GD estimator.</p>
+<h3 id="small_blue_diamond-statistical-properties-of-learned-multi-head-attention">🔹 Statistical Properties of Learned Multi-Head Attention</h3>
+<p>Our experiments show that no matter how many heads the model has, it consistently acquires diagonal-only KQ and last-entry-only OV circuits. For $H \ge 2$, the heads split into three groups—positive, negative, and dummy—and effectively approximate a gradient-descent-style solution. Specifically:</p>
+<ol>
+<li>
+<p><strong>Equivalent to Two-Head Form.</strong> Even in higher-head models, only the positive and negative heads contribute to the final predictor, which can be expressed exactly as a two-head model with parameters $\omega_{\mathrm{eff}} = (\gamma, -\gamma)$ and $\mu_{\mathrm{eff}} = (\mu_\gamma, -\mu_\gamma)$. For <span style="color: fuchsia;">small $\gamma$</span>, this predictor approximates a <strong>debiased GD</strong> predictor:
+\begin{align*}
+\hat{y}_q &amp; = \mu_{\gamma}\cdot\biggl(  \sum_{\ell=1}^L \frac{y_\ell\cdot\exp(\gamma\cdot x_\ell^\top x_q)}{\sum_{\ell=1}^L \exp(\gamma\cdot x_\ell^\top x_q)} -
+\sum_{\ell=1}^L\frac{y_\ell\cdot\exp(-\gamma\cdot x_\ell^\top x_q)}{\sum_{\ell=1}^L\exp(-\gamma\cdot x_\ell^\top x_q)} \bigg)\\
+&amp;\approx\frac{{2\mu_\gamma\gamma}}{L}\cdot\sum_{\ell=1}^L y_\ell \cdot \bar{x}_\ell^\top x_q\quad\text{with}\quad\bar{x}_\ell=x_\ell-{L}^{-1}\cdot \sum_{\ell=1}^L x_\ell.
+\end{align*}</p>
+</li>
+<li>
+<p><strong>Debiased GD vs. Vanilla GD.</strong>  When $L \gg d$, debiased GD coincides with vanilla GD since $\mathbb{E}[x_\ell]=0$, so multi-head softmax attention becomes equivalent to linear attention studied in prior work.</p>
+</li>
+<li>
+<p><strong>Single-Head vs. Multi-Head.</strong> Single-head attention behaves like a kernel estimator (e.g., a Nadaraya–Watson regressor with a Gaussian RBF kernel and $\|x_\ell\|_2$ fixed). By contrast, multi-head attention implements a parametric form akin to GD, leading to better statistical performance for in-context linear regression.</p>
+</li>
+<li>
+<p><strong>Approximation, Optimality, and Bayes Risk.</strong></p>
+<ul>
+<li><strong>Approximation</strong>: Multi-head attention can approximate any debiased GD predictor within an error that shrinks as $\gamma \to 0$.</li>
+<li><strong>Optimality</strong>: The approximate loss $\tilde{\mathcal{L}}$ is minimized on a solution manifold as $\gamma \to 0$. The learned parameters approach a debiased GD solution.</li>
+<li><strong>Bayes Risk</strong>: In a high-dimensional limit with $d/L \to \xi$, the best multi-head attention predictor remains <span style="color: fuchsia;">within a constant factor of the Bayes-optimal risk</span>. This aligns with empirical findings showing near-optimal performance.</li>
+</ul>
+</li>
+</ol>
+<p>The arguments above can be formally summarized in the following theorem.</p>
+<p><strong>Theorem 1.</strong> Consider the parameter space $\overline{\mathscr{S}} \supseteq \mathscr{S}^*$ defined by
+$$
+\overline{\mathscr{S}}=
+\Bigl\{(\omega,\mu):
+\forall \gamma&gt;0,,
+\omega^{(h)} = \gamma\cdot\mathrm{sign}\bigl(\omega^{(h)}\bigr),\text{ for all } h\in[H],,\min{|\mathcal{H}_{+}|, |\mathcal{H}_{-}|} &gt; 1
+\Bigr\}.
+$$</p>
+<p>Consider $\theta = (\omega,\mu)\in \overline{\mathscr{S}}$, and let $\sum_{h\in \mathcal{H}_{+}}\mu^{(h)} = \mu_{+}$ and $\sum_{h\in \mathcal{H}_{-}}\mu^{(h)} = \mu_{-}$. Then:</p>
+<ol>
+<li><strong>(Approximation)</strong> Let $\eta &gt; 0$ be any constant learning rate and let $\delta \in (0,1)$ be a given failure probability.
+Given any scaling $\gamma &gt; 0$, we define $\breve\mu = \eta / (2 \gamma)$.
+Consider a multi-head attention with no dummy head and $\theta  \in \bar{\mathscr{S}}$.
+Moreover, we set $\mu_+=-\mu_-=\breve\mu$.
+When $L$ is sufficiently large such that  $L\gtrsim\log(1/\delta)$ and  $\gamma$ is sufficiently small such that $\gamma\lesssim(\sqrt{d}\cdot\log(L/\delta))^{-1}$, with probability at least $1-\delta$, we have
+$$
+|\hat{y}_q(\theta)-\hat y_q^{\sf gd}(\eta)|\leq\tilde{O}\bigl( \sqrt{1+\sigma^2}\cdot \gamma \cdot d  \bigr),
+$$
+where $\tilde{O}(\cdot)$ omits logarithmic factors.
+In particular, suppose we drive $\gamma$ to zero while keeping $\breve\mu = \eta / (2\gamma)$, the resulting $\hat{y}_q(\theta)$ coincides with $\hat{y}_q^{\sf gd}(\eta)$.</li>
+<li><strong>(Optimality)</strong> Minimizing $\tilde{\mathcal{L}}(\omega,\mu)$ over $\overline{\mathscr{S}}$ attains its minimum in $\mathscr{S}^*$. In particular, taking $\gamma \to 0^{+}$ yields the same predictor as the debiased GD estimator $\hat{y}_q^{\mathsf{gd}}\bigl(\eta^\ast\bigr)$, where $\eta^\ast = \bigl(1 + (1+\sigma^2),d / L\bigr)^{-1}$.</li>
+<li><strong>(Bayes Risk)</strong> We consider the high-dimensional and asymptotic regime where $L\rightarrow\infty$ and  $d/L\rightarrow\xi$,
+where $\xi\in(0,\infty)$ is a constant.
+Suppose the noise level $\sigma^2 &gt; 0$ and $\xi$ is sufficiently small such that $\sigma^2+\xi^{-1}&gt;1$.
+Then we have</li>
+</ol>
+<p>$$
+\frac{\mathcal{E}(\hat{y}_q^{\mathsf{gd}}(\eta^\ast))}{\mathsf{BayesRisk}_{\xi,\sigma^2}}\leq 1+
+\sigma^{-2} \cdot \big\{(1+\xi\sigma^2)\cdot(1+\sigma^2+\xi^{-1})\big\}^{-1},
+$$
+where $\mathsf{BayesRisk} _{\xi,\sigma^2}$ denotes the limiting Bayes risk.</p>
+<h2 id="-dicussion-role-of-softmax-activation">📍 Dicussion: Role of Softmax Activation</h2>
+<h3 id="small_blue_diamond-linear-vs-softmax--attention">🔹 Linear vs Softmax  Attention</h3>
+<p>Recent work has explored <strong>linear transformers</strong> (e.g., <a href="https://arxiv.org/abs/2212.07677" target="_blank">Von Oswald et al., 2023</a>
+), which remove the nonlinearity and causal mask. Concretely, linear attention is defined as</p>
+<p>$$
+\mathrm{LinTF}_\theta(Z_\mathsf{ebd}) = Z_\mathsf{ebd} + \frac{1}{L}\sum_{h=1}^H O^{(h)} V^{(h)} Z_\mathsf{ebd} \cdot Z_\mathsf{ebd}^\top K^{(h)^\top} Q^{(h)} Z_\mathsf{ebd}.
+$$
+When applied to linear regression tasks, such a single-head linear transformer can learn the same <em>one-step gradient descent</em> solution as its softmax-based counterpart. However, <u>softmax attention offers two key advantages</u>:</p>
+<ol>
+<li><strong>Dynamic Normalization.</strong> Linear attention hard-codes a factor of $1/L$, which prevents it from seamlessly scaling to new sequence lengths.  Softmax attention, by contrast, automatically adjusts its <span style="color: fuchsia;">internal “normalization”</span> via the softmax operation and does not explicitly depend on $L$. This lets it process more (or fewer) in-context examples than it was trained on, <strong>generalizing</strong> to different sequence lengths.</li>
+</ol>
+<figure style="text-align: center;">
+  <img src=/images/03_25_in_context_regression/img/Lin_smax_comparison-1.jpg style="width: 45%;">
+  <figcaption>Figure 4.1. ICL prediction errors of linear attention, single-head and multi-head softmax attention trained on L=40 evaluated over different lengths. We see that softmax attention can generalize in length because the prediction error decays with more examples. 
+    Linear attention cannot generalize in length and the prediction error starts to increase when the number of examples exceeds L.</figcaption>
+</figure>
+<ol start="2">
+<li><strong>Greater Expressive Power.</strong> Any $H$-head linear attention mechanism can be approximated by a $2H$-head softmax attention with small scaling parameters $\gamma$. When the token embeddings are centralized, linear and softmax attention behave similarly. Yet softmax attention can still adapt better across different lengths because it does not fix the normalization to $1/L$.</li>
+</ol>
+<h3 id="small_blue_diamond-ablation-study-activation-functions-beyond-softmax">🔹 Ablation Study: Activation Functions beyond Softmax</h3>
+<p>We found that <span style="color: fuchsia;">the previous findings can also be extended to more general types of activations</span>.  We replaced the exponential function in softmax with alternative “normalized activations”:
+$\sigma:\mathbb{R}^d\mapsto\mathbb{R}^d$ defined by letting $\sigma(\nu)_i=f(\nu_i)/\sum_{j=1}^df(\nu_j)$ for all $i\in[d]$,
+where $f(\cdot)$ is any univariate function satisfying $f(x)\approx 1 + C_f\cdot x$ for small $x$. We tested three such families: (1) $f(x)=1+Cx$,
+(2) $f(x)=(1+Cx)^2$, and (3) $f(x)=1+\tanh(x)$,
+all of which share the first-order property $f(x)\approx 1 + C_f\cdot x$.
+We have the following key observations:</p>
+<ol>
+<li><strong>Same Emergent Patterns.</strong> Like standard softmax attention, two-head models with these activations learn:
+<ul>
+<li><strong>Positive/Negative Heads</strong>: Each head’s KQ parameters share one magnitude with opposite signs, and the OV parameters also match that sign.</li>
+<li><strong>Sum of Kernel Regressors</strong>: The model effectively computes a difference of two “kernel-like” sums of the form $\bigl(\omega, -\omega\bigr)$ and $\bigl(\mu, -\mu\bigr)$.</li>
+</ul>
+</li>
+</ol>
+<p>\begin{align*}
+\hat{y}_q &amp;= \| \mu\|_{\infty} \cdot \biggl(  \sum_{\ell=1}^L \frac{y_\ell\cdot{f} ( \| \omega\|_{\infty} \cdot x_\ell^\top x_q)} {\sum_{\ell=1}^L{f}(\| \omega\|_{\infty} \cdot x_\ell^\top x_q)} -  \sum_{\ell=1}^L \frac{y_\ell\cdot {f} (-| \omega|_{\infty}\cdot x_\ell^\top x_q)}{\sum_{\ell=1}^L {f}(-\| \omega\|_{\infty}\cdot x_\ell^\top x_q)} \bigg), \notag\\
+&amp;\approx \frac{\eta_{\mathsf{eff}} } {L} \sum_{\ell=1}^ L y_{\ell} \cdot \bar x_{\ell}^\top x_q, \qquad \textrm{where}
+~~ \eta_{\mathsf{eff}} =  2 {C_{f}}\cdot \| \omega\|_{\infty} \cdot \| \mu\|_{\infty}
+\end{align*}</p>
+<figure style="text-align: center;">
+  <img src=/images/03_25_in_context_regression/img/compare_diff_link_fun.jpg  style="width: 100%;">
+  <figcaption>Figure 4.2. Heatmap of KQ matrices and OV vectors of trained two-head attention using alternative activation functions.  The trained models consistently exhibit the same patterns shared by softmax attention, though the parameters of different models converge to different values.</figcaption>
+</figure>
+<ol start="2">
+<li><strong>Stable Patterns, Varying Dynamics.</strong>  While all models eventually converge to the same final structure, their <em>training dynamics</em> can vary. For example, $f(x)=1+\tanh(x)$ behaves more like vanilla softmax where $\|\omega\|_\infty$ grows then shrinks, whereas polynomial-based activations show more complex trajectories.</li>
+</ol>
+<figure style="text-align: center;">
+  <img src=/images/03_25_in_context_regression/img/compare_link_function_training.jpg style="width: 100%;">
+  <figcaption>Figure 4.2. Comparison of the training dynamics of KQ and OV parameters for a two-head attention model with various activation functions. 
+    In particular, Figure (c) illustrates the dynamics of the case f(x) = 1+tanh(x), which are closer to those of the vanilla softmax attention model.</figcaption>
+</figure>
+<h2 id="-conclusion">🎇 Conclusion</h2>
+<p>We studied how multi-head softmax attention models learn in-context linear regression, revealing emergent structural patterns that drive efficient learning.
+Our analysis reveals that trained transformers develop structured key-query (KQ) and output-value (OV) circuits, with attention heads forming opposite positive and negative groups.
+These patterns emerge early in training and are preserved throughout the training process, enabling the transformers to approximately implement a debiased gradient descent predictor.
+Additionally, we show that softmax attention generalizes better than linear attention to longer sequences during testing and that learned attention structures extend to non-isotropic and multi-task settings.
+As for future work, some interesting directions include ICL with nonlinear regression data or transformer models with at least two layers.
+Another intriguing problem is systematically demystifying the superposition phenomenon for multi-task ICL in the general case.</p>
+<h2 id="bibtex">BibTex</h2>
+<pre tabindex="0"><code>@article{he2025context,
+  title={In-Context Linear Regression Demystified: Training Dynamics and Mechanistic Interpretability of Multi-Head Softmax Attention},
+  author={He, Jianliang and Pan, Xintian and Chen, Siyu and Yang, Zhuoran},
+  journal={arXiv preprint arXiv:2503.12734},
+  year={2025}
+}
+</code></pre>
+
+                
+            </section>
+
+            
+
+            
+        </article>
+    </div>
+
+    <div class="hidden lg:flex lg:flex-col lg:items-end">
+        
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#beginner-setups-data-distribution-and-multi-head-attention">:beginner: Setups: Data Distribution and Multi-Head Attention</a></li>
+    <li><a href="#-empirical-insights-emerged-patterns-and-dynamics">📚 Empirical Insights: Emerged Patterns and Dynamics</a>
+      <ul>
+        <li><a href="#small_blue_diamond-key-finding-1-global-kqov-patterns">:small_blue_diamond: Key Finding 1: Global KQ/OV Patterns.</a></li>
+        <li><a href="#small_blue_diamond-key-finding-2-learned-values-of-omegamu">:small_blue_diamond: Key Finding 2: Learned Values of $(\omega,\mu)$.</a></li>
+        <li><a href="#small_blue_diamond-key-finding-3-multi-head-outperforms-single-head-approximates-gradient-descent">:small_blue_diamond: Key Finding 3: Multi-Head Outperforms Single-Head, Approximates Gradient Descent</a></li>
+        <li><a href="#small_blue_diamond-key-finding-4-consistent-training-dynamics">:small_blue_diamond: Key Finding 4: Consistent Training Dynamics</a></li>
+      </ul>
+    </li>
+    <li><a href="#-extentions">🧭 Extentions</a>
+      <ul>
+        <li><a href="#small_blue_diamond-non-isotropic-covariates">:small_blue_diamond: Non-Isotropic Covariates</a></li>
+        <li><a href="#small_blue_diamond-in-context-multi-task-regression">:small_blue_diamond: In-Context Multi-Task Regression</a></li>
+      </ul>
+    </li>
+    <li><a href="#-mechanistic-interpretation">🔬 Mechanistic Interpretation</a>
+      <ul>
+        <li><a href="#small_blue_diamond-simplification-and-approximate-loss">:small_blue_diamond: Simplification and Approximate Loss</a></li>
+        <li><a href="#small_blue_diamond-training-dynamics-emerged-patterns-and-solution-manifold">:small_blue_diamond: Training Dynamics, Emerged Patterns, and Solution Manifold</a></li>
+        <li><a href="#small_blue_diamond-statistical-properties-of-learned-multi-head-attention">:small_blue_diamond: Statistical Properties of Learned Multi-Head Attention</a></li>
+      </ul>
+    </li>
+    <li><a href="#-dicussion-role-of-softmax-activation">📍 Dicussion: Role of Softmax Activation</a>
+      <ul>
+        <li><a href="#small_blue_diamond-linear-vs-softmax--attention">:small_blue_diamond: Linear vs Softmax  Attention</a></li>
+        <li><a href="#small_blue_diamond-ablation-study-activation-functions-beyond-softmax">:small_blue_diamond: Ablation Study: Activation Functions beyond Softmax</a></li>
+      </ul>
+    </li>
+    <li><a href="#-conclusion">🎇 Conclusion</a></li>
+    <li><a href="#bibtex">BibTex</a></li>
+  </ul>
+</nav>
+        
+    </div>
+</div>
+
+
+            
+<footer class="flex justify-between items-center gap-2 container mx-auto px-4 py-8">
+
+  <div class="flex h-[32px] items-center">
+  
+  <p>
+    © 2025 Y-Agent Research Blog
+  </p>
+  
+</div>
+  <div
+  x-data="{ icons: [
+    { name: 'sunny', status: 'n' },
+    { name: 'moon', status: 'y' },
+    { name: 'desktop', status: 'auto' }
+  ] }"
+  class="flex items-center gap-2 h-[32px] px-2 bg-base-100 border border-base-content/30 rounded-full"
+>
+  <template x-for="icon in icons">
+    <div
+      role="button"
+      tabindex="0"
+      :aria-label="'Select ' + icon.name + ' mode'"
+      class="group inline-flex justify-center items-center p-1 rounded-full cursor-pointer hover:bg-primary"
+      :class="$store.darkMode.icon() === icon.name && 'bg-primary'"
+      @click="$store.darkMode.toggle(icon.status)"
+    >
+      <ion-icon
+        :name="`${icon.name}-outline`"
+        class="group-hover:text-primary-content"
+        :class="$store.darkMode.icon() === icon.name && 'text-primary-content'"
+      >
+      </ion-icon>
+    </div>
+  </template>
+</div>
+
+</footer>
+          </div>
+        </div>
+        <div class="back">
+          <div class="container">
+            
+            <div class="dream-grid dream-grid-about">
+  
+
+  
+
+  
+</div>
+
+            
+
+            
+<footer class="flex justify-between items-center gap-2 container mx-auto px-4 py-8">
+
+  <div class="flex h-[32px] items-center">
+  
+  <p>
+    © 2025 Y-Agent Research Blog
+  </p>
+  
+</div>
+  <div
+  x-data="{ icons: [
+    { name: 'sunny', status: 'n' },
+    { name: 'moon', status: 'y' },
+    { name: 'desktop', status: 'auto' }
+  ] }"
+  class="flex items-center gap-2 h-[32px] px-2 bg-base-100 border border-base-content/30 rounded-full"
+>
+  <template x-for="icon in icons">
+    <div
+      role="button"
+      tabindex="0"
+      :aria-label="'Select ' + icon.name + ' mode'"
+      class="group inline-flex justify-center items-center p-1 rounded-full cursor-pointer hover:bg-primary"
+      :class="$store.darkMode.icon() === icon.name && 'bg-primary'"
+      @click="$store.darkMode.toggle(icon.status)"
+    >
+      <ion-icon
+        :name="`${icon.name}-outline`"
+        class="group-hover:text-primary-content"
+        :class="$store.darkMode.icon() === icon.name && 'text-primary-content'"
+      >
+      </ion-icon>
+    </div>
+  </template>
+</div>
+
+</footer>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+  window.lightTheme = "emerald"
+  window.darkTheme = "forest"
+</script>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/imagesloaded@5.0.0/imagesloaded.pkgd.min.js" integrity="sha256-htrLFfZJ6v5udOG+3kNLINIKh2gvoKqwEhHYfTTMICc=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js" integrity="sha256-Nn1q/fx0H7SNLZMQ5Hw5JLaTRZp0yILA/FRexe19VdI=" crossorigin="anonymous"></script>
+
+  
+  
+  <script src="/js/grid.js"></script>
+
+
+
+
+<script src="/js/main.js"></script>
+
+    
+
+
+
+
+
+
+
+
+
+    
+
+    
+      <script>
+    MathJax = {
+        tex: {
+            packages: ['base', 'ams', 'noerrors', 'noundefined', 'newcommand', 'boldsymbol'],
+            inlineMath: [
+                ['\\(', '\\)'],
+                ['$', '$']
+            ],
+            displayMath: [
+                ['\\[', '\\]'],
+                ['$$', '$$']
+            ],
+            processEscapes: true,
+            processEnvironments: true,
+            macros: {
+                
+                sfP: "\\text{P}"
+            },
+            tagSide: 'right',
+            tagIndent: '0.8em',
+            multlineWidth: '85%',
+            tags: 'ams'
+        },
+        svg: {
+            fontCache: 'global',
+            scale: 1.0,
+            mtextInheritFont: false,
+            merrorInheritFont: true,
+            mathmlSpacing: false
+        },
+        chtml: {
+            displayAlign: 'center',
+            displayIndent: '0',
+            matchFontHeight: true,
+            scale: 1.0,
+            fontURL: 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/output/chtml/fonts/woff-v2'
+        },
+        loader: {
+            load: ['[tex]/ams', '[tex]/newcommand', '[tex]/boldsymbol']
+        },
+        options: {
+            enableMenu: false, 
+            skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        }
+    };
+</script>
+<script id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js"></script>
+    
+
+    
+
+    
+    
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+      <script>
+        var doNotTrack = false;
+        if ( false ) {
+          var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+          var doNotTrack = (dnt == "1" || dnt == "yes");
+        }
+        if (!doNotTrack) {
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-XXXXXXXXXX');
+        }
+      </script>
+    
+
+    <script type="module" src="https://unpkg.com/ionicons@7.4.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.4.0/dist/ionicons/ionicons.js"></script>
+  </body>
+</html>

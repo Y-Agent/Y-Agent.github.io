@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Y-Agent Research Blog</title>
+    <link>http://localhost:1313/</link>
+    <description>Recent content on Y-Agent Research Blog</description>
+    <generator>Hugo</generator>
+    <language>en-US</language>
+    <lastBuildDate>Mon, 24 Mar 2025 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://localhost:1313/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>In-Context Linear Regression Demystified</title>
+      <link>http://localhost:1313/posts/in_context_regression/</link>
+      <pubDate>Mon, 24 Mar 2025 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/in_context_regression/</guid>
+      <description>&lt;!-- Paper title --&gt;&#xA;&lt;p&gt;&lt;strong style=&#34;font-size: 0.8em; letter-spacing: 1px;&#34;&gt;Paper:&lt;/strong&gt; In-Context Linear Regression Demystified: Training Dynamics and Mechanistic Interpretability of Multi-Head Softmax Attention&lt;/p&gt;&#xA;&lt;!-- Authors Section --&gt;&#xA;&lt;p&gt;&lt;strong style=&#34;font-size: 0.8em; letter-spacing: 1px;&#34;&gt;AUTHORS:&lt;/strong&gt;&#xA;&lt;small&gt;&#xA;Jianliang He, Xintian Pan, Siyu Chen, and Zhuoran Yang.&#xA;&lt;/small&gt;&lt;/p&gt;&#xA;&lt;!--&#xA;  &lt;strong style=&#34;font-size: 0.8em; letter-spacing:1px;&#34;&gt;AFFILIATIONS.&lt;/strong&gt;&#xA;      &lt;small&gt;&#xA;Yale University and Nanjing University.&#xA;&lt;/small&gt;&#xA;--&gt;&#xA;&lt;p&gt;&lt;strong style=&#34;font-size: 0.8em; letter-spacing:1px;&#34;&gt;LINKS.&lt;/strong&gt;&#xA;&lt;small&gt;&#xA;&lt;strong&gt;ArXiv:&lt;/strong&gt; &lt;a href=&#34;https://arxiv.org/abs/2503.12734&#34; target=&#34;_blank&#34;&gt;arxiv.org/abs/2503.12734&lt;/a&gt;,&#xA;&lt;strong&gt;Github:&lt;/strong&gt; &lt;a href=&#34;https://github.com/XintianPan/ICL_linear&#34; target=&#34;_blank&#34;&gt;github.com/XintianPan/ICL_linear&lt;/a&gt;.&#xA;&lt;/small&gt;&lt;/p&gt;&#xA;&lt;p&gt;&lt;strong style=&#34;font-size: 0.8em; letter-spacing:1px;&#34;&gt;TAKEAWAYS.&lt;/strong&gt;&#xA;We study how multi-head softmax attention models are trained to perform &lt;u&gt;in-context learning on linear data&lt;/u&gt;.&#xA;Through extensive empirical experiments and rigorous theoretical analysis, we demystify how &lt;strong&gt;trained&lt;/strong&gt; multi-head attention solves in-context linear regression:&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

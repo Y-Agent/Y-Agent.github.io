@@ -1,0 +1,47 @@
+<script>
+    MathJax = {
+        tex: {
+            packages: ['base', 'ams', 'noerrors', 'noundefined', 'newcommand', 'boldsymbol'],
+            inlineMath: [
+                ['\\(', '\\)'],
+                ['$', '$']
+            ],
+            displayMath: [
+                ['\\[', '\\]'],
+                ['$$', '$$']
+            ],
+            processEscapes: true,
+            processEnvironments: true,
+            macros: {
+                // Custom macro as fallback for mathsf
+                sfP: "\\text{P}"
+            },
+            tagSide: 'right',
+            tagIndent: '0.8em',
+            multlineWidth: '85%',
+            tags: 'ams'
+        },
+        svg: {
+            fontCache: 'global',
+            scale: 1.0,
+            mtextInheritFont: false,
+            merrorInheritFont: true,
+            mathmlSpacing: false
+        },
+        chtml: {
+            displayAlign: 'center',
+            displayIndent: '0',
+            matchFontHeight: true,
+            scale: 1.0,
+            fontURL: 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/output/chtml/fonts/woff-v2'
+        },
+        loader: {
+            load: ['[tex]/ams', '[tex]/newcommand', '[tex]/boldsymbol']
+        },
+        options: {
+            enableMenu: false, // disable the menu for cleaner UI
+            skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        }
+    };
+</script>
+<script id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js"></script>

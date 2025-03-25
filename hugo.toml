@@ -1,0 +1,116 @@
+# Base site settings
+baseURL = "https://example.com"  # Replace with your GitHub Pages URL later (e.g., "https://yourusername.github.io/yourrepo/")
+defaultContentLanguage = "en"
+languageCode = "en-US"
+title = "Y-Agent Research Blog"
+theme = "dream"
+
+# Content organization
+hasCJKLanguage = false
+
+[pagination]
+  pagerSize = 6  # Number of posts per page on list pages
+
+# Enable robots.txt for SEO
+enableRobotsTXT = true
+
+# Google Analytics configuration
+[services]
+  [services.googleAnalytics]
+    ID = "G-XXXXXXXXXX"  # Replace with your Google Analytics Tracking ID
+
+# Author information
+[author]
+  name = "Zhuoran Yang and Group"
+  email = ""  # Optional, add your email if you want it visible
+  link = ""   # Optional, can add a link to your personal site
+
+
+
+    
+
+# Markdown configuration
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true  # Allows HTML in markdown content
+  [markup.highlight]
+    codeFences = true
+    guessSyntax = false
+    lineNoStart = 1
+    lineNos = true
+    lineNumbersInTable = true
+    noClasses = false
+    tabWidth = 2
+
+# Dream-specific parameters
+[params]
+  # Layout settings
+  background = "black"  # Theme background color
+  backgroundImage = ""  # Optional background image
+  linkColor = "seagreen"  # Color for links
+  
+  # Motto: 
+  motto = "Zhuoran Yang and Research Group"
+
+  # Set light and dark themes (simple options from Dream's daisyUI support)
+  lightTheme = "emerald"  # Clean and light, suits research blogs
+  darkTheme = "forest"    # Simple dark mode option
+
+  # Site title and description
+  headerTitle = "Y-Agent Research Blog"
+  description = "Research blog on reinforcement learning, LLMs, and related topics."
+  
+  # Author information (duplicated from above for theme compatibility)
+  author = "Zhuoran Yang and Group"
+  
+  # Avatar image shown in profile
+  avatar = "images/agent.jpeg"  # Add path to avatar if needed
+  
+  # Start year for copyright or footer
+  siteStartYear = 2025
+  
+  # Favicon (optional, from your previous config)
+  favicon = "images/rocket_fovicon.png"
+  
+  # Social media and contact links (uncomment and add if needed)
+  # email = ""
+  # twitter = ""
+  # github = ""
+  # linkedin = ""
+  
+  # MathJax support
+  enableMathJax = true  # Enable LaTeX math rendering
+  
+  # Feature toggles
+  rss = false            # No RSS feed
+  hideMadeWithLine = true # Remove "Made with Hugo" line
+  stickyNav = true       # Keep navigation sticky, as it's default in original layout
+  showSummaryCoverInPost = true  # Show featured image in post
+  hasTwitterEmbed = false  # Set to true if you use Twitter embeds
+  shareInPost = false  # Disable social sharing buttons in posts
+  showPowerBy = false  # Hide "Powered by" text
+  
+  # Table of contents settings
+  showTableOfContents = true  # Enable table of contents for posts
+  tocFolding = true  # Allow TOC sections to be collapsed
+  tocPosition = "inner"  # Options: inner, outer
+  
+  # Date format (ISO 8601, clean and standard for research)
+  dateFormat = "2006-01-02"
+  
+  # Search functionality
+  enableSearch = true
+  searchResultLength = 20  # Number of search results to show
+  
+  # Comment system (all disabled by default)
+  [params.comment]
+    enabled = true
+    
+  # Poem quotes under site title (optional)
+  [params.poem]
+    enabled = false
+    
+  # JS plugins (leave as is unless you need to modify)
+  [params.js]
+    enabled = true
