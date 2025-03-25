@@ -8,12 +8,13 @@ cover: /images/03_25_in_context_regression/cover.png
 # images:
 #   - /img/cover.jpg
 categories:
-  - category1
+  - research blog
 tags:
   - "in-context learning" 
   - "transformers"
+  - "LLM"
 # nolastmod: true
-draft: true 
+draft: false 
 math: true
 ---
 

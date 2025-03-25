@@ -52,7 +52,7 @@ enableRobotsTXT = true
   linkColor = "seagreen"  # Color for links
   
   # Motto: 
-  motto = "Zhuoran Yang and Research Group"
+  motto = "Zhuoran Yang Research Group"
 
   # Set light and dark themes (simple options from Dream's daisyUI support)
   lightTheme = "emerald"  # Clean and light, suits research blogs
