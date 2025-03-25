@@ -1,5 +1,6 @@
 # Base site settings
-baseURL = "https://example.com"  # Replace with your GitHub Pages URL later (e.g., "https://yourusername.github.io/yourrepo/")
+baseURL = "https://Y-Agent.github.io/"
+"  # Replace with your GitHub Pages URL later (e.g., "https://yourusername.github.io/yourrepo/")
 defaultContentLanguage = "en"
 languageCode = "en-US"
 title = "Y-Agent Research Blog"
