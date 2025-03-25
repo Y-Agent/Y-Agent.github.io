@@ -32,3 +32,4 @@ jobs:
           personal_token: ${{ secrets.PERSONAL_TOKEN }}
           publish_dir: ./public
           publish_branch: main  # Deploy built files to main branch
+          allow_deploy_from_same_branch: true
