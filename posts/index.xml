@@ -1,1 +1,22 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on Y-Agent Research Blog</title><link>https://example.com/posts/</link><description>Recent content in Posts on Y-Agent Research Blog</description><generator>Hugo</generator><language>en-US</language><lastBuildDate/><atom:link href="https://example.com/posts/index.xml" rel="self" type="application/rss+xml"/></channel></rss>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on Y-Agent Research Blog</title><link>https://Y-Agent.github.io/posts/</link><description>Recent content in Posts on Y-Agent Research Blog</description><generator>Hugo</generator><language>en-US</language><lastBuildDate>Mon, 24 Mar 2025 00:00:00 +0000</lastBuildDate><atom:link href="https://Y-Agent.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>In-Context Linear Regression Demystified</title><link>https://Y-Agent.github.io/posts/in_context_regression/</link><pubDate>Mon, 24 Mar 2025 00:00:00 +0000</pubDate><guid>https://Y-Agent.github.io/posts/in_context_regression/</guid><description>&lt;!-- Paper title -->
+&lt;p>&lt;strong style="font-size: 0.8em; letter-spacing: 1px;">Paper:&lt;/strong> In-Context Linear Regression Demystified: Training Dynamics and Mechanistic Interpretability of Multi-Head Softmax Attention&lt;/p>
+&lt;!-- Authors Section -->
+&lt;p>&lt;strong style="font-size: 0.8em; letter-spacing: 1px;">AUTHORS:&lt;/strong>
+&lt;small>
+Jianliang He, Xintian Pan, Siyu Chen, and Zhuoran Yang.
+&lt;/small>&lt;/p>
+&lt;!--
+ &lt;strong style="font-size: 0.8em; letter-spacing:1px;">AFFILIATIONS.&lt;/strong>
+ &lt;small>
+Yale University and Nanjing University.
+&lt;/small>
+-->
+&lt;p>&lt;strong style="font-size: 0.8em; letter-spacing:1px;">LINKS.&lt;/strong>
+&lt;small>
+&lt;strong>ArXiv:&lt;/strong> &lt;a href="arxiv.org/abs/2503.12734" target="_blank">arxiv.org/abs/2503.12734&lt;/a>,
+&lt;strong>Github:&lt;/strong> &lt;a href="github.com/Y-Agent/ICL_linear" target="_blank">&lt;a href="https://github.com/Y-Agent/ICL_linear" target="_blank">https://github.com/Y-Agent/ICL_linear&lt;/a>
+&lt;/a>.
+&lt;/small>&lt;/p>
+&lt;p>&lt;strong style="font-size: 0.8em; letter-spacing:1px;">TAKEAWAYS.&lt;/strong>
+We study how multi-head softmax attention models are trained to perform &lt;u>in-context learning on linear data&lt;/u>.
+Through extensive empirical experiments and rigorous theoretical analysis, we demystify how &lt;strong>trained&lt;/strong> multi-head attention solves in-context linear regression:&lt;/p></description></item></channel></rss>
