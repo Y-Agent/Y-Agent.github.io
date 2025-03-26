@@ -1,6 +1,6 @@
 ---
 title: "In-Context Linear Regression Demystified"
-date: 2025-03-24
+date: 2025-03-25
 author: "Jianliang He, Xintian Pan, Siyu Chen, and Zhuoran Yang"
 # avatar: /img/author.jpg
 # authorlink: https://author.site

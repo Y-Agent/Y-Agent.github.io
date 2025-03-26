@@ -114,3 +114,5 @@ enableRobotsTXT = true
   # JS plugins (leave as is unless you need to modify)
   [params.js]
     enabled = true
+  
+ 
