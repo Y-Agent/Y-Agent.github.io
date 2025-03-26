@@ -311,7 +311,7 @@ The attention model continues to optimize the loss function with this pattern pr
 
 
 
-## 🧭 Extentions
+## 🧭 Extensions
 ### :small_blue_diamond: Non-Isotropic Covariates
 
 When covariates are drawn from a centered Gaussian with a general covariance matrix $\Sigma$, softmax attention still learns a **sum of two kernel regressors** ------ but the KQ blocks need not be diagonal. Here, we consider the two-head model for illustration. Concretely:
