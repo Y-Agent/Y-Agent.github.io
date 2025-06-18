@@ -11,8 +11,16 @@ tags:
   - "Sparse Autoencoders"
   - "Feature Recovery"
 draft: false
-cover: "/images/taming-sae-gba/SAE.png"
 ---
+
+<script>
+  window.location.href = "/taming-sae-gba/index.html";
+</script>
+
+<noscript>
+  <meta http-equiv="refresh" content="0;url=/taming-sae-gba/index.html">
+  <p>Please click <a href="/taming-sae-gba/index.html">here</a> to view the paper page.</p>
+</noscript>
 
 <!-- Paper title -->
 <p><strong style="font-size: 0.8em; letter-spacing: 1px;">Paper:</strong> Taming Polysemanticity in LLMs: Provable Feature Recovery via Sparse Autoencoders</p>
