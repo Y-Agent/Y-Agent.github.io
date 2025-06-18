@@ -81,7 +81,7 @@ y_1 & \dots & y_L & 0
 \end{bmatrix}.
 \end{align}
 $$
-Here, each column of $Z_\mathsf{ebd}$  is a $(d+1)$-dimensional vector, whose first $d$ entries corresponds to the covariate and the last entry is the response. We put the query in the last column. Since we do not have the resposne $y_q = \beta^\top x_q + \epsilon$, we put a zero at the $(d+1, L+1)$-th entry at  $Z\_\mathsf{ebd}$. Such setup is widely considered in literature (e.g., [Garg et al., 2022](http://arxiv.org/abs/2208.01066), [Ahn et al., 2023](https://arxiv.org/abs/2306.00297), [Zhang et al., 2024](https://arxiv.org/abs/2306.09927)).
+Here, each column of $Z_\mathsf{ebd}$  is a $(d+1)$-dimensional vector, whose first $d$ entries corresponds to the covariate and the last entry is the response. We put the query in the last column. Since we do not have the response $y_q = \beta^\top x_q + \epsilon$, we put a zero at the $(d+1, L+1)$-th entry at  $Z\_\mathsf{ebd}$. Such setup is widely considered in literature (e.g., [Garg et al., 2022](http://arxiv.org/abs/2208.01066), [Ahn et al., 2023](https://arxiv.org/abs/2306.00297), [Zhang et al., 2024](https://arxiv.org/abs/2306.09927)).
 
 For now, we focus mainly on the <u>isotropic case</u> where $\mathsf{P}\_x=\mathcal{N} (0,I_d)$ and $\mathsf{P}\_\beta=\mathcal{N}(0,I_d/d)$. Later we will also consider  the <u>non-isometric cases</u>, i.e., $\mathsf{P}\_x=\mathcal{N}(0,\Sigma)$ for some general $\Sigma\in\mathbb{R}^{d\times d}$. Here $\mathcal{N} (\mu, \Sigma)$ is the multivariate Gaussian distribution. 
 
@@ -406,7 +406,7 @@ OV^{(h)}\_{21} & OV^{(h)}\_{22}
 \in\mathbb{R}^{(d+N)\times(d+N)}.
 $$
 
-  -  The KQ circuits have a digonal top $d$-by-$d$ submatrix and the rest of the entries are not effective, which takes the form
+  -  The KQ circuits have a diagonal top $d$-by-$d$ submatrix and the rest of the entries are not effective, which takes the form
     
     $$
     KQ^{(h)}\_{11}=\mathrm{diag}(\omega^{(h)})\in\mathbb{R}^{d\times d},\qquad KQ^{(h)}\_{21}=\mathbf{0}\_{N\times d},\qquad\forall h\in[H].
@@ -560,7 +560,7 @@ For the general multi-task setting, characterizing the training dynamics and sol
 ## 🔬 Mechanistic Interpretation
 In this section, we focus on the the single-task and isotropic case and present the theoretical explanations for the learned multi-head attention model. 
 ### :small_blue_diamond: Simplification and Approximate Loss
-Since the transformer’s KQ and OV circuits settle into a diagonal-only and last-entry-only structure early in training, we can reparametrize the model in terms of $(\omega,\mu)$. This simplified view captures the core learning behavior: the final prediction $\hat{y}_q$ can be computed based on the scaling parametrs of the  KQ and OV circuits, namely $\omega$ and $\mu$. 
+Since the transformer’s KQ and OV circuits settle into a diagonal-only and last-entry-only structure early in training, we can reparameterize the model in terms of $(\omega,\mu)$. This simplified view captures the core learning behavior: the final prediction $\hat{y}_q$ can be computed based on the scaling parameters of the  KQ and OV circuits, namely $\omega$ and $\mu$. 
 
 Now we can regard the population risk of ICL as a function of $\omega$ and $\mu$. 
 We derive an approximation loss, which is more amenable for theoretical analysis. 
