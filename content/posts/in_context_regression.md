@@ -16,6 +16,7 @@ tags:
 # nolastmod: true
 draft: false 
 math: true
+toc: true
 ---
 
 
@@ -739,8 +740,8 @@ all of which share the first-order property $f(x)\approx 1 + C_f\cdot x$.
 We have the following key observations:
 
 1. **Same Emergent Patterns.** Like standard softmax attention, two-head models with these activations learn:
-     - **Positive/Negative Heads**: Each head’s KQ parameters share one magnitude with opposite signs, and the OV parameters also match that sign.  
-    - **Sum of Kernel Regressors**: The model effectively computes a difference of two “kernel-like” sums of the form $\bigl(\omega, -\omega\bigr)$ and $\bigl(\mu, -\mu\bigr)$.
+     - **Positive/Negative Heads**: Each head's KQ parameters share one magnitude with opposite signs, and the OV parameters also match that sign.  
+    - **Sum of Kernel Regressors**: The model effectively computes a difference of two "kernel-like" sums of the form $\bigl(\omega, -\omega\bigr)$ and $\bigl(\mu, -\mu\bigr)$.
 
  \begin{align*}
 \hat{y}\_q &= \\| \mu\\|\_{\infty} \cdot \biggl(  \sum\_{\ell=1}^L \frac{y\_\ell\cdot{f} ( \\| \omega\\|\_{\infty} \cdot x\_\ell^\top x_q)} {\sum\_{\ell=1}^L{f}(\\| \omega\\|\_{\infty} \cdot x\_\ell^\top x_q)} -  \sum\_{\ell=1}^L \frac{y_\ell\cdot {f} (-\| \omega\|\_{\infty}\cdot x_\ell^\top x_q)}{\sum\_{\ell=1}^L {f}(-\\| \omega\\|\_{\infty}\cdot x_\ell^\top x_q)} \bigg), \notag\\\
