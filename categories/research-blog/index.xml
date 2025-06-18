@@ -19,4 +19,23 @@ Yale University and Nanjing University.
 &lt;/small>&lt;/p>
 &lt;p>&lt;strong style="font-size: 0.8em; letter-spacing:1px;">TAKEAWAYS.&lt;/strong>
 We study how multi-head softmax attention models are trained to perform &lt;u>in-context learning on linear data&lt;/u>.
-Through extensive empirical experiments and rigorous theoretical analysis, we demystify how &lt;strong>trained&lt;/strong> multi-head attention solves in-context linear regression:&lt;/p></description></item></channel></rss>
+Through extensive empirical experiments and rigorous theoretical analysis, we demystify how &lt;strong>trained&lt;/strong> multi-head attention solves in-context linear regression:&lt;/p></description></item><item><title>Taming Polysemanticity in LLMs: Provable Feature Recovery via Sparse Autoencoders</title><link>https://Y-Agent.github.io/posts/taming-sae-gba/</link><pubDate>Mon, 25 Mar 2024 00:00:00 +0000</pubDate><guid>https://Y-Agent.github.io/posts/taming-sae-gba/</guid><description>&lt;script>
+ window.location.href = "/taming-sae-gba/index.html";
+&lt;/script>
+&lt;noscript>
+ &lt;meta http-equiv="refresh" content="0;url=https://Y-Agent.github.io/taming-sae-gba/index.html">
+ &lt;p>Please click &lt;a href="https://Y-Agent.github.io/taming-sae-gba/index.html">here&lt;/a> to view the paper page.&lt;/p>
+&lt;/noscript>
+&lt;!-- Paper title -->
+&lt;p>&lt;strong style="font-size: 0.8em; letter-spacing: 1px;">Paper:&lt;/strong> Taming Polysemanticity in LLMs: Provable Feature Recovery via Sparse Autoencoders&lt;/p>
+&lt;!-- Authors Section -->
+&lt;p>&lt;strong style="font-size: 0.8em; letter-spacing: 1px;">AUTHORS:&lt;/strong>
+&lt;small>
+Siyu Chen*, Heejune Sheen*, Xuyuan Xiong†, Tianhao Wang§, and Zhuoran Yang*
+&lt;/small>&lt;/p>
+&lt;p>&lt;strong style="font-size: 0.8em; letter-spacing:1px;">AFFILIATIONS.&lt;/strong>
+&lt;small>
+*Department of Statistics and Data Science, Yale University&lt;br>
+†Antai College of Economics and Management, Shanghai Jiao Tong University&lt;br>
+§Toyota Technological Institute at Chicago
+&lt;/small>&lt;/p></description></item></channel></rss>
