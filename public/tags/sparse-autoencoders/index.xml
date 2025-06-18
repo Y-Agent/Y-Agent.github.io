@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Sparse Autoencoders on Y-Agent Research Blog</title>
+    <link>http://localhost:1313/tags/sparse-autoencoders/</link>
+    <description>Recent content in Sparse Autoencoders on Y-Agent Research Blog</description>
+    <generator>Hugo</generator>
+    <language>en-US</language>
+    <lastBuildDate>Mon, 25 Mar 2024 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://localhost:1313/tags/sparse-autoencoders/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Taming Polysemanticity in LLMs: Provable Feature Recovery via Sparse Autoencoders</title>
+      <link>http://localhost:1313/posts/taming-sae-gba/</link>
+      <pubDate>Mon, 25 Mar 2024 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/taming-sae-gba/</guid>
+      <description>&lt;script&gt;&#xA;  window.location.href = &#34;/taming-sae-gba/index.html&#34;;&#xA;&lt;/script&gt;&#xA;&lt;noscript&gt;&#xA;  &lt;meta http-equiv=&#34;refresh&#34; content=&#34;0;url=http://localhost:1313/taming-sae-gba/index.html&#34;&gt;&#xA;  &lt;p&gt;Please click &lt;a href=&#34;http://localhost:1313/taming-sae-gba/index.html&#34;&gt;here&lt;/a&gt; to view the paper page.&lt;/p&gt;&#xA;&lt;/noscript&gt;&#xA;&lt;!-- Paper title --&gt;&#xA;&lt;p&gt;&lt;strong style=&#34;font-size: 0.8em; letter-spacing: 1px;&#34;&gt;Paper:&lt;/strong&gt; Taming Polysemanticity in LLMs: Provable Feature Recovery via Sparse Autoencoders&lt;/p&gt;&#xA;&lt;!-- Authors Section --&gt;&#xA;&lt;p&gt;&lt;strong style=&#34;font-size: 0.8em; letter-spacing: 1px;&#34;&gt;AUTHORS:&lt;/strong&gt;&#xA;&lt;small&gt;&#xA;Siyu Chen*, Heejune Sheen*, Xuyuan Xiong†, Tianhao Wang§, and Zhuoran Yang*&#xA;&lt;/small&gt;&lt;/p&gt;&#xA;&lt;p&gt;&lt;strong style=&#34;font-size: 0.8em; letter-spacing:1px;&#34;&gt;AFFILIATIONS.&lt;/strong&gt;&#xA;&lt;small&gt;&#xA;*Department of Statistics and Data Science, Yale University&lt;br&gt;&#xA;†Antai College of Economics and Management, Shanghai Jiao Tong University&lt;br&gt;&#xA;§Toyota Technological Institute at Chicago&#xA;&lt;/small&gt;&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

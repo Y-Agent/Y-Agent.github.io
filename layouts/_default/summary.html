@@ -15,7 +15,13 @@
         <h2 class="card-title">{{ .Title }}</h2>
         <div class="text-sm text-base-content/60 flex items-center mt-1">
             <ion-icon name="time" class="mr-1"></ion-icon>
-            <span>{{ .ReadingTime }}{{ T "minuteRead" .ReadingTime }}</span>
+            <span>
+                {{ if .Params.readingTime }}
+                    {{ .Params.readingTime }}{{ T "minuteRead" .Params.readingTime }}
+                {{ else }}
+                    {{ .ReadingTime }}{{ T "minuteRead" .ReadingTime }}
+                {{ end }}
+            </span>
         </div>
     </div>
 </a>

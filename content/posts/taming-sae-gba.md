@@ -3,6 +3,7 @@ title: "Taming Polysemanticity in LLMs: Provable Feature Recovery via Sparse Aut
 date: 2024-03-25
 lastmod: 2024-03-25
 author: "Siyu Chen, Heejune Sheen, Xuyuan Xiong, Tianhao Wang, Zhuoran Yang"
+cover: "/images/taming-sae-gba/bias_adap_illus.png"
 categories:
   - "Research Blog"
 tags:
@@ -11,6 +12,7 @@ tags:
   - "Sparse Autoencoders"
   - "Feature Recovery"
 draft: false
+readingTime: 15
 ---
 
 <script>

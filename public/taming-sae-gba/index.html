@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <!-- Meta tags for social media banners, these should be filled in appropriatly as they are your "business card" -->
+  <!-- Replace the content tag with appropriate information -->
+  <meta name="description" content="DESCRIPTION META TAG">
+  <meta property="og:title" content="SOCIAL MEDIA TITLE TAG"/>
+  <meta property="og:description" content="SOCIAL MEDIA DESCRIPTION TAG TAG"/>
+  <meta property="og:url" content="URL OF THE WEBSITE"/>
+  <!-- Path to banner image, should be in the path listed below. Optimal dimenssions are 1200X630-->
+  <meta property="og:image" content="static/image/your_banner_image.png" />
+  <meta property="og:image:width" content="1200"/>
+  <meta property="og:image:height" content="630"/>
+
+  <style>
+    .highlight {
+      color: #0081B9; 
+    }
+    .question {
+      color: #B8860B;  
+    }
+    .highlight-2 {
+      color: #800080;
+      font-weight: bold;
+      font-style: italic;
+    }
+    .term {
+      display: inline-block;
+      padding: 0 5px;
+      background-color: rgba(255,255,255,0.5);
+      border-radius: 3px;
+    }
+    .equation {
+      text-align: center;
+      margin: 10px 0;
+      padding: 10px;
+      background-color: rgba(255,255,255,0.1);
+      border-radius: 3px;
+      font-weight: bold;
+    }
+    .theorem {
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 5px;
+      border-left: 4px solid #888;
+      margin-bottom: 10px;
+      margin-top: 10px;
+      text-align: left;
+      font-style: italic;
+      color: #000000;
+    }
+  </style>
+
+
+  <meta name="twitter:title" content="TWITTER BANNER TITLE META TAG">
+  <meta name="twitter:description" content="TWITTER BANNER DESCRIPTION META TAG">
+  <!-- Path to banner image, should be in the path listed below. Optimal dimenssions are 1200X600-->
+  <meta name="twitter:image" content="static/images/your_twitter_banner_image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <!-- Keywords for your paper to be indexed by-->
+  <meta name="keywords" content="KEYWORDS SHOULD BE PLACED HERE">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+  <title>Taming Polysemanticity in LLMs: Provable Feature Recovery via
+    Sparse Autoencoders</title>
+  <link rel="icon" type="image/x-icon" href="static/images/favicon.ico">
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+  rel="stylesheet">
+
+  <link rel="stylesheet" href="static/css/bulma.min.css">
+  <link rel="stylesheet" href="static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+  href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="static/css/index.css">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://documentcloud.adobe.com/view-sdk/main.js"></script>
+  <script defer src="static/js/fontawesome.all.min.js"></script>
+  <script src="static/js/bulma-carousel.min.js"></script>
+  <script src="static/js/bulma-slider.min.js"></script>
+  <script src="static/js/index.js"></script>
+</head>
+<body>
+
+
+  <section class="hero">
+    <div class="hero-body">
+      <div class="container is-max-desktop">
+        <div class="columns is-centered">
+          <div class="column has-text-centered">
+            <h1 class="title is-1 publication-title">Taming Polysemanticity in LLMs: Provable Feature Recovery via
+              Sparse Autoencoders</h1>
+            <div class="is-size-5 publication-authors">
+              <!-- Paper authors -->
+              <span class="author-block">
+                <a href="https://ffishy-git.github.io/" target="_blank">Siyu Chen</a><sup>*</sup>,
+              </span>
+              <span class="author-block">
+                <a href="https://statistics.yale.edu/people/heejune-sheen/" target="_blank">Heejune Sheen</a><sup>*</sup>,
+              </span>
+              <span class="author-block">
+                <a href="https://github.com/xjyxys/" target="_blank">Xuyuan Xiong</a><sup>†</sup>,
+              </span>
+              <span class="author-block">
+                <a href="https://tianhaowang.ttic.edu/" target="_blank">Tianhao Wang</a><sup>§</sup>,
+              </span>
+              <span class="author-block">
+                <a href="https://zhuoranyang.github.io/" target="_blank">Zhuoran Yang</a><sup>*</sup>
+              </span>
+              
+              </span>
+                  </div>
+
+                  <br>
+
+                  <div class="is-size-6 publication-authors">
+                    <span class="author-block"><sup>*</sup>Department of Statistics and Data Science, Yale University</span>
+                    <!-- <span class="eql-cntrb"><small><br><sup>*</sup>Indicates Equal Contribution</small></span> -->
+                  </div>
+                  <div class="is-size-6 publication-authors">
+                    <span class="author-block"><sup>†</sup>Antai College of Economics and Management, Shanghai Jiao Tong University</span>
+                    <!-- <span class="eql-cntrb"><small><br><sup>*</sup>Indicates Equal Contribution</small></span> -->
+                  </div>
+                  <div class="is-size-6 publication-authors">
+                    <span class="author-block"><sup>§</sup>Toyota Technological Institute at Chicago</span>
+                    <!-- <span class="eql-cntrb"><small><br><sup>*</sup>Indicates Equal Contribution</small></span> -->
+                  </div>
+
+                  <div class="column has-text-centered">
+                    <div class="publication-links">
+                         <!-- Arxiv PDF link -->
+                      <span class="link-block">
+                        <!-- TODO: add arxiv paper id -->
+                        <a href="https://arxiv.org/pdf/<ARXIV PAPER ID>.pdf" target="_blank"
+                        class="external-link button is-normal is-rounded is-dark">
+                        <span class="icon">
+                          <i class="fas fa-file-pdf"></i>
+                        </span>
+                        <span>Paper</span>
+                      </a>
+                    </span>
+
+                    <!-- Supplementary PDF link
+                    <span class="link-block">
+                      <a href="static/pdfs/supplementary_material.pdf" target="_blank"
+                      class="external-link button is-normal is-rounded is-dark">
+                      <span class="icon">
+                        <i class="fas fa-file-pdf"></i>
+                      </span>
+                      <span>Supplementary</span>
+                    </a>
+                  </span> -->
+
+                  <!-- Github link -->
+                  <span class="link-block">
+                    <a href="https://github.com/FFishy-git/TamingSAE_GBA/tree/main/" target="_blank"
+                    class="external-link button is-normal is-rounded is-dark">
+                    <span class="icon">
+                      <i class="fab fa-github"></i>
+                    </span>
+                    <span>Code</span>
+                  </a>
+                </span>
+
+                <!-- ArXiv abstract Link -->
+                <span class="link-block">
+                  <!-- TODO: add arxiv paper id -->
+
+                  <a href="https://arxiv.org/abs/<ARXIV PAPER ID>" target="_blank"
+                  class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                    <i class="ai ai-arxiv"></i>
+                  </span>
+                  <span>arXiv</span>
+                </a>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- Teaser video-->
+<!-- <section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <video poster="" id="tree" autoplay controls muted loop height="100%"> -->
+        <!-- Your video here -->
+        <!-- <source src="static/videos/banner_video.mp4"
+        type="video/mp4">
+      </video>
+      <h2 class="subtitle has-text-centered">
+        Aliquam vitae elit ullamcorper tellus egestas pellentesque. Ut lacus tellus, maximus vel lectus at, placerat pretium mi. Maecenas dignissim tincidunt vestibulum. Sed consequat hendrerit nisl ut maximus. 
+      </h2>
+    </div>
+  </div>
+</section> -->
+<!-- End teaser video -->
+
+<!-- Paper abstract -->
+<section class="section hero is-light">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <div class="title is-3">Abstract</div>
+        <div class="content has-text-justified">
+          <p>
+            We address the challenge of theoretically grounded feature recovery using Sparse Autoencoders (SAEs) for interpreting Large Language Models. Current SAE training methods lack mathematical guarantees and face issues like hyperparameter sensitivity. We propose a statistical framework for feature recovery that models polysemantic features as sparse mixtures of monosemantic concepts. Based on this, we develop a "bias adaptation" SAE training algorithm that dynamically adjusts network biases for optimal sparsity. We <span class="highlight">prove that this algorithm correctly recovers all monosemantic features</span> under our statistical model. Our improved variant, Group Bias Adaptation (GBA), <span class="highlight">outperforms existing methods on LLMs up to 1.5 billion parameters</span> in terms of sparsity-loss trade-off and feature consistency. This work provides the first SAE algorithm with theoretical recovery guarantees, advancing interpretable and trustworthy AI through enhanced mechanistic understanding.
+          </p>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- End paper abstract -->
+
+<!-- What are our contributions -->
+<section class="section hero is-small">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Key Contributions</h2>
+        <div class="content has-text-justified">
+          <!-- <p>
+            Our work addresses these theoretical and practical issues in feature recovery with the following contributions:
+          </p> -->
+          <div class="box">
+            <i class="fas fa-chart-bar"></i>
+            <span class="highlight">A novel statistical framework</span> that rigorously formalizes feature recovery by modeling polysemantic features as sparse combinations of underlying monosemantic concepts, and establishes a precise notion of feature identifiability.
+          </div>
+
+          <div class="box">
+            <i class="fas fa-tools"></i>
+            <span class="highlight">An innovative SAE training algorithm</span>, <span class="highlight-2">Group Bias Adaptation (GBA)</span>, which adaptively adjusts neural network bias parameters to enforce optimal activation sparsity, allowing distinct groups of neurons to target different activation frequencies.
+          </div>
+
+          <div class="box">
+            <i class="fas fa-calculator"></i>
+            <span class="highlight">The first theoretical guarantee</span> proving that SAE training algorithm can provably recover all monosemantic features when the input data is sampled from our proposed statistical model.
+          </div>
+
+          <div class="box">
+            <i class="fas fa-rocket"></i>
+            <span class="highlight">Superior empirical performance</span> on LLMs up to 1.5B parameters, where GBA achieves the best sparsity-loss trade-off while learning more consistent features than benchmark methods.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Introduction -->
+<section class="section hero is-small">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Introduction</h2>
+        <div class="content has-text-justified">
+          <p>
+            <h2 style="font-weight: bold; font-size: 20px;">BACKGROUND 1: FEATURE RECOVERY</h2>
+            To understand the task of feature recovery, let us consider the following example sentence: 
+            <blockquote style="background-color: #f5f5f5; padding: 10px; border-radius: 5px; border-left: 4px solid #888;">
+                <p>
+                    <i>The detective found a <span style="background-color: rgba(255,255,0,0.25); color: black; font-weight: bold;">muddy footprint</span> near the <span style="background-color: rgba(0,128,128,0.10); color: black; font-weight: bold;">broken window</span>, leading him to suspect a <span style="text-decoration: underline;">?</span></i>
+                </p>
+            </blockquote>
+            The sentence contains two distinct concepts: a muddy footprint and a broken window. For a trained deep neural network, the learned representations in the intermediate layers are often <span class="highlight">polysemantic</span>, meaning that they are mixture of multiple features of the underlying concepts.
+            Specifically, the representation \(x\) after seeing the whole sentence may have the following form:
+            <blockquote style="text-align: center; background-color: #f5f5f5; padding: 10px; border-radius: 5px; border-left: 4px solid #888;">
+                \(x = h_1 \cdot\) <span class="term">
+                    <span style="background-color: rgba(255,255,0,0.25);">
+                        <b><i>"feature of muddy footprint"</i></b>
+                    </span>
+                </span>
+                \( + h_2 \cdot\) <span class="term">
+                    <span style="background-color: rgba(0,128,128,0.10);">
+                        <b><i>"feature of broken window"</i></b>
+                    </span>
+                </span>
+            </blockquote>
+            where \(h_1\) and \(h_2\) are the nonnegative weights of the two <span class="highlight">monosemantic features</span>. After obtaining the polysemantic representation \(x\), the model can then generate the token "burglary" at the "?" position.<br>
+            <blockquote  style="background-color: #f5f5f5; padding: 10px; border-radius: 5px; border-left: 4px solid #888;">
+              <b>The goal of feature recovery</b> is to recover the <span class="highlight">monosemantic features</span> underlying each concept, through training on a dataset that contains <span class="highlight">polysemantic representations</span>, which are often extracted from the intermediate layers of a trained deep neural network, e.g., the residual stream of a transformer-based model.
+            </blockquote>
+            While this example illustrates the intuitive notion of monosemantic features, we need a more rigorous definition to make progress. 
+            Currently, researchers primarily assess monosemanticity through feature <i>interpretability</i>, i.e., how well a feature aligns with human-understandable concepts.
+            However, this anthropocentric view has limitations: neural networks may process information in ways fundamentally different from human conceptual understanding. We need a more principled, mathematically grounded definition of monosemantic features that captures their essential properties independent of human interpretation. Specifically, we ask the following questions:
+            
+            </p>
+            <div class="columns is-centered">
+              <div class="column is-two-fifths">
+                <div class="box has-text-centered">
+                  <span class="tag is-info is-medium">Question 1</span>
+                  <p class="mt-3">What is a mathematically rigorous definition of <span class="highlight">identifiable</span> monosemantic features?</p>
+                </div>
+              </div>
+              <div class="column is-two-fifths">
+                <div class="box has-text-centered">
+                  <span class="tag is-info is-medium">Question 2</span>
+                  <p class="mt-3">Given <span class="highlight">polysemantic</span> representations, when will the <span class="highlight">monosemantic</span> features be identifiable?</p>
+                </div>
+              </div>
+              <div class="column is-one-fourth">
+                <div class="box has-text-centered">
+                  <span class="tag is-info is-medium">Question 3</span>
+                  <p class="mt-3">How to reliably recover the monosemantic features?</p>
+                </div>
+              </div>
+            </div>
+            <p>
+              
+            </p>
+            </div>
+
+        <div class="content has-text-justified">
+          <p>
+            <h2 style="font-weight: bold; font-size: 20px;">BACKGROUND 2: SPARSE AUTOENCODERS</h2>
+            <div class="box">
+              <h4 class="title is-5">📚 What are SAEs?</h4>
+              At the core of our feature recovery method is the Sparse Autoencoder (SAE), a neural network designed to learn sparse representations through self-reconstruction. A typical SAE architecture (with weight sharing between encoding and decoding layers) can be described as follows:
+              \[
+                  \hat x = \sum_{m=1}^M a_{m} \cdot w_{m} \cdot \phi\bigl( \underbrace{{w_{m}^\top (x-b_{\mathrm{pre}}) + b_{m}}}_{\displaystyle  \small\text{pre-activation}~y_m} \bigr) + b_{\mathrm{pre}}, 
+              \]
+              where each \(m\) index a neuron in the SAE, \(w_m\in \mathbb{R}^d\) is the tied weight vector for both encoding and decoding, \(a_m\in \mathbb{R}\) is the output scale for neuron \(m\), \(b_m\in \mathbb{R}\) is the bias for neuron \(m\), and \(b_{\mathrm{pre}}\in \mathbb{R}^d\) is the pre-bias vector that centers the input data. People usually use some nonlinear activation function \(\phi\) like ReLU or JumpReLU. 
+              <div style="text-align: center; margin-top: 20px; margin-bottom: 20px;">
+                <figure>
+                  <img src="./static/images/SAE.png" alt="Illustration of neuron grouping and bias adaptation" width="40%">
+                  <figcaption style="font-size: small; text-align: left;">
+                    <script type="text/javascript" async
+                    src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
+                    </script>
+                    <center>Figure 1: Sparse Autoencoder Architecture, where the latent representation \(z\in\mathbb{R}^M\) is obtained by passing the pre-activation \(y_m\) through the activation function \(\phi\).</center>
+                  </figcaption>
+                </figure>
+              </div>
+            </div>
+
+            <div class="box">
+              <h4 class="title is-5">🔧 How are SAEs trained?</h4>
+              Given the input \(x\in \mathbb{R}^d\), the SAE outputs \(\hat x\in \mathbb{R}^d\) as the reconstruction, and the training objective is to minimize the reconstruction error with a regularization term to encourage sparsity.
+              Specifically, the training objective for the \(\ell_1\) method is to minimize the following loss function:
+              \[
+                  \mathcal{L} = \mathbb{E}_{x\sim \mathcal{D}} \biggl[\underbrace{ (\hat x - x)^2}_{\displaystyle \small\text{reconstruction loss}} + \underbrace{\lambda \sum_{m=1}^M \|w_m\|_2 \phi(w_m^\top (x - b_{\mathrm{pre}}) + b_m)}_{\displaystyle \small\text{sparsity regularization}} \biggr].
+              \]
+              where \(\mathcal{D}\) is the training dataset, and \(\lambda\) is the regularization parameter.
+              The first term is the reconstruction loss, and the second term is the sparsity regularization term.
+              The sparsity regularization term encourages the SAE to activate only a small number of neurons, which is crucial for feature recovery. The TopK method does not have a regularization term, and the activation frequency is controlled by only allowing the top-K neurons in terms of the pre-activation \(y_m\) to be activated.
+            </div>
+
+            <div class="box">
+              <h4 class="title is-5">🤔 Why using SAEs?</h4>
+              The hypothesis is that by enforcing activation sparsity, SAEs can decompose polysemantic representations (a mixture of multiple features) into monosemantic features (which each correspond to a single interpretable concept). Empirically, SAEs have been shown to learn interpretable features for LLMs.
+            </div>
+            
+            
+            <!-- <ul>
+                <li>
+                🔍 <b>What are SAEs?</b> Sparse Autoencoders (SAEs) are neural networks that are used to "decompose" the inner representation of another neural network (e.g., LLM) into a set of monosemantic features.
+                </li>
+                <li>
+                  🔧<b>How are SAEs trained?</b> SAEs are trained to reconstruct intermediate representations of LLMs while ensuring that each input activates only a small number of neurons in the learned representation.
+                </li>
+                <li>
+                🤔 <b>Why using SAEs?</b> The hypothesis is that by enforcing activation sparsity, SAEs can decompose polysemantic representations (a mixture of multiple features) into monosemantic features (which each correspond to a single interpretable concept).
+                </li>
+                <!-- <li> -->
+                <!-- 🎯 <b>The key challenge</b> is designing training algorithms that reliably recover these monosemantic features while maintaining good reconstruction quality.
+                </li> -->
+            
+           
+          </p>
+        </div>
+        <div class="content has-text-justified">
+          <p>
+            <h2 style="font-weight: bold; font-size: 20px;">WHAT ARE THE CHALLENGES</h2>
+            The current SAE training algorithms face the following challenges:
+            <ul>
+                <li><b>Theoretical uncertainty:</b> We lack clear feature definitions  and current SAE training algorithms <span class="question">lack theoretical guarantees</span>, making reliable feature recovery uncertain.</li>
+                <li><b>Hyperparameter sensitivity:</b> Empirically, \( \ell_1 \) regularization and TopK activation methods are <span class="question">sensitive to hyperparameters</span> tuning.</li>
+                <li><b>Feature inconsistency:</b> TopK activation methods produce <span class="question">inconsistent features</span> across different random seeds.<sup>1</sup></li>
+            </ul>
+            <h2 style="font-weight: bold; font-size: 20px;">WHAT ARE OUR GOALS</h2>
+            Our research aims to address these challenges with the following objectives:
+            <ul>
+                <li>
+                <b>Theoretical foundation:</b> Develop a rigorous mathematical framework for understanding and analyzing feature recovery in SAEs.
+                </li>
+                <li>
+                <b>Algorithm design:</b> Create a simple and robust training algorithm that can reliably recover monosemantic features without extensive hyperparameter tuning, and learn more consistent features across different random seeds.
+                </li>
+            </ul>
+            
+            Ultimately, our research aims to establish a rigorous foundation for mechanistic interpretability research, bringing us closer to realizing our interpretability dreams<sup>2</sup> of understanding the inner workings of neural networks.
+            <br><br>
+            <sup>1</sup><small><a href="https://arxiv.org/abs/2501.16615">Paulo, Gonçalo, and Nora Belrose. "Sparse Autoencoders Trained on the Same Data Learn Different Features." <u>https://arxiv.org/abs/2501.16615</u></a></small><br>
+            
+            <sup>2</sup><small><a href="https://transformer-circuits.pub/2023/interpretability-dreams/index.html">Chris Olah. "Interpretability Dreams." <u>https://transformer-circuits.pub/2023/interpretability-dreams/index.html</u></a></small>
+            <!-- Building on this framework, we introduce a new SAE training algorithm based on <span class="highlight">bias adaptation</span>, a technique that adaptively adjusts neural network bias parameters to ensure appropriate activation sparsity. 
+            We theoretically <span class="highlight">prove that this algorithm correctly recovers all monosemantic features</span> when input data is sampled from our proposed statistical model. 
+            Furthermore, we develop an improved empirical variant, Group Bias Adaptation (GBA), and <span class="highlight">demonstrate its superior performance against benchmark methods when applied to LLMs with up to 1.5 billion parameters</span>. 
+            This work represents a foundational step in demystifying SAE training by providing the first SAE algorithm with theoretical recovery guarantees, thereby advancing the development of more transparent and trustworthy AI systems through enhanced mechanistic interpretability. -->
+                  </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- Algorithm Design -->
+<section class="section hero is-small">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Algorithm Design</h2>
+        <div class="content has-text-justified">
+          <p>
+            To address the limitations of existing Sparse Autoencoder (SAE) training methods, we propose a new algorithm called <span class="highlight-2">Grouped Bias Adaptation (GBA)</span>. 
+            Our algorithm has two main components: a <b>bias adaptation</b> subroutine that controls the activation frequency of each neuron, and a <b>neuron grouping</b> strategy that allows us to assign different target activation frequencies (TAFs) to different groups of neurons. The algorithm is carried out as follows:
+          </p>
+          <div class="box" style="background-color: #f5f5f5;">
+            <strong>👥 Before the training: Neuron Grouping with TAFs</strong><br>
+            <ul>
+                <li>We divide the neurons into some groups (let us denote each group as \(G_k\), and the group index as \(k=1,2,\ldots,K\)), and each group has a unique TAF \(p_k\).</li>
+                <li>During the training, we wish the activation frequency (fraction of data on which the neuron is activated) for neurons within each group to be close to \(p_k\).</li>
+                <li>We typically use a geometric sequence starting at a high frequency, e.g., 0.1, and decreasing to a low frequency, e.g., 0.001, for assigning the TAFs to capture both the common and rare features.</li>
+            </ul>
+          </div>
+
+          <div class="box" style="background-color: #f5f5f5;">
+            <strong>🔄 During the training: Bias Adaptation to Achieve TAFs</strong><br>
+            During training, we perform two main operations:
+            <ul>
+                <li>Minimize reconstruction loss by performing gradient steps on the weights \((w_m, a_m, b_{\mathrm{pre}})\) except for the biases.
+                </li>
+                <li>Dynamically adjust neuron biases based on activation frequency in a data buffer:
+                    <ul>
+                        <li>If a neuron activates more frequently than its TAF → decrease its bias to reduce activation</li>
+                        <li>If a neuron activates less frequently than its TAF → increase its bias to encourage activation</li>
+                    </ul>
+                </li>
+            </ul>
+            This dual approach maintains balanced neuron activation and prevents "dead" neurons.
+          </div>
+          <p>
+            By combining these two strategies, GBA offers direct control over neuron activation, avoiding the need for complex tuning while ensuring that neurons are activated at appropriate frequencies to learn features that also occur with different frequencies.
+          </p>
+
+          <!-- <ol> -->
+            <!-- <li><strong>Bias Adaptation</strong><br>
+              Each neuron has a bias value that helps control when it activates. We adjust the bias dynamically based on the frequency of activation over a dataset. If a neuron is activated too frequently, we decrease its bias to reduce its activation. On the other hand, if it's rarely activated, we increase its bias to encourage more frequent activations. This helps maintain a balance between sufficient activation and avoiding "dead" neurons that don't contribute effectively.
+            </li>
+            <li><strong>Neuron Grouping</strong><br>
+              Instead of applying the same activation frequency control to all neurons, we group neurons into distinct sets. Each group targets different activation frequencies, allowing us to better capture both common and rare features in the data. For example, neurons that capture frequently occurring features might have a higher target activation frequency, while those that capture rarer features might have a lower one.
+            </li> -->
+          <!-- </ol> -->
+          <!-- <p>
+            By combining these two strategies, GBA offers direct control over neuron activation, avoiding the need for complex tuning while ensuring that neurons are activated at appropriate frequencies for their tasks.
+          </p> -->
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px; margin-bottom: 20px;">
+          <figure>
+            <img src="./static/images/bias_adap_illus.png" alt="Illustration of neuron grouping and bias adaptation">
+            <figcaption style="font-size: small; text-align: left;">
+              <script type="text/javascript" async
+              src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
+              </script>
+              <center>Figure 2: <i>Neuron Grouping (Left):</i> Neurons are grouped and assigned different Target Activation Frequencies (TAFs).
+              <i>Bias Adaptation (Right):</i> The bias adaptation mechanism shifts the neuron's bias \( b \) to only allow the neuron to be activated by data that produces a large pre-activation. The bias is shifted in a way that the neuron achieves the designated TAF across the training dataset.</center>
+            </figcaption>
+          </figure>
+        </div>
+
+        <!-- <div class="content has-text-justified">
+          <p> -->
+            <!-- <h2 style="font-weight: bold; font-size: 20px;">SOME DETAILS ABOUT GBA</h2>
+            <table class="table is-bordered is-fullwidth">
+              <thead>
+                <tr>
+                  <th>Problem</th>
+                  <th>Solution</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>\(\ell_1\) regularization method is sensitive to hyperparameter tuning.
+                    <ul>
+                      <li>The loss function is usually \(\mathcal{L} = \mathcal{L}_{\text{reconstruct}} + \lambda \mathcal{L}_{\text{sparsity}}\), where \(\lambda\) requires careful tuning.</li>
+                      <li>The activation frequency is not controlled on the neuron level.
+                      </li>
+                    </ul>
+                  </td>
+                  <td>GBA allows us to gain control over the activation frequency more accurately on the neuron level by directly adapting the bias of each neuron.</td>
+                </tr>
+                <tr>
+                  <td>TopK method does not account for data diversity:
+                    <ul>
+                      <li>The number of allowed activated neurons \(K\) for each input is fixed, while different inputs may have different number of features.</li>
+                      <li>The activation frequency is not controlled on the neuron level.</li>
+                    </ul>
+                  </td>
+                  <td>GBA can control the activation frequency more accurately on the neuron level by adapting the bias of each neuron.</td>
+                </tr>
+              </tbody>
+            </table> -->
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+
+<section class="section hero is-small">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">SAE Training on Qwen2.5-1.5B</h2>
+
+        <div class="content has-text-justified">
+          <p>
+            In this section, we evaluate the performance of our Grouped Bias Adaptation (GBA) algorithm across several key dimensions. To ensure a comprehensive understanding, we first briefly introduce the experimental setup before diving into the analysis of the three key questions.
+          </p>
+        </div>
+
+        <!-- Experiment Setup Section -->
+        <h3 class="title is-4">Experimental Setup</h3>
+        <div class="content has-text-justified">
+          <p>
+            We conduct our experiments using two datasets: <code>Pile Github</code> and <code>Pile Wikipedia</code> datasets, each with the first 100k tokens. The experiments are performed on the <span class="highlight">Qwen2.5-1.5B base model</span>, where we attach a Sparse Autoencoder (SAE) to the MLP outputs of layers 2, 13, and 26. Each SAE contains <span class="highlight">66k hidden neurons</span> and operates with an input/output dimension of <span class="highlight">1536</span>.
+
+            To ensure optimal performance, we adopt the JumpReLU activation function for all methods tested. We use <span class="highlight">100 million tokens</span> for training the SAEs, feeding the tokens through the LLM and collecting the MLP outputs at the specified layers.
+
+            The four methods compared are:
+            <ul>
+              <li><code>TopK</code>: A sparse activation method that retains only the top-K activated neurons.</li>
+              <li><code>L1</code>: A sparse method that uses L1 regularization for sparsity.</li>
+              <li><code>BA (Bias Adaptation)</code>: A variant of GBA with a single group and hyperparameter tuning for Target Activation Frequency (TAF).</li>
+              <li><code>GBA (Grouped Bias Adaptation)</code>: Our proposed method, which uses multiple groups of neurons with TAFs set geometrically without hyperparameter tuning.</li>
+            </ul>
+            All methods were trained using the AdamW optimizer with the same set of hyperparameters, including learning rate, weight decay, and batch size. In the GBA method, we used <span class="highlight">10 groups</span>, with the Highest Target Frequency (HTF) set to <span class="highlight">0.1</span> and the Lowest Target Frequency (LTF) set to <span class="highlight">0.001</span>.
+          </p>
+        </div>
+
+        <h3 class="title is-4">Reconstruction Loss and Activation Sparsity Frontier</h3>
+        <div class="content has-text-justified">
+          <p>
+            The first question we address is how the GBA method compares with other methods in terms of reconstruction loss and activation sparsity. The results show that GBA performs comparably to the TopK method with post-activation sparsity and outperforms it with pre-activation sparsity. Furthermore, GBA significantly outperforms the L1 and Bias Adaptation (BA) methods across all experiments.
+          </p>
+          <ul style="background-color: #f5f5f5; padding: 20px; border-radius: 8px;">
+            <li>🎯<strong>Finding (1):</strong> GBA performs <span class="highlight">comparably to the best-performing benchmark</span>, <span class="highlight">TopK</span> with post-activation sparsity. In addition, GBA outperforms TopK with pre-activation sparsity. Specifically, when these methods have the same average fraction of activated neurons, GBA's reconstruction is comparable to that of TopK with post-activation sparsity and significantly better than that of TopK with pre-activation sparsity.</li>
+            <li>🏆<strong>Finding (2):</strong> <span class="highlight">GBA outperforms L1</span> significantly. When they have the same average fraction of activated neurons, GBA achieves a lower reconstruction loss.</li>
+            <li>🏆<strong>Finding (3):</strong> <span class="highlight">GBA outperforms BA</span> consistently across all experiments. This provides strong evidence that the grouping mechanism enhances both sparsity and reconstruction performance.</li>
+          </ul>
+        </div>
+
+        <!-- Insert Figure for Reconstruction Loss vs Activation Sparsity -->
+        <div style="text-align: center; margin-top: 20px; margin-bottom: 20px;">
+          <figure>
+            <img src="./static/images/loss_sparsity.png" alt="Reconstruction loss vs activation sparsity">
+            <figcaption style="font-size: small; text-align: left;">
+              <center>Figure 3: Reconstruction loss versus the average fraction of activated neurons for various methods. The GBA method shows competitive performance with the TopK method.</center>
+            </figcaption>
+          </figure>
+        </div>
+
+        <h3 class="title is-4">Robustness and Nearly Tuning-Free</h3>
+        <div class="content has-text-justified">
+          <p>
+            The second question revolves around the robustness of the GBA method to the choice of hyperparameters, such as the number of groups and target frequencies. Our ablation studies show that GBA is nearly tuning-free. As long as the Highest Target Frequency (HTF) is sufficiently high (e.g., 0.5) and the number of groups (K) is large enough (e.g., 10 or 20), GBA performs consistently well.
+          </p>
+          <ul style="background-color: #f5f5f5; padding: 20px; border-radius: 8px;">
+            <li>🎯<strong>Finding (4):</strong> When HTF and LTF are properly chosen (e.g., a high HTF and a modestly low LTF), with an adequate number of groups, the GBA method achieves performance comparable to TopK, and the performance becomes largely <span class="highlight">insensitive to the specific choices of these parameters</span>.</li>
+          </ul>
+          <!-- <p>
+            Even with variations in LTF and the number of groups, GBA maintains stable performance, making it less sensitive to hyperparameter tuning compared to methods like TopK, which requires manual tuning of the number of activated neurons.
+          </p> -->
+        </div>
+
+        <!-- Insert Figure for GBA Robustness -->
+        <div style="text-align: center; margin-top: 20px; margin-bottom: 20px;">
+          <figure>
+            <img src="./static/images/group_ablation.png" alt="Ablation study on GBA robustness">
+            <figcaption style="font-size: small; text-align: left;">
+              <center>Figure 4: Ablation study showing the robustness of GBA to different choices of the Highest Target Frequency (HTF) and the number of groups (K).</center>
+            </figcaption>
+          </figure>
+        </div>
+
+        <h3 class="title is-4">Consistency of Recovered Features</h3>
+        <div class="content has-text-justified">
+          <p>
+            <!-- The third question examines the consistency of the features learned by the GBA method across independent runs with different random seeds. We evaluate this using the Maximum Cosine Similarity (MCS) metric, and the results show that GBA outperforms other methods, including TopK, in terms of feature consistency. -->
+            The third question examines the consistency of the features learned by the GBA method across independent runs with different random seeds. We evaluate this using the Maximum Cosine Similarity (MCS) metric, and the results show that GBA outperforms other methods, including TopK, in terms of feature consistency. The specific definition of MCS can be found in  §A.2 (Evaluation Metrics) of the paper. Simply put, a higher MCS indicates that a neuron can find another neuron that is more similar to it in other runs, with higher values indicating better consistency. Speicifically, we plot the percentage of neurons that has MCS higher than different  thresholds, where the neurons ploted are also filtered by certain metrics.
+          </p>
+          <ul style="background-color: #f5f5f5; padding: 20px; border-radius: 8px;">
+            <li>🏆<strong>Finding (5):</strong> As the TopK method is shown to be seed-dependent, it has the lowest MCS overall. Our <span class="highlight">GBA method outperforms TopK</span> in achieving a higher percentage of neurons with high MCS.</li>
+            <li>🎯<strong>Finding (6):</strong> The L1 method is more consistent than TopK uniformly and more consistent than GBA in three of the four cases. However, when focusing on neurons with the top-0.05% activations, our GBA method surpasses the L1 method.</li>
+          </ul>
+        </div>
+
+        <!-- Insert Figure for Feature Consistency -->
+        <div style="text-align: center; margin-top: 20px; margin-bottom: 20px;">
+          <figure>
+            <img src="./static/images/consistency.png" alt="Consistency of features across runs">
+            <figcaption style="font-size: small; text-align: left;">
+              <center>Figure 5: Consistency of recovered features measured by Maximum Cosine Similarity (MCS) across three runs with different random seeds. GBA outperforms other methods in feature consistency.</center>
+            </figcaption>
+          </figure>
+        </div>
+
+        <h3 class="title is-4">Additional Results</h3>
+        <div class="content has-text-justified">
+          <p>
+            We provide additional studies on the neurons learned by the GBA in terms of the three metrics used above: maximum activation, Z-score, and maximum cosine similarity across different runs with different random seeds.
+            These metrics are computed based on the validation part of the <code>Pile Github</code> dataset, with the hook position at the MLP output of layer 26.
+            For each neuron, we also compute the <em>activation fraction</em>, which is the fraction of tokens where the pre-activations of the neuron are non-negative.
+          </p>
+          <p>
+            For each neuron, we have four metrics: maximum activation, Z-score, maximum cosine similarity, and activation fraction. We generate scatter plots by plotting the Z-score against the other three metrics. The results for GBA are shown below.
+          </p>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px; margin-bottom: 20px;">
+          <figure>
+            <img src="./static/images/zscore_1.png" alt="Scatter plots for neuron properties (GBA and TopK)">
+            <figcaption style="font-size: small; text-align: left;">
+              <center>Figure 6: Scatter plots illustrating neuron properties for the GBA method: Z-score versus Maximum Activation, Fraction of Non-negative Pre-Activations (i.e., activation frequency), and Maximum Cosine Similarity across different runs with different random seeds. The 66k-neuron SAE is trained on the <code>Pile Github</code> dataset with a hook at the MLP output of layer 26.</center>
+            </figcaption>
+          </figure>
+        </div>
+
+        <div class="content has-text-justified">
+          <div class="box" style="background-color: #f5f5f5;">
+            <h4 class="title is-5" style="margin-bottom: 15px;">Subplots Explanation</h4>
+            <ul>
+              <li><strong>Left:</strong> Z-score vs Maximum Activation - This plot shows the relationship between the Z-score and maximum activation of neurons. We observe an <span class="highlight">almost linear relationship</span>, indicating that neurons with higher Z-scores also have higher maximum activations.</li>
+              <li><strong>Middle:</strong> Z-score vs Activation Fraction - This plot illustrates the correlation between the Z-score and the activation fraction. Neurons with higher Z-scores tend to have activation frequency close to 0.01, capturing more infrequent features.</li>
+              <li><strong>Right:</strong> Z-score vs Maximum Cosine Similarity - This plot compares the Z-score and maximum cosine similarity across different runs. It shows that <span class="highlight">neurons with higher Z-scores tend to exhibit higher consistency in feature recovery across runs</span>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Placeholder for the second set of scatter plots for TopK neurons -->
+        <!-- <div style="text-align: center; margin-top: 20px; margin-bottom: 20px;">
+          <figure>
+            <img src="./static/images/zscore_2.png" alt="Scatter plots for TopK neurons">
+            <figcaption style="font-size: small; text-align: left;">
+              Figure 6: Scatter plots for the neurons trained using TopK with \( K=300 \), showing similar neuron properties.
+            </figcaption>
+          </figure>
+        </div> -->
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section hero is-small">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Theoretical Foundings</h2>
+        <h3 class="title is-4">A Statistical Framework for Feature Recovery</h3>
+        <p class="content" style="text-align: left;">
+          To formulate the feature recovery problem, let's consider a model's hidden representation at a specific layer. This layer encodes \(n\) distinct features in a \(d\)-dimensional space, which we collect into a <span class="highlight">feature matrix</span> \(V\in\mathbb{R}^{n\times d}\). Each row \(v_i\) represents one feature vector.
+          
+          Given a training set of \(N\) tokens, we extract their hidden representations into a <span class="highlight">data matrix</span> \(X\in\mathbb{R}^{N\times d}\). Each row \(x_\ell\) is a weighted combination of the feature vectors, with weights stored in a <span class="highlight">coefficient matrix</span> \(H\in\mathbb{R}_+^{N\times n}\). This gives us the compact data model:
+          \begin{align}\label{eq:data_model}
+              X = H V \in \mathbb{R}^{N\times d}. \tag{1}
+          \end{align}
+        </p>
+        <h3 class="title is-4">Feature Identifiability</h3>
+        <p class="content" style="text-align: left;">
+          Given data generated according to Eq. \eqref{eq:data_model}, we know that not all feature matrices \(V\) can be uniquely identified from the observed data matrix \(X\). This leads us to a fundamental question in feature recovery: Under what conditions can we identify the feature matrix \(V\) from the data matrix \(X\)?
+        <!-- </p>
+        <p style="text-align: left;"> -->
+          In the following, we restrict to \((H,V), (H', V')\in \mathcal{G}\) for a class \(\mathcal{G}\).
+          <div style="margin: 10px 0;">
+            <div style="background-color: #e0e0e0; padding: 8px; border-top-left-radius: 5px; border-top-right-radius: 5px; text-align: left;">
+              <strong>Definition (Feature Identifiability)</strong>
+            </div>
+            <div style="background-color: #f5f5f5; padding: 12px; border-bottom-left-radius: 5px; border-bottom-right-radius: 5px; text-align: left; font-style: italic;">
+               A feature matrix \(V \in \mathbb{R}^{n\times d}\) is identifiable with data \(X = HV\) if for any other feature matrix \(V'\) (possibly with different number of features in the rows) and conformable coefficient matrix \(H'\) that satisfy \(X = H'V'\), we can transform \(V'\) into \(V\) through the following 3 steps:
+              <ol style="list-style-type: decimal; padding-left: 30px; margin-top: 5px; margin-bottom: 5px;">
+                <li>Split the features (rows) of \(V'\) into \(n\) disjoint groups, then form a new feature matrix \(V''\in\mathbb{R}^{n\times d}\) by taking convex combinations of features within each group.</li>
+                <li>Scale the rows of \(V''\) in magnitude.</li>
+                <li>Permute the rows of \(V''\) to match the rows of \(V\).</li>
+              </ol>
+            </div>
+          </div>
+          <div style="text-align: left;">
+            In fact, a feature matrix \(V\) is identifiable if andonly if it has the <span class="highlight">minimal</span> number of features in the rows due to step 1 (the grouping process). The second and third steps capture the ambiguity in the scale of the feature vectors and the order of the features in the rows, respectively. 
+            <div class="box has-text-left">
+              <span class="tag is-info is-medium">Answer to Question 1: What is Feature Identification?</span>
+              <p class="mt-3">
+                In a nutshell, feature identification is to find the <span class="highlight">minimal</span> number of features that can decompose the dataset under certain conditions (specified by the class \(\mathcal{G}\)), which are <span class="highlight">unique up to feature scaling and permutation</span>.
+              </p>
+            </div>
+            To achieve this, we identify the following conditions that guarantee the identifiability of the feature matrix \(V\):
+            <div style="margin: 10px 0;">
+              <div style="background-color: #e0e0e0; padding: 8px; border-top-left-radius: 5px; border-top-right-radius: 5px; text-align: left;">
+                <strong>Informal Theorem (Identifiability Conditions)</strong>
+              </div>
+              <div style="background-color: #f5f5f5; padding: 12px; border-bottom-left-radius: 5px; border-bottom-right-radius: 5px; text-align: left; font-style: italic;">
+                Given data \(X = HV\), the feature matrix \(V\) is identifiable within the class \(\mathcal{G}\) if any \((H', V')\in \mathcal{G}\) satisfies the following conditions:
+                <ol style="list-style-type: decimal; padding-left: 30px; margin-top: 5px; margin-bottom: 5px;">
+                  <li>(Row-wise sparsity) Each data contains at most \(O(1)\) features.</li>
+                  <li>(Non-degeneracy) The average scale of the non-zero entries in each column of \(H'\) is \(O(1)\).</li>
+                  <li>(Low co-occurrence) The number of data in which two features co-occur is less than \(n^{-1/2}\) times the number of data each feature appears in.</li>
+                  <li>(Incoherence) The cosine similarity between any two features is \(o(1)\).</li> 
+                </ol>
+              </div>
+              We have four conditions that guarantee the identifiability of the feature matrix \(V\). Specifically, the first two conditions say that each data is a <span class="highlight">sparse</span> linear combination of the features, and the coefficients in the linear combination should not be too small, otherwise the feature can be too weak to be identified. 
+              The last two conditions imply that any two features should occur <span class="highlight">almost independently</span> in the dataset, and any two features should also be <span class="highlight">almost orthogonal</span>.
+              <div class="box has-text-left">
+                <span class="tag is-info is-medium">Answer to Question 2: When are the Features Identifiable?</span>
+                <p class="mt-3">
+                  The feature matrix V is identifiable when features are <span class="highlight">almost independently occurring</span> and <span class="highlight">almost orthogonal</span>. Besides, each data should be a <span class="highlight">sparse</span> linear combination of the features with <span class="highlight">non-negligible</span> combination coefficients.
+                </p>
+              </div>
+            </div>
+        </p>
+        </p>
+
+        <h3 class="title is-4" style="text-align: center;">Feature Learning</h3>
+        We theoretically investigate whether the proposed GBA method can learn the features that are identifiable. For theoretical simplicity, we consider only one group with a single Target Activation Frequency (TAF).
+        Since we only consider one group, we also require all the features to have similar occurrence frequency.
+        The results can be extended to multiple groups with different TAFs.
+          <div style="margin: 10px 0;">
+            <div style="background-color: #e0e0e0; padding: 8px; border-top-left-radius: 5px; border-top-right-radius: 5px; text-align: left;">
+              <strong>Informal Theorem (Feature Learning)</strong>
+            </div>
+            <div style="background-color: #f5f5f5; padding: 12px; border-bottom-left-radius: 5px; border-bottom-right-radius: 5px; text-align: left; font-style: italic;">
+              Under the identifiability and additional regularity conditions, the GBA algorithm can learn all the features with high probability in the sense that for any feature \(v_i\), there exists a neuron \(m_i\) that after constant number of iterations, \(\cos(v_i, m_i) = 1 - o(1)\).
+            </div>
+          </div>
+        </p>
+        <div class="box has-text-left">
+          <span class="tag is-info is-medium">Answer to Question 3: How to Recover the Features?</span>
+          <p class="mt-3">
+            We theoretically prove that the GBA algorithm can recover all the features if the features are identifiable and certain regularity conditions are met.
+          </p>
+        </div>
+
+        
+        <h3 class="title is-4" style="text-align: center;">Additional Insights</h3>
+        <p class="content" style="text-align: left;">
+          <div class="box has-text-left">
+            <h2 style="font-weight: bold; font-size: 20px;">🎵 Feature-Neuron Resonance</h2>
+            <p class="mt-3">
+              Our theoretical analysis further reveals that GBA works through a selective feature learning mechanism, where each <span class="highlight">neuron group preferentially learns features whose natural occurrence frequency is just slightly lower than the group's target activation frequency (TAF)</span>. This "resonance" principle enables robust and consistent feature recovery, and demonstrates the necessity of using different neuron groups to learn features with different occurrence frequencies.
+            </p>
+            <div style="text-align: center; margin-top: 20px; margin-bottom: 20px;">
+        
+            <figure>
+              <img src="./static/images/selectivity_analysis.png" alt="Analysis of feature learning selectivity">
+              <figcaption style="font-size: small; text-align: left;">
+                <center>Figure 7: Heatmap for percentage of features learned with different TAFs \(p\) and dimensions \(d\) with both axes in log scale. The experiment is conducted with \(65536\) features and \(2.62\times10^5\) neurons. Each feature has an occurrancy frequency of \(4.6\times 10^{-5}\). The learnable TAF \(p\) is just above the feature's occurrence frequency.
+                </center>
+              </figcaption>
+            </figure>
+            </div>
+          </div>
+
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered">
+      <div class="column is-four-fifths has-text-centered">
+        <h2 class="title is-3" style="white-space: nowrap;">
+          Demo: Feature Dashboard
+        </h2>
+        <p class="content" style="text-align: left;">
+          In this section, we present a demo of the feature dashboard for the SAE-learned features. These features are derived from the training experiments conducted using the Grouped Bias Adaptation (GBA) method, where the SAE was trained on the <code>Pile Github</code> dataset with the first 100k tokens. The features were extracted from the output of the MLP block at layer 26 of the <span class="highlight">Qwen2.5-1.5B base model</span>.
+        </p>
+        <!-- <p class="content" style="text-align: left;">
+          The feature dashboard visualizes various aspects of the learned features, providing insights into their activations and behaviors across different runs. The features shown in this dashboard were trained under consistent experimental conditions, allowing for a detailed comparison between different neurons and their learned characteristics. For a comprehensive view of all the learned features, see the <a href="./dashboards.html">All Feature Dashboards</a> page.
+        </p> -->
+        <p class="content" style="text-align: left;">
+          The feature dashboard visualizes various aspects of the learned features, providing insights into their activations and behaviors across different runs. One of the examples featured here corresponds to neuron 4688, which exhibits a clear bimodal activation pattern. This neuron is activated just before outputting the "class" token, indicating that it captures a distinct feature relevant to that part of the model's operation.
+        </p>
+        <p class="content" style="text-align: left;">
+          For a comprehensive view of all the learned features, see the <a href="./dashboards.html">All Feature Dashboards</a> page.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="container is-fluid" style="padding-top: 0;">
+    <div class="columns">
+      <div class="column">
+        <iframe
+          src="./static/dashboards/feature_4688.html"
+          title="Feature Dashboard Demo"
+          style="
+            width: 80%;
+            max-width: 1600px;
+            height: 800px;
+            border: none;
+            display: block;
+            margin: 0 auto;
+          ">
+        </iframe>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+
+<!-- Image carousel -->
+<!-- <section class="hero is-small">
+  <div class="hero-body">
+    <div class="container">
+      <div id="results-carousel" class="carousel results-carousel">
+       <div class="item"> -->
+        <!-- Your image here -->
+        <!-- <img src="static/images/carousel1.jpg" alt="MY ALT TEXT"/>
+        <h2 class="subtitle has-text-centered">
+          First image description.
+        </h2>
+      </div>
+      <div class="item"> -->
+        <!-- Your image here -->
+        <!-- <img src="static/images/carousel2.jpg" alt="MY ALT TEXT"/>
+        <h2 class="subtitle has-text-centered">
+          Second image description.
+        </h2>
+      </div>
+      <div class="item"> -->
+        <!-- Your image here -->
+        <!-- <img src="static/images/carousel3.jpg" alt="MY ALT TEXT"/>
+        <h2 class="subtitle has-text-centered">
+         Third image description.
+       </h2>
+     </div>
+     <div class="item"> -->
+      <!-- Your image here -->
+      <!-- <img src="static/images/carousel4.jpg" alt="MY ALT TEXT"/>
+      <h2 class="subtitle has-text-centered">
+        Fourth image description.
+      </h2>
+    </div>
+  </div>
+</div>
+</div>
+</section> -->
+<!-- End image carousel -->
+
+
+
+
+<!-- Youtube video -->
+<!-- <section class="hero is-small is-light">
+  <div class="hero-body">
+    <div class="container"> -->
+      <!-- Paper video. -->
+      <!-- <h2 class="title is-3">Video Presentation</h2>
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-four-fifths">
+          
+          <div class="publication-video"> -->
+            <!-- Youtube embed code here -->
+            <!-- <iframe src="https://www.youtube.com/embed/JkaxUblCGz0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section> -->
+<!-- End youtube video -->
+
+
+<!-- Video carousel -->
+<!-- <section class="hero is-small">
+  <div class="hero-body">
+    <div class="container">
+      <h2 class="title is-3">Another Carousel</h2>
+      <div id="results-carousel" class="carousel results-carousel">
+        <div class="item item-video1">
+          <video poster="" id="video1" autoplay controls muted loop height="100%"> -->
+            <!-- Your video file here -->
+            <!-- <source src="static/videos/carousel1.mp4"
+            type="video/mp4">
+          </video>
+        </div>
+        <div class="item item-video2">
+          <video poster="" id="video2" autoplay controls muted loop height="100%"> -->
+            <!-- Your video file here -->
+            <!-- <source src="static/videos/carousel2.mp4"
+            type="video/mp4">
+          </video>
+        </div>
+        <div class="item item-video3">
+          <video poster="" id="video3" autoplay controls muted loop height="100%">\ -->
+            <!-- Your video file here -->
+            <!-- <source src="static/videos/carousel3.mp4"
+            type="video/mp4">
+          </video>
+        </div>
+      </div>
+    </div>
+  </div>
+</section> -->
+<!-- End video carousel -->
+
+
+
+
+
+
+<!--BibTex citation -->
+  <!-- <section class="section" id="BibTeX">
+    <div class="container is-max-desktop content">
+      <h2 class="title">BibTeX</h2>
+      <pre><code>BibTex Code Here</code></pre>
+    </div>
+</section> -->
+<!--End BibTex citation -->
+
+
+  <footer class="footer">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content">
+
+          <p>
+            This page was built using the <a href="https://github.com/eliahuhorwitz/Academic-project-page-template" target="_blank">Academic Project Page Template</a>.
+            <br> This website is licensed under a <a rel="license"  href="http://creativecommons.org/licenses/by-sa/4.0/" target="_blank">Creative
+            Commons Attribution-ShareAlike 4.0 International License</a>.
+          </p>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- Statcounter tracking code -->
+  
+<!-- You can add a tracker to track page visits by creating an account at statcounter.com -->
+
+    <!-- End of Statcounter Code -->
+
+  </body>
+  </html>

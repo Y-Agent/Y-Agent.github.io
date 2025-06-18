@@ -63,7 +63,7 @@ In the former, multi-head attention learns to implement a form of <span style="c
 In the latter, we uncover an intriguing regime where the interplay between head number and task number triggers a <span style="color: fuchsia;">superposition</span> phenomenon that efficiently resolves multi-task in-context learning. --->
 
 
-## :beginner: Setups: Data Distribution and Multi-Head Attention
+## 🔍 Setups: Data Distribution and Multi-Head Attention
 
 
 
@@ -147,10 +147,10 @@ where the update method can be gradient descent, Adam, or another optimizer.
 
 We performed experiments to understand how multi-head softmax attention learns linear regression tasks through in-context learning (ICL). 
 We consider the setting with isotropic covariates, i.e., $\mathsf{P}_x = \mathcal{N} (0,I_d)$ and vary $H$ (the number of heads) in our experiments. 
-All experiments use a data setup with $L = 40$, $d = 5$, and noise variance $\sigma^2 = 0.1$. Models are trained using Adam with learning rate $\eta = 10^{-3}$, batch size $256$ for $5 \times 10^5$ steps, starting from PyTorch’s default random initialization. We remark that variations in optimization algorithm, hyperparameters, or the data-generating process do not significantly affect the results. 
+All experiments use a data setup with $L = 40$, $d = 5$, and noise variance $\sigma^2 = 0.1$. Models are trained using Adam with learning rate $\eta = 10^{-3}$, batch size $256$ for $5 \times 10^5$ steps, starting from PyTorch's default random initialization. We remark that variations in optimization algorithm, hyperparameters, or the data-generating process do not significantly affect the results. 
 
 
-### :small_blue_diamond: Key Finding 1: Global KQ/OV Patterns.
+### 💎 Key Finding 1: Global KQ/OV Patterns.
 
 For any number of heads with $H \geq 1$, in the trained one-layer multi-head attention  model, the KQ and OV circuits take the following form: for all $h\in[H]$, we have
 
@@ -207,7 +207,7 @@ Thus, each head acts as a separate kernel regressor, and thus the attention mode
     KQ and OV share the same sign for each head, while the parameter scaling is homogeneous across heads. </figcaption>
 </figure>
 
-###  :small_blue_diamond: Key Finding 2: Learned Values of $(\omega,\mu)$.
+### 💎 Key Finding 2: Learned Values of $(\omega,\mu)$.
 
 Note that the model is effectively governed by parameters $(\omega,\mu) \in \mathbb{R}^{2H}$. For each head $h$, $\omega^{(h)}$ scales its key-query block and $\mu^{(h)}$ sets the output weight in the OV circuit. Two main observations emerge when $H \ge 2$ (see Figure 2.2):
 
@@ -231,7 +231,7 @@ Thus, multi-head attention models typically have at least one positive head and 
 
 
 
-###  :small_blue_diamond: Key Finding 3: Multi-Head Outperforms Single-Head, Approximates Gradient Descent
+### 💎 Key Finding 3: Multi-Head Outperforms Single-Head, Approximates Gradient Descent
 
 1. **Performance**: In terms of the ICL prediction error, the two-head attention model <span style="color: fuchsia;">outperforms</span> single-head model.  Surprisingly, all multi-head configurations $H=2, 3, 4, \dots$ attains nearly the **same** performance, indicating that the <span style="color: fuchsia;"> multi-head attention models all learn the same predictor</span> when $H \geq 2$.
 <figure style="text-align: center;">
@@ -251,7 +251,7 @@ Furthermore, since $\mathbb{E}[x_\ell]=0$, when $L$ is large, the debiased GD pr
 3. **Single-Head Attention vs. Multi-Head Attention** The multi-head attention models learn a different predictor from the single-head attention model. In terms of the values of the parameters, As proven in [Chen et al. (2024a)](https://arxiv.org/abs/2402.19442)
 , in a single-head attention model, we have $\omega^{(1)} = 1/\sqrt{d}$ and $\mu^{(1)} = \Theta(\sqrt{d})$. In the multi-head attention models, the magnitude of the KQ circuits, $|\omega^{(h)}|$, is much smaller than $1/\sqrt{d}$. Qualitatively speaking,  single-head attention learns  a <span style="color: fuchsia;"> Nataraya-Watson (nonparametric) predictor</span>, whereas multi-head attention learns a  <span style="color: fuchsia;"> GD (parametric) predictor</span>.
 
-4. **Near-Bayes Performance**: While the optimally tuned ridge estimator remains the theoretical Bayes-optimal for isotropic Gaussian data, multi-head attention’s mean-squared error nearly achieves Bayesian optimality up to a proportional factor. 
+4. **Near-Bayes Performance**: While the optimally tuned ridge estimator remains the theoretical Bayes-optimal for isotropic Gaussian data, multi-head attention's mean-squared error nearly achieves Bayesian optimality up to a proportional factor. 
 
 <figure style="text-align: center;">
   <img src=/images/03_25_in_context_regression/img/Lin_smax_comparison-1.jpg style="width: 45%;">
@@ -259,7 +259,7 @@ Furthermore, since $\mathbb{E}[x_\ell]=0$, when $L$ is large, the debiased GD pr
 </figure>
 
 
-###  :small_blue_diamond: Key Finding 4: Consistent Training Dynamics
+### 💎 Key Finding 4: Consistent Training Dynamics
 
 - **Emergence of Patterns**: Despite random initializations, the parameter evolution follows a highly consistent trajectory throughout training. 
 As shown in Figure 2.5, the attention model quickly develops the pattern identified in **Key Finding 1**, during the early stages of training. 
@@ -312,7 +312,7 @@ The attention model continues to optimize the loss function with this pattern pr
 
 
 ## 🧭 Extensions
-### :small_blue_diamond: Non-Isotropic Covariates
+### 💎 Non-Isotropic Covariates
 
 When covariates are drawn from a centered Gaussian with a general covariance matrix $\Sigma$, softmax attention still learns a **sum of two kernel regressors** ------ but the KQ blocks need not be diagonal. Here, we consider the two-head model for illustration. Concretely:
 - **Persistent OV Patterns**: The last-entry-only structure in the OV circuits continues to emerge, splitting heads into a positive and a negative group.
@@ -366,7 +366,7 @@ In short, **multi-head softmax attention naturally learns to incorporate covaria
 </figure>
  
 
-### :small_blue_diamond: In-Context Multi-Task Regression
+### 💎 In-Context Multi-Task Regression
 
 We also consider **multi-task** regression, where each task uses a different subset $\mathcal{S}\_n\subseteq [d]$ of features. The transformer is now trained to predict a vector $y_q\in\mathbb{R}^N$ given $L$ demonstrations $\\{(x_\ell, y_\ell)\\}_{\ell\in[L]}$. The setup is formalized as follows.
 
@@ -559,8 +559,9 @@ For the general multi-task setting, characterizing the training dynamics and sol
 
 ## 🔬 Mechanistic Interpretation
 In this section, we focus on the the single-task and isotropic case and present the theoretical explanations for the learned multi-head attention model. 
-### :small_blue_diamond: Simplification and Approximate Loss
-Since the transformer’s KQ and OV circuits settle into a diagonal-only and last-entry-only structure early in training, we can reparameterize the model in terms of $(\omega,\mu)$. This simplified view captures the core learning behavior: the final prediction $\hat{y}_q$ can be computed based on the scaling parameters of the  KQ and OV circuits, namely $\omega$ and $\mu$. 
+### 💎 Simplification and Approximate Loss
+
+Since the transformer's KQ and OV circuits settle into a diagonal-only and last-entry-only structure early in training, we can reparameterize the model in terms of $(\omega,\mu)$. This simplified view captures the core learning behavior: the final prediction $\hat{y}_q$ can be computed based on the scaling parameters of the  KQ and OV circuits, namely $\omega$ and $\mu$. 
 
 Now we can regard the population risk of ICL as a function of $\omega$ and $\mu$. 
 We derive an approximation loss, which is more amenable for theoretical analysis. 
@@ -576,7 +577,10 @@ $$
 \tilde{\mathcal{L}}(\omega,\mu)= 1+\sigma^2-2\mu^\top\omega+\mu^\top\big(\omega\omega^\top+(1+\sigma^2)\cdot L^{-1}\cdot\exp(d\omega\omega^\top)\big)\mu.
 $$
  -->
-### :small_blue_diamond: Training Dynamics, Emerged Patterns, and Solution Manifold
+### 💎 Training Dynamics, Emerged Patterns, and Solution Manifold
+
+
+
 Starting from small random initialization, the attention parameters converge in two main stages under gradient descent in terms of the approximate loss where
 $$
 \mu_{t+1}\leftarrow\mu_t-\eta\cdot\nabla_{\mu}\tilde{\mathcal{L}}(\mu_t,\omega_t),\qquad \omega_{t+1}\leftarrow\omega_t-\eta\cdot\nabla_\omega\tilde{\mathcal{L}}(\mu_t,\omega_t).
@@ -652,7 +656,7 @@ Second, the inequality for the odd terms is actually an equality, which holds if
 	\end{align} 
   The specific scale $\gamma$ is sensitive to optimization details, e.g., learning rate. But theoretically, we can show that the optimal $\gamma$ is $0^{+}$, which gives rise to the debiased GD estimator. 
 
-### :small_blue_diamond: Statistical Properties of Learned Multi-Head Attention
+### 💎 Statistical Properties of Learned Multi-Head Attention
 Our experiments show that no matter how many heads the model has, it consistently acquires diagonal-only KQ and last-entry-only OV circuits. For $H \ge 2$, the heads split into three groups—positive, negative, and dummy—and effectively approximate a gradient-descent-style solution. Specifically:
 1. **Equivalent to Two-Head Form.** Even in higher-head models, only the positive and negative heads contribute to the final predictor, which can be expressed exactly as a two-head model with parameters $\omega_{\mathrm{eff}} = (\gamma, -\gamma)$ and $\mu_{\mathrm{eff}} = (\mu_\gamma, -\mu_\gamma)$. For <span style="color: fuchsia;">small $\gamma$</span>, this predictor approximates a **debiased GD** predictor:
 \begin{align*}
@@ -705,8 +709,10 @@ where $\mathsf{BayesRisk} \_{\xi,\sigma^2}$ denotes the limiting Bayes risk.
 
 
 
-## 📍 Dicussion: Role of Softmax Activation
-### :small_blue_diamond: Linear vs Softmax  Attention
+## 📝 Discussion: Role of Softmax Activation
+### 💎 Linear vs Softmax Attention
+
+
 Recent work has explored **linear transformers** (e.g., [Von Oswald et al., 2023](https://arxiv.org/abs/2212.07677)), which remove the nonlinearity and causal mask. Concretely, linear attention is defined as
 
 $$
@@ -723,7 +729,7 @@ When applied to linear regression tasks, such a single-head linear transformer c
 
 2. **Greater Expressive Power.** Any $H$-head linear attention mechanism can be approximated by a $2H$-head softmax attention with small scaling parameters $\gamma$. When the token embeddings are centralized, linear and softmax attention behave similarly. Yet softmax attention can still adapt better across different lengths because it does not fix the normalization to $1/L$.
 
-### :small_blue_diamond: Ablation Study: Activation Functions beyond Softmax
+### 💎 Ablation Study: Activation Functions beyond Softmax
 
 We found that <span style="color: fuchsia;">the previous findings can also be extended to more general types of activations</span>.  We replaced the exponential function in softmax with alternative “normalized activations”:
 $\sigma:\mathbb{R}^d\mapsto\mathbb{R}^d$ defined by letting $\sigma(\nu)\_i=f(\nu_i)/\sum\_{j=1}^df(\nu_j)$ for all $i\in[d]$,
@@ -757,7 +763,7 @@ We have the following key observations:
 
 
 
-## 🎇 Conclusion
+## 🎯 Conclusion
 We studied how multi-head softmax attention models learn in-context linear regression, revealing emergent structural patterns that drive efficient learning. 
 Our analysis reveals that trained transformers develop structured key-query (KQ) and output-value (OV) circuits, with attention heads forming opposite positive and negative groups. 
 These patterns emerge early in training and are preserved throughout the training process, enabling the transformers to approximately implement a debiased gradient descent predictor. 
