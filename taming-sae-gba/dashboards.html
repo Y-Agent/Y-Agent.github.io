@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Feature Dashboards Overview</title>
+  <style>
+    /* 把下拉菜单固定在左上角 */
+    #dashboard-selector-container {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: rgba(255,255,255,0.9);
+      padding: 8px;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      z-index: 100;
+    }
+    /* 下面的 iframe 占满剩余空间 */
+    #dashboard-frame {
+      position: absolute;
+      top: 50px;   /* 给上方下拉留出空间 */
+      left: 0;
+      width: 100%;
+      height: calc(100vh - 50px);
+      border: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="dashboard-selector-container">
+    <label for="dashboard-selector"><strong>Select Dashboard:</strong></label>
+    <br/>
+    <select id="dashboard-selector"></select>
+  </div>
+
+  <iframe id="dashboard-frame" src="" title="Feature Dashboard"></iframe>
+
+  <script>
+    // 所有 dashboard 文件名列表
+    const dashboards = [
+      "feature_10440.html",
+      "feature_10572.html",
+      "feature_10605.html",
+      "feature_10709.html",
+      "feature_10805.html",
+      "feature_10984.html",
+      "feature_11173.html",
+      "feature_11492.html",
+      "feature_11602.html",
+      "feature_1173.html",
+      "feature_11816.html",
+      "feature_11887.html",
+      "feature_12241.html",
+      "feature_12481.html",
+      "feature_13320.html",
+      "feature_13355.html",
+      "feature_13708.html",
+      "feature_14156.html",
+      "feature_1431.html",
+      "feature_1440.html",
+      "feature_14445.html",
+      "feature_14758.html",
+      "feature_14976.html",
+      "feature_15018.html",
+      "feature_15037.html",
+      "feature_15528.html",
+      "feature_15603.html",
+      "feature_15622.html",
+      "feature_15902.html",
+      "feature_15922.html",
+      "feature_16008.html",
+      "feature_16031.html",
+      "feature_16471.html",
+      "feature_16814.html",
+      "feature_17198.html",
+      "feature_17298.html",
+      "feature_17301.html",
+      "feature_17446.html",
+      "feature_1747.html",
+      "feature_18125.html",
+      "feature_18361.html",
+      "feature_18578.html",
+      "feature_18625.html",
+      "feature_2002.html",
+      "feature_21672.html",
+      "feature_22388.html",
+      "feature_2372.html",
+      "feature_24406.html",
+      "feature_2864.html",
+      "feature_31530.html",
+      "feature_32264.html",
+      "feature_33544.html",
+      "feature_35709.html",
+      "feature_3583.html",
+      "feature_3640.html",
+      "feature_3655.html",
+      "feature_37768.html",
+      "feature_40840.html",
+      "feature_4132.html",
+      "feature_4177.html",
+      "feature_4267.html",
+      "feature_4688.html",
+      "feature_47369.html",
+      "feature_49787.html",
+      "feature_5.html",
+      "feature_5260.html",
+      "feature_5434.html",
+      "feature_5549.html",
+      "feature_55927.html",
+      "feature_5917.html",
+      "feature_5921.html",
+      "feature_5977.html",
+      "feature_59965.html",
+      "feature_5998.html",
+      "feature_6034.html",
+      "feature_60533.html",
+      "feature_6114.html",
+      "feature_6215.html",
+      "feature_6441.html",
+      "feature_6453.html",
+      "feature_7033.html",
+      "feature_7264.html",
+      "feature_7640.html",
+      "feature_8233.html",
+      "feature_8345.html",
+      "feature_8552.html",
+      "feature_8554.html",
+      "feature_8611.html",
+      "feature_8875.html",
+      "feature_9028.html",
+      "feature_9258.html",
+      "feature_944.html",
+      "feature_9511.html",
+      "feature_9576.html",
+      "feature_9643.html",
+      "feature_9715.html",
+      "feature_997.html"
+    ];
+
+    const selector = document.getElementById('dashboard-selector');
+    const iframe   = document.getElementById('dashboard-frame');
+
+    // create <option> and inject
+    dashboards.forEach(fname => {
+      const opt = document.createElement('option');
+      opt.value = `./static/dashboards/${fname}`;
+      // show pure number index more intuitive
+      opt.text  = fname.replace('feature_','').replace('.html','');
+      selector.appendChild(opt);
+    });
+
+    // listen to switch
+    selector.addEventListener('change', e => {
+      iframe.src = e.target.value;
+    });
+
+    // 
+    if (dashboards.length > 0) {
+      selector.selectedIndex = 0;
+      iframe.src = `./static/dashboards/${dashboards[0]}`;
+    }
+
+    // Add home button
+    const homeButton = document.createElement('button');
+    homeButton.textContent = 'Back to Home';
+    homeButton.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 10px 20px;
+      background-color: #485fc7;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    `;
+    homeButton.addEventListener('click', () => {
+      window.location.href = './index.html';
+    });
+    document.body.appendChild(homeButton);
+  </script>
+</body>
+</html>
