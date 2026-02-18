@@ -59,6 +59,11 @@
  background: rgba(150, 150, 150, 0.12);
  padding: 14px 18px; margin: 14px 0; border-radius: 6px;
  }
+
+ .red-box {
+ background: rgba(255, 0, 0, 0.12);
+ padding: 14px 18px; margin: 14px 0; border-radius: 6px;
+ }
 &lt;/style&gt;
 &lt;p&gt;&lt;strong style="font-size: 0.85em; letter-spacing: 1px; color: #3B9DD9;"&gt;AUTHORS:&lt;/strong&gt;
 &lt;small&gt;
