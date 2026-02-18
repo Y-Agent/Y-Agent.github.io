@@ -35,8 +35,8 @@
 {{ .Store.Set "hasMathjax" true }}
 {{ end }}
 
-<div class="lg:grid lg:grid-cols-5 gap-4 mt-4 px-4">
-    <div class="lg:col-span-4">
+<div class="lg:flex gap-6 mt-4 px-4">
+    <div class="flex-1 min-w-0">
         <article class="mx-auto prose prose-quoteless dark:prose-invert max-w-none" id="dream-single-post-main" itemscope
             itemtype="http://schema.org/Article">
             {{ template "_internal/schema.html" . }}
@@ -126,9 +126,11 @@
         </article>
     </div>
 
-    <div class="hidden lg:flex lg:flex-col lg:items-end">
+    <div class="hidden lg:block" style="width: 220px; flex-shrink: 0;">
         {{ if site.Params.showTableOfContents }}
+        <div style="position: sticky; top: 4rem; max-height: calc(100vh - 5rem); overflow-y: auto;">
         {{ .TableOfContents }}
+        </div>
         {{ end }}
     </div>
 </div>

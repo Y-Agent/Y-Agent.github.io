@@ -79,7 +79,7 @@ toc: true
   }
 </style>
 
-<strong style="font-size: 0.8em; letter-spacing: 1px;">AUTHORS:</strong>
+<strong style="font-size: 0.85em; letter-spacing: 1px; color: #3B9DD9;">AUTHORS:</strong>
 <small>
 <a href="https://jlianghe.github.io/">Jianliang He</a>,
 <a href="https://futwangalerda.github.io/">Leda Wang</a>,
@@ -87,15 +87,15 @@ toc: true
 <a href="https://zhuoranyang.github.io/">Zhuoran Yang</a>
 </small>
 
-<strong style="font-size: 0.8em; letter-spacing: 1px;">AFFILIATIONS:</strong>
+<strong style="font-size: 0.85em; letter-spacing: 1px; color: #3B9DD9;">AFFILIATIONS:</strong>
 <small>Department of Statistics and Data Science, Yale University</small>
 
-<strong style="font-size: 0.8em; letter-spacing: 1px;">LINKS:</strong>
-<small>
-<strong>arXiv:</strong> <a href="#" target="_blank">Coming soon</a>,
-<strong>GitHub:</strong> <a href="https://github.com/Y-Agent/modular-addition-feature-learning" target="_blank">Code</a>,
-<strong>Demo:</strong> <a href="https://huggingface.co/spaces/y-agent/modular-addition-feature-learning" target="_blank">HuggingFace Space</a>
-</small>
+<strong style="font-size: 0.85em; letter-spacing: 1px; color: #3B9DD9;">LINKS:</strong>
+<span style="font-size: 0.9em;">
+<strong style="color: #D98C3B;">arXiv:</strong> <a href="#" target="_blank">Coming soon</a> &nbsp;|&nbsp;
+<strong style="color: #4CAF7D;">GitHub:</strong> <a href="https://github.com/Y-Agent/modular-addition-feature-learning" target="_blank"><strong>Code</strong></a> &nbsp;|&nbsp;
+<strong style="color: #A96CD5;">Demo:</strong> <a href="https://huggingface.co/spaces/y-agent/modular-addition-feature-learning" target="_blank"><strong>HuggingFace Space</strong></a>
+</span>
 
 <small><em><strong>Cover Figure:</strong> A two-layer neural network (left) learns to compute $17 + 9 = 3 \pmod{23}$ by discovering Fourier features: each hidden neuron becomes a cosine wave at a single frequency (center). These waves, spread symmetrically with different phases and at different frequencies, combine into a "majority vote" that peaks sharply at the correct answer on the modular number line (right).</em></small>
 
