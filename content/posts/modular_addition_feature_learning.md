@@ -77,6 +77,11 @@ toc: true
     background: rgba(150, 150, 150, 0.12);
     padding: 14px 18px; margin: 14px 0; border-radius: 6px;
   }
+
+  .red-box {
+    background: rgba(255, 0, 0, 0.12);
+    padding: 14px 18px; margin: 14px 0; border-radius: 6px;
+  }
 </style>
 
 <strong style="font-size: 0.85em; letter-spacing: 1px; color: #3B9DD9;">AUTHORS:</strong>
@@ -200,6 +205,14 @@ After training the network to 100% accuracy on the full dataset, we inspect the 
 ### 4.1 Empirical Observations
 
 We make four key observations about the structure of the trained network. Each observation is stated as a finding, supported by figures, and then explained intuitively.
+
+<!-- <div class="red-box"> -->
+<p align="center">
+<img src="/images/modular_addition_feature_learning/phase_doubling_diagram.png" width="85%">
+</p>
+
+Figure 2. **Anatomy of a single trained neuron: cosine weights and phase doubling.** After training, each neuron $m$ in the two-layer network $f(x,y) = \sum_m \xi_m \cdot \sigma(\theta_m[x] + \theta_m[y])$ develops a striking structure. **Top:** the input weight vector $\theta_m \in \mathbb{R}^p$ traces a clean cosine curve $\alpha \cos(2\pi k j / p + \phi)$ at a single frequency $k$, with input phase $\phi$. **Bottom:** the output weight vector $\xi_m \in \mathbb{R}^p$ is also a cosine at the *same* frequency $k$, but its phase is exactly doubled: $\psi = 2\phi$ (green arrow), as illustrated by the polar diagram on the right. These two properties — single-frequency cosine structure (Observation 1) and the $\psi = 2\phi$ phase alignment (Observation 2) — are the building blocks of the network's Fourier-based algorithm for modular addition.
+<!-- </div> -->
 
 <div class="obs-box">
 
