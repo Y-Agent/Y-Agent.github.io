@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Grokking on Y-Agent Research Blog</title><link>https://Y-Agent.github.io/tags/grokking/</link><description>Recent content in Grokking on Y-Agent Research Blog</description><generator>Hugo</generator><language>en-US</language><lastBuildDate>Wed, 18 Jun 2025 00:00:00 +0000</lastBuildDate><atom:link href="https://Y-Agent.github.io/tags/grokking/index.xml" rel="self" type="application/rss+xml"/><item><title>On the Mechanism and Dynamics of Modular Addition: Fourier Features, Lottery Ticket, and Grokking</title><link>https://Y-Agent.github.io/posts/modular_addition_feature_learning/</link><pubDate>Wed, 18 Jun 2025 00:00:00 +0000</pubDate><guid>https://Y-Agent.github.io/posts/modular_addition_feature_learning/</guid><description>&lt;style&gt;
+ /* --- Inline colored text --- */
+ .hl-blue { color: #3B9DD9; font-weight: bold; }
+ .hl-purple { color: #A96CD5; font-weight: bold; }
+ .hl-orange { color: #D98C3B; font-weight: bold; }
+ .hl-green { color: #4CAF7D; font-weight: bold; }
+
+ /* --- Boxes: semi-transparent backgrounds for light+dark mode --- */
+ .question-box {
+ background: rgba(217, 166, 59, 0.12);
+ border-left: 4px solid #D9A63B;
+ padding: 12px 16px; margin: 12px 0; border-radius: 0 6px 6px 0;
+ }
+ .question-box strong { color: #D9A63B; }
+
+ .obs-box {
+ background: rgba(59, 157, 217, 0.10);
+ border-left: 4px solid #3B9DD9;
+ padding: 12px 16px; margin: 12px 0; border-radius: 0 6px 6px 0;
+ }
+
+ .theorem-box {
+ background: rgba(150, 150, 150, 0.10);
+ border-left: 4px solid #888;
+ padding: 12px 16px; margin: 12px 0; border-radius: 0 6px 6px 0;
+ }
+
+ .result-box {
+ background: rgba(76, 175, 125, 0.12);
+ border: 1px solid rgba(76, 175, 125, 0.3);
+ border-left: 4px solid #4CAF7D;
+ padding: 14px 16px; margin: 14px 0; border-radius: 0 6px 6px 0;
+ }
+
+ .contrib-box {
+ padding: 14px 18px; margin: 14px 0; border-radius: 6px;
+ }
+ .contrib-1 {
+ background: rgba(59, 157, 217, 0.10);
+ border-left: 5px solid #3B9DD9;
+ }
+ .contrib-2 {
+ background: rgba(169, 108, 213, 0.10);
+ border-left: 5px solid #A96CD5;
+ }
+ .contrib-3 {
+ background: rgba(217, 140, 59, 0.10);
+ border-left: 5px solid #D98C3B;
+ }
+
+ .takeaway-box {
+ background: rgba(217, 185, 59, 0.12);
+ border: 1px solid rgba(217, 185, 59, 0.3);
+ border-left: 4px solid #D9B93B;
+ padding: 12px 16px; margin: 14px 0; border-radius: 0 6px 6px 0;
+ }
+
+ .grey-box {
+ background: rgba(150, 150, 150, 0.12);
+ padding: 14px 18px; margin: 14px 0; border-radius: 6px;
+ }
+&lt;/style&gt;
+&lt;div style="position: relative; width: 100%; margin-bottom: 2em;"&gt;
+ &lt;!-- Background image --&gt;
+ &lt;img src="https://Y-Agent.github.io/images/modular_addition_feature_learning/figure_blog.jpeg" style="width: 100%; display: block; filter: brightness(0.35);" alt=""&gt;
+ &lt;!-- Overlay text --&gt;
+ &lt;div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white; padding: 2em;"&gt;
+ &lt;h1 style="font-size: 2em; margin: 0 0 0.3em 0; color: white; line-height: 1.2;"&gt;On the Mechanism and Dynamics of Modular Addition:&lt;br&gt;Fourier Features, Lottery Ticket, and Grokking&lt;/h1&gt;
+ &lt;p style="font-size: 1.1em; margin: 0.3em 0; color: #e0e0e0;"&gt;
+ &lt;a href="https://jlianghe.github.io/" style="color: #8ecfff;"&gt;Jianliang He&lt;/a&gt;,
+ &lt;a href="https://futwangalerda.github.io/" style="color: #8ecfff;"&gt;Leda Wang&lt;/a&gt;,
+ &lt;a href="https://ffishy-git.github.io/" style="color: #8ecfff;"&gt;Siyu Chen&lt;/a&gt;,
+ &lt;a href="https://zhuoranyang.github.io/" style="color: #8ecfff;"&gt;Zhuoran Yang&lt;/a&gt;
+ &lt;/p&gt;</description></item></channel></rss>
