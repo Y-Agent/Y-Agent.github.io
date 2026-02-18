@@ -92,8 +92,9 @@ toc: true
 
 <strong style="font-size: 0.8em; letter-spacing: 1px;">LINKS:</strong>
 <small>
-<strong>GitHub:</strong> <a href="https://github.com/Y-Agent/modular-addition-feature-learning" target="_blank">https://github.com/Y-Agent/modular-addition-feature-learning</a>,
-<strong>Demo:</strong> <a href="#" target="_blank">Coming soon</a>
+<strong>arXiv:</strong> <a href="#" target="_blank">Coming soon</a>,
+<strong>GitHub:</strong> <a href="https://github.com/Y-Agent/modular-addition-feature-learning" target="_blank">Code</a>,
+<strong>Demo:</strong> <a href="https://huggingface.co/spaces/y-agent/modular-addition-feature-learning" target="_blank">HuggingFace Space</a>
 </small>
 
 <small><em><strong>Cover Figure:</strong> A two-layer neural network (left) learns to compute $17 + 9 = 3 \pmod{23}$ by discovering Fourier features: each hidden neuron becomes a cosine wave at a single frequency (center). These waves, spread symmetrically with different phases and at different frequencies, combine into a "majority vote" that peaks sharply at the correct answer on the modular number line (right).</em></small>
@@ -226,10 +227,10 @@ Figure 2. **Fourier sparsity of learned weights (10 representative neurons).** W
 
 We can also verify the cosine structure by fitting cosine curves directly to the raw weight vectors. The fits are nearly perfect:
 
-<p align="center">
-<img src="/images/modular_addition_feature_learning/full_training_para_origin_lineplot_in.jpg" width="48%">
-<img src="/images/modular_addition_feature_learning/full_training_para_origin_lineplot_out.jpg" width="48%">
-</p>
+<div style="display: flex; justify-content: center; gap: 4px; flex-wrap: nowrap;">
+<img src="/images/modular_addition_feature_learning/full_training_para_origin_lineplot_in.jpg" style="width: 48%; min-width: 0;">
+<img src="/images/modular_addition_feature_learning/full_training_para_origin_lineplot_out.jpg" style="width: 48%; min-width: 0;">
+</div>
 
 Figure 3. **Cosine fits to individual neurons.** For several representative neurons, we plot the raw learned weight values (blue dots/curves) against the index $j = 0, 1, \ldots, p-1$ and overlay a best-fit cosine of the form $a \cdot \cos(\omega_k j + \phi)$ (red dashed curves), where $a$ and $\phi$ are the fitted magnitude and phase. **Left:** input weights $\theta_m[j]$. **Right:** output weights $\xi_m[j]$. The fits are nearly perfect (residuals are negligible), confirming that each neuron's weight vector is well-described by a single cosine at one Fourier frequency. Different neurons fit to different frequencies $k$ and different phases $\phi_m$, $\psi_m$, consistent with the diversification described in Observation 3.
 
@@ -485,10 +486,10 @@ where $\widetilde{\mathcal{D}}_m^k(0)$ is the initial phase misalignment. The do
 
 Since the initial misalignments are independent and uniformly distributed, different neurons generically select different winning frequencies. With enough neurons ($M \gg (p-1)/2$), all frequencies are covered, explaining **Observation 1** (single-frequency structure) and contributing to **Observation 3** (frequency balance).
 
-<p align="center">
-<img src="/images/modular_addition_feature_learning/lottery_mech_phase.jpg" height="360">
-<img src="/images/modular_addition_feature_learning/lottery_mech_magnitude.jpg" height="360">
-</p>
+<div style="display: flex; justify-content: center; gap: 4px; flex-wrap: nowrap;">
+<img src="/images/modular_addition_feature_learning/lottery_mech_phase.jpg" style="width: 48%; min-width: 0;">
+<img src="/images/modular_addition_feature_learning/lottery_mech_magnitude.jpg" style="width: 48%; min-width: 0;">
+</div>
 
 Figure 9. **The lottery ticket race within a single neuron.** We track all $(p-1)/2 = 11$ frequency components within one neuron during training under random initialization. **Left (phase misalignment):** Each curve shows $\mathcal{D}_m^k(t) = (2\phi_m^k - \psi_m^k) \bmod 2\pi$ (rescaled to $[-\pi, \pi)$) for a different frequency $k$. The winning frequency (Freq. 7, highlighted in red) starts with the smallest initial misalignment and converges to $\mathcal{D} = 0$ fastest. The losing frequencies drift slowly but their alignment does not matter because their magnitudes never grow large enough to compete. **Right (magnitudes):** The corresponding output magnitude $\beta_m^k(t)$ for each frequency. The legend is sorted by initial magnitude. Once the winning frequency's phase aligns ($\mathcal{D} \approx 0$), its magnitude undergoes explosive super-linear growth (visible as the red curve pulling away after step 1,000), while all other frequencies grow only slowly and remain far below the winner. This is the <span class="hl-purple">positive feedback loop</span>: better alignment leads to faster growth, which in turn accelerates alignment. The winner is determined at initialization by the combination of initial magnitude and initial phase misalignment.
 
@@ -530,12 +531,12 @@ Our analysis, built on the understanding of the mechanism and dynamics from the 
 
 ### 5.1 Overview of the Three Stages
 
-<p align="center">
-<img src="/images/modular_addition_feature_learning/grokk_loss.jpg" width="24%">
-<img src="/images/modular_addition_feature_learning/grokk_acc.jpg" width="24%">
-<img src="/images/modular_addition_feature_learning/grokk_abs_phase_diff.jpg" width="24%">
-<img src="/images/modular_addition_feature_learning/grokk_avg_ipr.jpg" width="24%">
-</p>
+<div style="display: flex; justify-content: center; gap: 4px; flex-wrap: nowrap;">
+<img src="/images/modular_addition_feature_learning/grokk_loss.jpg" style="width: 24%; min-width: 0;">
+<img src="/images/modular_addition_feature_learning/grokk_acc.jpg" style="width: 24%; min-width: 0;">
+<img src="/images/modular_addition_feature_learning/grokk_abs_phase_diff.jpg" style="width: 24%; min-width: 0;">
+<img src="/images/modular_addition_feature_learning/grokk_avg_ipr.jpg" style="width: 24%; min-width: 0;">
+</div>
 
 Figure 13. **Four progress measures reveal the three stages of grokking.** The network is trained on 75% of all $(x,y)$ pairs with weight decay $\lambda = 2.0$. The three colored background regions (yellow, tan, gray) correspond to the three stages, separated by dashed vertical lines at ~2,200 and ~10,000 steps. **(a) Loss:** Training loss (dark blue) drops rapidly to near zero within the first ~2,000 steps (Stage I), while test loss (dark red) remains high, then drops sharply during Stage II and slowly decays during Stage III. **(b) Accuracy:** Training accuracy (dark blue) reaches 100% early; test accuracy (dark red) plateaus at ~70% during memorization (because the symmetric architecture gives "free" accuracy on $(y,x)$ pairs), then climbs to ~95% during Stage II, and converges toward 100% during Stage III. **(c) Phase alignment:** The average $|\sin(\mathcal{D}_m^\star)|$ (measuring misalignment of the dominant frequency's phases) decreases throughout, confirming that phase alignment continues to improve even after memorization. **(d) Frequency sparsity (IPR) and parameter norm:** The average IPR (brown, left axis; higher = sparser) increases throughout training as neurons concentrate energy at fewer frequencies. The parameter norm (dark blue, right axis) grows rapidly during Stages I-II when the loss gradient dominates, then plateaus and slightly decreases once weight decay takes over in Stage III.
 
