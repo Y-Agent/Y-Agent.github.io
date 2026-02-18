@@ -60,18 +60,13 @@
  padding: 14px 18px; margin: 14px 0; border-radius: 6px;
  }
 &lt;/style&gt;
-&lt;div style="position: relative; width: 100%; margin-bottom: 2em;"&gt;
- &lt;!-- Background image --&gt;
- &lt;img src="https://Y-Agent.github.io/images/modular_addition_feature_learning/figure_blog.jpeg" style="width: 100%; display: block; filter: brightness(0.35);" alt=""&gt;
- &lt;!-- Overlay text --&gt;
- &lt;div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white; padding: 2em;"&gt;
- &lt;h1 style="font-size: 2em; margin: 0 0 0.3em 0; color: white; line-height: 1.2;"&gt;On the Mechanism and Dynamics of Modular Addition:&lt;br&gt;Fourier Features, Lottery Ticket, and Grokking&lt;/h1&gt;
- &lt;p style="font-size: 1.1em; margin: 0.3em 0; color: #e0e0e0;"&gt;
- &lt;a href="https://jlianghe.github.io/" style="color: #8ecfff;"&gt;Jianliang He&lt;/a&gt;,
- &lt;a href="https://futwangalerda.github.io/" style="color: #8ecfff;"&gt;Leda Wang&lt;/a&gt;,
- &lt;a href="https://ffishy-git.github.io/" style="color: #8ecfff;"&gt;Siyu Chen&lt;/a&gt;,
- &lt;a href="https://zhuoranyang.github.io/" style="color: #8ecfff;"&gt;Zhuoran Yang&lt;/a&gt;
- &lt;/p&gt;</description></item><item><title>In-Context Linear Regression Demystified</title><link>https://Y-Agent.github.io/posts/in_context_regression/</link><pubDate>Tue, 25 Mar 2025 00:00:00 +0000</pubDate><guid>https://Y-Agent.github.io/posts/in_context_regression/</guid><description>&lt;!-- Paper title --&gt;
+&lt;p&gt;&lt;strong style="font-size: 0.8em; letter-spacing: 1px;"&gt;AUTHORS:&lt;/strong&gt;
+&lt;small&gt;
+&lt;a href="https://jlianghe.github.io/"&gt;Jianliang He&lt;/a&gt;,
+&lt;a href="https://futwangalerda.github.io/"&gt;Leda Wang&lt;/a&gt;,
+&lt;a href="https://ffishy-git.github.io/"&gt;Siyu Chen&lt;/a&gt;,
+&lt;a href="https://zhuoranyang.github.io/"&gt;Zhuoran Yang&lt;/a&gt;
+&lt;/small&gt;&lt;/p&gt;</description></item><item><title>In-Context Linear Regression Demystified</title><link>https://Y-Agent.github.io/posts/in_context_regression/</link><pubDate>Tue, 25 Mar 2025 00:00:00 +0000</pubDate><guid>https://Y-Agent.github.io/posts/in_context_regression/</guid><description>&lt;!-- Paper title --&gt;
 &lt;p&gt;&lt;strong style="font-size: 0.8em; letter-spacing: 1px;"&gt;Paper:&lt;/strong&gt; In-Context Linear Regression Demystified: Training Dynamics and Mechanistic Interpretability of Multi-Head Softmax Attention&lt;/p&gt;
 &lt;!-- Authors Section --&gt;
 &lt;p&gt;&lt;strong style="font-size: 0.8em; letter-spacing: 1px;"&gt;AUTHORS:&lt;/strong&gt;
