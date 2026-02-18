@@ -2,7 +2,7 @@
 title: "On the Mechanism and Dynamics of Modular Addition: Fourier Features, Lottery Ticket, and Grokking"
 date: 2025-06-18
 author: "Jianliang He, Leda Wang, Siyu Chen, Zhuoran Yang"
-cover: /images/modular_addition_feature_learning/module_addition_main.png
+cover: /images/modular_addition_feature_learning/figure_blog.jpeg
 categories:
   - "Research Blog"
 tags:
@@ -79,28 +79,24 @@ toc: true
   }
 </style>
 
-<div style="position: relative; width: 100%; margin-bottom: 2em;">
-  <!-- Background image -->
-  <img src="/images/modular_addition_feature_learning/figure_blog.jpeg" style="width: 100%; display: block; filter: brightness(0.35);" alt="">
-  <!-- Overlay text -->
-  <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white; padding: 2em;">
-    <h1 style="font-size: 2em; margin: 0 0 0.3em 0; color: white; line-height: 1.2;">On the Mechanism and Dynamics of Modular Addition:<br>Fourier Features, Lottery Ticket, and Grokking</h1>
-    <p style="font-size: 1.1em; margin: 0.3em 0; color: #e0e0e0;">
-      <a href="https://jlianghe.github.io/" style="color: #8ecfff;">Jianliang He</a>,
-      <a href="https://futwangalerda.github.io/" style="color: #8ecfff;">Leda Wang</a>,
-      <a href="https://ffishy-git.github.io/" style="color: #8ecfff;">Siyu Chen</a>,
-      <a href="https://zhuoranyang.github.io/" style="color: #8ecfff;">Zhuoran Yang</a>
-    </p>
-    <p style="font-size: 0.95em; margin: 0.2em 0 0.8em 0; color: #cccccc; font-style: italic;">Department of Statistics and Data Science, Yale University</p>
-    <p style="margin: 0;">
-      <a href="#" style="color: white; background: rgba(255,255,255,0.2); padding: 6px 16px; border-radius: 20px; text-decoration: none; margin: 0 4px;">arXiv</a>
-      <a href="https://github.com/Y-Agent/modular-addition-feature-learning" style="color: white; background: rgba(255,255,255,0.2); padding: 6px 16px; border-radius: 20px; text-decoration: none; margin: 0 4px;">Code</a>
-      <a href="#" style="color: white; background: rgba(255,255,255,0.2); padding: 6px 16px; border-radius: 20px; text-decoration: none; margin: 0 4px;">Demo</a>
-    </p>
-  </div>
-</div>
+<strong style="font-size: 0.8em; letter-spacing: 1px;">AUTHORS:</strong>
+<small>
+<a href="https://jlianghe.github.io/">Jianliang He</a>,
+<a href="https://futwangalerda.github.io/">Leda Wang</a>,
+<a href="https://ffishy-git.github.io/">Siyu Chen</a>,
+<a href="https://zhuoranyang.github.io/">Zhuoran Yang</a>
+</small>
 
-Background Figure: A two-layer neural network (left) learns to compute $17 + 9 = 3 \pmod{23}$ by discovering Fourier features: each hidden neuron becomes a cosine wave at a single frequency (center). These waves, spread symmetrically with different phases and at different frequencies, combine into a "majority vote" that peaks sharply at the correct answer on the modular number line (right).
+<strong style="font-size: 0.8em; letter-spacing: 1px;">AFFILIATIONS:</strong>
+<small>Department of Statistics and Data Science, Yale University</small>
+
+<strong style="font-size: 0.8em; letter-spacing: 1px;">LINKS:</strong>
+<small>
+<strong>GitHub:</strong> <a href="https://github.com/Y-Agent/modular-addition-feature-learning" target="_blank">https://github.com/Y-Agent/modular-addition-feature-learning</a>,
+<strong>Demo:</strong> <a href="#" target="_blank">Coming soon</a>
+</small>
+
+<small><em><strong>Cover Figure:</strong> A two-layer neural network (left) learns to compute $17 + 9 = 3 \pmod{23}$ by discovering Fourier features: each hidden neuron becomes a cosine wave at a single frequency (center). These waves, spread symmetrically with different phases and at different frequencies, combine into a "majority vote" that peaks sharply at the correct answer on the modular number line (right).</em></small>
 
 ---
 
