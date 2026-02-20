@@ -97,7 +97,7 @@ toc: true
 
 <strong style="font-size: 0.85em; letter-spacing: 1px; color: #3B9DD9;">LINKS:</strong>
 <span style="font-size: 0.9em;">
-<strong style="color: #D98C3B;">arXiv:</strong> <a href="#" target="_blank">Coming soon</a> &nbsp;|&nbsp;
+<strong style="color: #D98C3B;">arXiv:</strong> <a href="https://arxiv.org/abs/2602.16849" target="_blank"><strong>2602.16849</strong></a> &nbsp;|&nbsp;
 <strong style="color: #4CAF7D;">GitHub:</strong> <a href="https://github.com/Y-Agent/modular-addition-feature-learning" target="_blank"><strong>Code</strong></a> &nbsp;|&nbsp;
 <strong style="color: #A96CD5;">Demo:</strong> <a href="https://huggingface.co/spaces/y-agent/modular-addition-feature-learning" target="_blank"><strong>HuggingFace Space</strong></a>
 </span>
@@ -630,7 +630,7 @@ Our results have several implications beyond the specific setting of modular add
   title={On the Mechanism, Dynamics, and Grokking of Modular Addition:
          Fourier Features, Lottery Ticket, and Feature Learning},
   author={He, Jianliang and Wang, Leda and Chen, Siyu and Yang, Zhuoran},
-  journal={arXiv preprint},
-  year={2024}
+  journal={arXiv preprint arXiv:2602.16849},
+  year={2025}
 }
 ```
