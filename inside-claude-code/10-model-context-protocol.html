@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Model Context Protocol – Inside Claude Code</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./12-skills-system.html" rel="next">
+<link href="./09-auth-providers-flags.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-f2aa3fcab4a3c0cbb1a885f128e95a4e.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-4486e80548b20dd029182ccec781b91c.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-f2aa3fcab4a3c0cbb1a885f128e95a4e.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-e429c51d478a3f7fe436edff7d8b5e18.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-89366f393ab88770656785fe4740de67.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-e429c51d478a3f7fe436edff7d8b5e18.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<meta name="mermaid-theme" content="neutral">
+<script src="site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Palatino+Linotype&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="styles/custom.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Inside Claude Code</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="./index.html" aria-current="page"> 
+<span class="menu-text">Series Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./explorer-dist/index.html" target="_blank"> 
+<span class="menu-text">Code Explorer</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ZhuoranYang/claude_code_analysis"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./10-model-context-protocol.html">VI. Extensions</a></li><li class="breadcrumb-item"><a href="./10-model-context-protocol.html">VI.1 — Model Context Protocol</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Inside Claude Code</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./explorer-dist/index.html" class="sidebar-item-text sidebar-link" target="_blank">
+ <span class="menu-text">Code Explorer</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false">
+ <span class="menu-text">I. Overview</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./00-birds-eye-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">I.1 — Bird’s Eye Architecture</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-end-to-end-workflow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">I.2 — End-to-End Workflow</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false">
+ <span class="menu-text">II. Agent Harness</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-agent-loop-query-engine.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.1 — Agent Loop &amp; Query Engine</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./15-agent-sdk-structured-io.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.2 — Agent SDK &amp; Structured I/O</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-multi-agent-orchestration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.3 — Multi-Agent Orchestration</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./19-plan-mode.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.4 — Plan Mode</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false">
+ <span class="menu-text">III. Context Engineering</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-prompt-assembly.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.1 — Prompt Assembly</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-context-compaction.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.2 — Context Compaction</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./17-memory-hierarchy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.3 — Memory Hierarchy</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./11-hooks-lifecycle.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.4 — Hooks &amp; Lifecycle</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false">
+ <span class="menu-text">IV. Tools</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-tool-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IV.1 — Tool System &amp; Registry</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-safety-sandbox.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IV.2 — Safety &amp; Sandbox</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false">
+ <span class="menu-text">V. Invocation</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-cli-commands-ui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">V.1 — CLI, Commands &amp; UI</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-auth-providers-flags.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">V.2 — Auth, Providers &amp; Flags</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">VI. Extensions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./10-model-context-protocol.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">VI.1 — Model Context Protocol</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./12-skills-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.2 — Skills System</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./13-plugin-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.3 — Plugin Architecture</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="false">
+ <span class="menu-text">VII. Remote Runtime</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./16-remote-runtime-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VII.1 — Remote Runtime &amp; Bridge</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="false">
+ <span class="menu-text">VIII. Native Runtime</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./18-native-runtime-voice-portability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VIII.1 — Native Runtime, Voice &amp; Portability</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="false">
+ <span class="menu-text">IX. Transparency &amp; Trust</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./14-hidden-costs-context-manipulation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IX.1 — Transparency &amp; Trust</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction-the-n-times-m-integration-problem" id="toc-introduction-the-n-times-m-integration-problem" class="nav-link active" data-scroll-target="#introduction-the-n-times-m-integration-problem">Introduction: The <span class="math inline">\(N \times M\)</span> Integration Problem</a></li>
+  <li><a href="#protocol-design-json-rpc-over-three-transports" id="toc-protocol-design-json-rpc-over-three-transports" class="nav-link" data-scroll-target="#protocol-design-json-rpc-over-three-transports">Protocol Design: JSON-RPC over Three Transports</a></li>
+  <li><a href="#tool-discovery-dynamic-capability-registration" id="toc-tool-discovery-dynamic-capability-registration" class="nav-link" data-scroll-target="#tool-discovery-dynamic-capability-registration">Tool Discovery: Dynamic Capability Registration</a></li>
+  <li><a href="#transport-layers-stdio-sse-streamable-http" id="toc-transport-layers-stdio-sse-streamable-http" class="nav-link" data-scroll-target="#transport-layers-stdio-sse-streamable-http">Transport Layers: stdio, SSE, Streamable HTTP</a>
+  <ul class="collapse">
+  <li><a href="#stdio-the-local-default" id="toc-stdio-the-local-default" class="nav-link" data-scroll-target="#stdio-the-local-default">stdio: The Local Default</a></li>
+  <li><a href="#sse-remote-servers-via-http" id="toc-sse-remote-servers-via-http" class="nav-link" data-scroll-target="#sse-remote-servers-via-http">SSE: Remote Servers via HTTP</a></li>
+  <li><a href="#http-streamable-with-oauth" id="toc-http-streamable-with-oauth" class="nav-link" data-scroll-target="#http-streamable-with-oauth">HTTP: Streamable with OAuth</a></li>
+  <li><a href="#websocket-the-browser-bridge" id="toc-websocket-the-browser-bridge" class="nav-link" data-scroll-target="#websocket-the-browser-bridge">WebSocket: The Browser Bridge</a></li>
+  </ul></li>
+  <li><a href="#security-model-permissions-and-annotations" id="toc-security-model-permissions-and-annotations" class="nav-link" data-scroll-target="#security-model-permissions-and-annotations">Security Model: Permissions and Annotations</a></li>
+  <li><a href="#server-examples-and-the-three-tool-tiers" id="toc-server-examples-and-the-three-tool-tiers" class="nav-link" data-scroll-target="#server-examples-and-the-three-tool-tiers">Server Examples and the Three Tool Tiers</a>
+  <ul class="collapse">
+  <li><a href="#connection-lifecycle-the-state-machine" id="toc-connection-lifecycle-the-state-machine" class="nav-link" data-scroll-target="#connection-lifecycle-the-state-machine">Connection Lifecycle: The State Machine</a></li>
+  <li><a href="#cache-economics-of-mcp-instructions" id="toc-cache-economics-of-mcp-instructions" class="nav-link" data-scroll-target="#cache-economics-of-mcp-instructions">Cache Economics of MCP Instructions</a></li>
+  </ul></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">Summary</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./10-model-context-protocol.html">VI. Extensions</a></li><li class="breadcrumb-item"><a href="./10-model-context-protocol.html">VI.1 — Model Context Protocol</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Model Context Protocol</h1>
+<p class="subtitle lead">The LSP of AI agents – a universal tool protocol that turns <span class="math inline">\(N 	imes M\)</span> into <span class="math inline">\(N + M\)</span></p>
+  <div class="quarto-categories">
+    <div class="quarto-category">mcp</div>
+    <div class="quarto-category">extensibility</div>
+    <div class="quarto-category">protocol</div>
+  </div>
+  </div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="introduction-the-n-times-m-integration-problem" class="level2">
+<h2 class="anchored" data-anchor-id="introduction-the-n-times-m-integration-problem">Introduction: The <span class="math inline">\(N \times M\)</span> Integration Problem</h2>
+<p>An AI coding agent needs to connect to many external services – GitHub for pull requests, Postgres for database queries, Jira for issue tracking, Slack for notifications. Without a standard protocol, every agent-service pair requires a bespoke integration: 5 agents talking to 20 services means 100 custom adapters. This is an <span class="math inline">\(N \times M\)</span> problem. The <span class="kw-terra">Model Context Protocol (MCP)</span> standardizes the interface between AI agents and tool services, reducing the cost to <span class="math inline">\(N + M\)</span>: one adapter per agent, one adapter per service, and any agent talks to any service. 5 + 20 = 25 instead of 100.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-nm-reduction" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-nm-reduction-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-nm-reduction">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart LR
+  subgraph Without["Without Protocol: N x M"]
+    direction LR
+    c1["Claude Code"] ~~~ s1["GitHub"]
+    c2["Cursor"] ~~~ s2["Postgres"]
+    c3["Copilot"] ~~~ s3["Jira"]
+    c1 --- s1
+    c1 --- s2
+    c1 --- s3
+    c2 --- s1
+    c2 --- s2
+    c2 --- s3
+    c3 --- s1
+    c3 --- s2
+    c3 --- s3
+  end
+
+  subgraph With["With MCP: N + M"]
+    direction LR
+    c4["Claude Code"] --&gt; MCP["&lt;b&gt;MCP&lt;/b&gt;"]
+    c5["Cursor"] --&gt; MCP
+    c6["Copilot"] --&gt; MCP
+    MCP --&gt; s4["GitHub"]
+    MCP --&gt; s5["Postgres"]
+    MCP --&gt; s6["Jira"]
+  end
+  style c1 fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style s1 fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style c2 fill:#C2856E,color:#fff,stroke:#A06A54
+  style s2 fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style c3 fill:#C4A882,color:#fff,stroke:#A08562
+  style s3 fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style c4 fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style MCP fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style c5 fill:#C2856E,color:#fff,stroke:#A06A54
+  style c6 fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style s4 fill:#C4A882,color:#fff,stroke:#A08562
+  style s5 fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style s6 fill:#8B9DAF,color:#fff,stroke:#6E7F91
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-nm-reduction-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: The N x M to N + M reduction illustrated with three clients and three services. Without a standard protocol, every client-server pair requires a bespoke adapter (9 total), and the count grows quadratically. With MCP as a universal intermediary, each side implements one adapter (3 + 3 = 6), and adding a new client or service costs exactly one adapter rather than N or M. This is the same economic argument that drove adoption of ODBC, LSP, and USB.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> The left subgraph (“Without Protocol”) shows every client connected to every service with 9 individual links – this is the N x M explosion. The right subgraph (“With MCP”) shows the same three clients and three services routed through a single MCP hub, requiring only 6 adapters total. The takeaway is that adding a fourth client or service on the left adds 3 new links, while on the right it adds exactly 1. <strong>Source files covered in this post:</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 28%">
+<col style="width: 42%">
+<col style="width: 28%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Purpose</th>
+<th>Size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>src/services/mcp/client.ts</code></td>
+<td>MCP client implementation (connection, tool registration)</td>
+<td>~1,500 LOC</td>
+</tr>
+<tr class="even">
+<td><code>src/services/mcp/auth.ts</code></td>
+<td>MCP authentication (OAuth, API keys)</td>
+<td>~1,100 LOC</td>
+</tr>
+<tr class="odd">
+<td><code>src/services/mcp/config.ts</code></td>
+<td>MCP server configuration and discovery</td>
+<td>~600 LOC</td>
+</tr>
+<tr class="even">
+<td><code>src/services/mcp/normalization.ts</code></td>
+<td>Tool name sanitization and namespacing</td>
+<td>~200 LOC</td>
+</tr>
+<tr class="odd">
+<td><code>src/services/mcp/types.ts</code></td>
+<td>MCP type definitions</td>
+<td>~150 LOC</td>
+</tr>
+<tr class="even">
+<td><code>src/tools/MCPTool/</code></td>
+<td>MCP tool invocation and result formatting</td>
+<td>6 files</td>
+</tr>
+<tr class="odd">
+<td><code>src/tools/ListMcpResourcesTool/</code></td>
+<td>MCP resource listing</td>
+<td>~5 files</td>
+</tr>
+<tr class="even">
+<td><code>src/tools/ReadMcpResourceTool/</code></td>
+<td>MCP resource reading</td>
+<td>~5 files</td>
+</tr>
+<tr class="odd">
+<td><code>src/tools/McpAuthTool/</code></td>
+<td>MCP authentication tool</td>
+<td>~3 files</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="protocol-design-json-rpc-over-three-transports" class="level2">
+<h2 class="anchored" data-anchor-id="protocol-design-json-rpc-over-three-transports">Protocol Design: JSON-RPC over Three Transports</h2>
+<p>MCP’s wire format is <span class="kw-terra">JSON-RPC 2.0</span> – the same protocol LSP uses. Every message is a JSON object with a <code>method</code>, <code>params</code>, and either an <code>id</code> (for requests expecting responses) or no <code>id</code> (for notifications). This choice is not accidental: JSON-RPC is minimal, language-agnostic, and well-understood. It has none of the overhead of gRPC’s protobuf or GraphQL’s query parsing, and none of the ambiguity of custom text protocols.</p>
+<p>The architecture consists of three layers: a <span class="kw-sage">configuration layer</span> (where servers are defined), a <span class="kw-sage">client layer</span> (where connections are managed), and a <span class="kw-sage">transport layer</span> (how bytes move). Understanding the layers explains why MCP can be simultaneously simple to use and complex to implement.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-mcp-architecture" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-mcp-architecture-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-mcp-architecture">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart TD
+  subgraph Config["Configuration Layer"]
+    C1[".claude/&lt;br&gt;settings.json"]
+    C2["~/.claude/&lt;br&gt;settings.json"]
+    C3[".mcp.json&lt;br&gt;per-directory"]
+    C4["claude mcp&lt;br&gt;CLI commands"]
+  end
+
+  subgraph Client["Client Layer"]
+    CL1["Connection&lt;br&gt;Manager"]
+    CL2["Tool&lt;br&gt;Registry"]
+    CL3["Resource&lt;br&gt;Manager"]
+    CL4["Reconnection&lt;br&gt;Logic"]
+  end
+
+  subgraph Transport["Transport Layer"]
+    T1["&lt;b&gt;stdio&lt;/b&gt;&lt;br&gt;&lt;i&gt;local process&lt;/i&gt;"]
+    T2["&lt;b&gt;SSE&lt;/b&gt;&lt;br&gt;&lt;i&gt;remote server&lt;/i&gt;"]
+    T3["&lt;b&gt;HTTP&lt;/b&gt;&lt;br&gt;&lt;i&gt;OAuth + stream&lt;/i&gt;"]
+    T4["&lt;b&gt;WebSocket&lt;/b&gt;&lt;br&gt;&lt;i&gt;browser bridge&lt;/i&gt;"]
+  end
+
+  Config --&gt; Client --&gt; Transport
+  style C1 fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style C2 fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style C3 fill:#C2856E,color:#fff,stroke:#A06A54
+  style C4 fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style CL1 fill:#C4A882,color:#fff,stroke:#A08562
+  style CL2 fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style CL3 fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style CL4 fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style T1 fill:#C2856E,color:#fff,stroke:#A06A54
+  style T2 fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style T3 fill:#C4A882,color:#fff,stroke:#A08562
+  style T4 fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-mcp-architecture-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: MCP architecture stack organized into three layers. The configuration layer merges settings from project, user, per-directory, and CLI sources with clear precedence rules. The client layer manages connection state, tool registration, resource access, and reconnection logic. The transport layer abstracts four communication mechanisms – stdio for local processes, SSE for team servers, streamable HTTP with OAuth for enterprise environments, and WebSocket for browser extension bridges – letting the same JSON-RPC messages flow over any channel.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Start at the top with the Configuration Layer, where four sources of server definitions feed into the Client Layer below. The Client Layer manages connections, tool registration, resources, and reconnection. Arrows flow downward into the Transport Layer, which shows the four concrete mechanisms (stdio, SSE, HTTP, WebSocket) over which JSON-RPC messages travel. The key takeaway is that the same client logic works regardless of which transport is used at the bottom.</p>
+<p>The configuration layer is intentionally pluralistic. Project-level settings (<code>.claude/settings.json</code>) define servers specific to a repository. User-level settings (<code>~/.claude/settings.json</code>) define servers that follow you across projects. The <code>.mcp.json</code> file provides per-directory overrides. The resolution order (project &gt; user &gt; dynamic) means project-specific servers can override user defaults, just as a project’s <code>.bashrc</code> can override <code>~/.bashrc</code>.</p>
+<hr>
+</section>
+<section id="tool-discovery-dynamic-capability-registration" class="level2">
+<h2 class="anchored" data-anchor-id="tool-discovery-dynamic-capability-registration">Tool Discovery: Dynamic Capability Registration</h2>
+<p>When Claude Code starts, it does not know what tools its MCP servers provide. It discovers them through a strict <span class="kw-sage">three-step handshake</span> that mirrors <span class="kw-sage">capability negotiation</span> in protocols from HTTP/2 to TLS.</p>
+<p><strong>Step 1: initialize.</strong> The client sends an <code>initialize</code> request containing its own capabilities (which MCP features it supports). The server responds with its capabilities – which features it implements, what tool types it offers, whether it supports subscriptions. This is capability negotiation: both sides declare what they can do, and the intersection determines what actually happens.</p>
+<p><strong>Step 2: tools/list.</strong> The client calls <code>tools/list</code> to discover every tool the server provides. Each tool comes with a name, description, JSON Schema for its input parameters, and an optional <code>annotations</code> object carrying metadata like <code>readOnly</code> and <code>destructive</code>. The response is paginated for servers with many tools.</p>
+<p><strong>Step 3: register.</strong> For each discovered tool, the client creates a local registration using a deterministic naming scheme:</p>
+<pre><code>mcp__{sanitize(serverName)}__{sanitize(toolName)}</code></pre>
+<p>The <code>sanitize</code> function replaces every non-alphanumeric character with an underscore. This produces names like <code>mcp__github__create_issue</code> or <code>mcp__postgres__run_query</code>. The double-underscore delimiter is chosen because it is unlikely to appear in natural tool or server names, making the name reliably parseable in both directions. This is a classic <span class="kw-sage">namespace flattening</span> technique – the same approach Python uses for name mangling (<code>__private</code> becomes <code>_ClassName__private</code>) and DNS uses for service records (<code>_sip._tcp.example.com</code>).</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-mcp-handshake" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-mcp-handshake-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-mcp-handshake">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+sequenceDiagram
+  participant CC as Claude Code
+  participant SRV as MCP Server
+
+  Note over CC,SRV: Step 1 - Capability Negotiation
+  CC-&gt;&gt;SRV: initialize {capabilities: {tools, resources}}
+  SRV-&gt;&gt;CC: result {capabilities: {tools: {list: true}}}
+
+  Note over CC,SRV: Step 2 - Tool Discovery
+  CC-&gt;&gt;SRV: tools/list
+  SRV-&gt;&gt;CC: [create_issue, list_repos, search_code, ...]
+
+  Note over CC: Step 3 - Local Registration
+  CC-&gt;&gt;CC: Register mcp__github__create_issue
+  CC-&gt;&gt;CC: Register mcp__github__list_repos
+  CC-&gt;&gt;CC: Register mcp__github__search_code
+
+  Note over CC,SRV: Tools now appear in system prompt&lt;br&gt;alongside Read, Write, Bash
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-mcp-handshake-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: The three-step MCP handshake between Claude Code and an MCP server. Step 1 (initialize) performs capability negotiation where both sides declare supported features. Step 2 (tools/list) discovers every tool the server provides, with JSON Schema for each. Step 3 registers each tool locally under a deterministic namespaced name (mcp__server__tool). After this handshake, MCP tools are indistinguishable from built-in tools like Read, Write, and Bash in the model’s context window.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Time flows downward. Claude Code (left) initiates the conversation by sending an <code>initialize</code> request to the MCP Server (right), which responds with its capabilities. Next, Claude Code requests the tool list and receives the available tools. In Step 3, Claude Code talks to itself – registering each discovered tool under a namespaced name like <code>mcp__github__create_issue</code>. After the three steps complete, MCP tools appear alongside built-in tools in the system prompt.</p>
+<p>Once registered, MCP tools are indistinguishable from built-in tools in the model’s context window. The model sees <code>mcp__github__create_issue</code> alongside <code>Read</code> and <code>Write</code> in its tool list, calls it with a <code>tool_use</code> block, and receives a <code>tool_result</code> block. The routing to the MCP server is completely transparent. This is the key design property: <span class="kw-sage">MCP tools are first-class citizens</span> in the tool registry.</p>
+<div class="callout callout-style-default callout-caution callout-titled" title="Pattern Spotted">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Caution</span>Pattern Spotted
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The three-step handshake is the <strong>capability negotiation</strong> pattern found throughout networking. HTTP/2 uses SETTINGS frames for the same purpose: client and server declare what they support, and the connection uses the intersection. TLS does it with cipher suite negotiation. WiFi does it with association frames. The pattern is always: declare, intersect, proceed with the common ground.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="transport-layers-stdio-sse-streamable-http" class="level2">
+<h2 class="anchored" data-anchor-id="transport-layers-stdio-sse-streamable-http">Transport Layers: stdio, SSE, Streamable HTTP</h2>
+<p>MCP defines the messages; transports define how those messages move. Each transport mechanism serves a different deployment scenario with different trade-offs in latency, security, and operational complexity.</p>
+<section id="stdio-the-local-default" class="level3">
+<h3 class="anchored" data-anchor-id="stdio-the-local-default">stdio: The Local Default</h3>
+<p>The <span class="kw-terra">stdio transport</span> spawns a local process and pipes JSON-RPC messages over stdin/stdout. The MCP client calls <code>child_process.spawn()</code> with the configured command, writes JSON to the child’s stdin, and reads JSON from the child’s stdout. Stderr is captured separately for diagnostics – it is not part of the JSON-RPC channel, so the server can safely log debug information to stderr without corrupting the protocol stream.</p>
+<p>This is by far the most common transport, and for good reason: it has the lowest operational complexity. No ports to allocate, no certificates to manage, no firewall rules to configure. A typical configuration:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"mcpServers"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"github"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"command"</span><span class="fu">:</span> <span class="st">"npx"</span><span class="fu">,</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"args"</span><span class="fu">:</span> <span class="ot">[</span><span class="st">"-y"</span><span class="ot">,</span> <span class="st">"@modelcontextprotocol/server-github"</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"env"</span><span class="fu">:</span> <span class="fu">{</span> <span class="dt">"GITHUB_TOKEN"</span><span class="fu">:</span> <span class="st">"${GITHUB_TOKEN}"</span> <span class="fu">}</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <code>env</code> field enables secret injection without hardcoding tokens – <code>${GITHUB_TOKEN}</code> is resolved from the shell environment at spawn time, keeping credentials out of configuration files. The limitation is locality: stdio servers must run on the same machine as Claude Code.</p>
+</section>
+<section id="sse-remote-servers-via-http" class="level3">
+<h3 class="anchored" data-anchor-id="sse-remote-servers-via-http">SSE: Remote Servers via HTTP</h3>
+<p>The <span class="kw-terra">SSE</span> (Server-Sent Events) transport uses HTTP for the request path and SSE for the response path. The client sends JSON-RPC requests via HTTP POST; the server holds open an SSE connection and streams responses back as events. This enables a team to run shared MCP servers on internal infrastructure. One Postgres MCP server serves the entire team, with each developer’s Claude Code connecting over HTTP.</p>
+<p>SSE also enables a deployment pattern impossible with stdio: <strong>centralized upgrades</strong>. When the team’s Postgres MCP server is updated to support a new tool, every developer gets it immediately on their next connection – no local package update, no restart required.</p>
+</section>
+<section id="http-streamable-with-oauth" class="level3">
+<h3 class="anchored" data-anchor-id="http-streamable-with-oauth">HTTP: Streamable with OAuth</h3>
+<p>The <span class="kw-terra">HTTP transport</span> is the enterprise-grade evolution of SSE. It uses streamable HTTP with OAuth 2.0 support – PKCE flows, device code grants, token refresh. The auth implementation alone is <span class="kw-slate">88,754 bytes</span> in the codebase, reflecting the complexity of enterprise identity. HTTP with OAuth is necessary when the MCP server sits behind an identity provider and needs per-user authorization.</p>
+</section>
+<section id="websocket-the-browser-bridge" class="level3">
+<h3 class="anchored" data-anchor-id="websocket-the-browser-bridge">WebSocket: The Browser Bridge</h3>
+<p>The WebSocket transport is specialized: it connects Claude Code to a Chrome browser extension that exposes browser automation tools. The extension registers <span class="kw-slate">8 tools</span> including <code>javascript_tool</code>, <code>read_page</code>, <code>find</code>, <code>form_input</code>, <code>computer</code>, <code>navigate</code>, <code>resize_window</code>, and <code>gif_creator</code>. The WebSocket transport has a 2,000ms timeout for tabs context discovery, reflecting its purpose: browser automation should be fast.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Transport</th>
+<th>Latency</th>
+<th>Auth</th>
+<th>Deployment</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>stdio</td>
+<td>&lt; 1ms</td>
+<td>Process isolation</td>
+<td>Local dev, single user</td>
+</tr>
+<tr class="even">
+<td>SSE</td>
+<td>10–100ms</td>
+<td>Network/token</td>
+<td>Team servers, internal</td>
+</tr>
+<tr class="odd">
+<td>HTTP</td>
+<td>50–200ms</td>
+<td>OAuth 2.0 (PKCE)</td>
+<td>Enterprise, IdP</td>
+</tr>
+<tr class="even">
+<td>WebSocket</td>
+<td>5–50ms</td>
+<td>Extension perms</td>
+<td>Browser automation</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+</section>
+<section id="security-model-permissions-and-annotations" class="level2">
+<h2 class="anchored" data-anchor-id="security-model-permissions-and-annotations">Security Model: Permissions and Annotations</h2>
+<p>MCP tools do not bypass Claude Code’s permission system. They go through the same <span class="kw-sage">three-tier architecture</span> as built-in tools (see <a href="./06-safety-sandbox.html">Part IV.2</a>), with annotations providing the metadata that permissions need.</p>
+<p>Every MCP tool can carry an <code>annotations</code> object with two key fields:</p>
+<ul>
+<li><strong><code>readOnly: true</code></strong> – The tool does not modify external state. In permissive permission modes, read-only tools may be auto-approved without prompting the user.</li>
+<li><strong><code>destructive: true</code></strong> – The tool modifies external state in a way that may be difficult to reverse. Destructive tools always prompt for confirmation, even in the most permissive mode.</li>
+</ul>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-mcp-permissions" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-mcp-permissions-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-mcp-permissions">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart TD
+  toolcall["Model outputs&lt;br&gt;tool use block"]
+  parse["findToolByName()&lt;br&gt;Is this mcp__* ?"]
+  splitns["Parse server and tool&lt;br&gt;from namespaced name"]
+  perm{"Check annotations&lt;br&gt;and permission mode"}
+
+  approve["Auto-approve&lt;br&gt;readOnly, permissive"]
+  prompt["Prompt user&lt;br&gt;destructive or unknown"]
+  blocked["Block&lt;br&gt;denied by policy"]
+
+  route["Route to MCP server&lt;br&gt;return tool result"]
+
+  toolcall --&gt; parse --&gt; splitns --&gt; perm
+  perm --&gt; approve
+  perm --&gt; prompt
+  perm --&gt; blocked
+  approve --&gt; route
+  prompt --&gt; route
+  style toolcall fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style parse fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style splitns fill:#C2856E,color:#fff,stroke:#A06A54
+  style perm fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style approve fill:#C4A882,color:#fff,stroke:#A08562
+  style prompt fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style blocked fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style route fill:#9CAF88,color:#fff,stroke:#7A8D68
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-mcp-permissions-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4: Permission flow for MCP tools, which follows the identical three-tier path as built-in tools. The namespaced tool name is parsed to identify the originating server, then annotations (readOnly, destructive) and the current permission mode determine the outcome: auto-approve, prompt the user, or block. This uniform treatment is the Liskov Substitution Principle applied at the tool level – no special-case branching for MCP tools anywhere in the permission or hook code.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Start at the top where the model outputs a tool use block. The flow moves downward through name parsing and server/tool extraction, arriving at the diamond-shaped decision node that checks annotations and the current permission mode. Three branches fan out: auto-approve (for read-only tools in permissive mode), prompt the user (for destructive or unknown tools), or block (if denied by policy). Both the approve and prompt paths converge on routing the call to the MCP server, while the block path is a dead end.</p>
+<p>Pre-tool-use and post-tool-use hooks also fire for MCP tools. A hook configured to match <code>mcp__github__*</code> will intercept every GitHub MCP tool call. This means the same audit logging, policy enforcement, and automation that works for built-in tools works identically for MCP tools. The model, the permission system, and the hook system all treat MCP tools as first-class.</p>
+<hr>
+</section>
+<section id="server-examples-and-the-three-tool-tiers" class="level2">
+<h2 class="anchored" data-anchor-id="server-examples-and-the-three-tool-tiers">Server Examples and the Three Tool Tiers</h2>
+<p>Claude Code operates with three categories of tools, each running in a different process with different trust and performance characteristics.</p>
+<p><strong>Built-in tools</strong> are TypeScript functions compiled into the Claude Code binary. They run in-process, have direct access to the filesystem and shell, and are subject to the local platform sandbox (see <a href="./06-safety-sandbox.html">Part IV.2</a>). They are the fastest tools because there is no inter-process communication.</p>
+<p><strong>MCP tools</strong> run in a separate process or on a remote server. They communicate via JSON-RPC, which adds serialization overhead and network latency. But they can be written in any language and can access services that are not available locally – GitHub, Postgres, Jira, and any custom API.</p>
+<p><strong>Server-side tools</strong> are a third category that many users do not realize exists. When the Anthropic API response contains a <code>server_tool_use</code> content block, it means the model invoked a tool that ran on Anthropic’s infrastructure – not on the user’s machine. <code>web_search</code>, <code>web_fetch</code>, and <code>code_execution</code> are server-side tools. They do not go through Claude Code’s permission system or sandbox, because they never execute locally.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Attribute</th>
+<th>Built-in</th>
+<th>MCP</th>
+<th>Server-side</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Location</td>
+<td>In-process</td>
+<td>Cross-process/remote</td>
+<td>Anthropic cloud</td>
+</tr>
+<tr class="even">
+<td>Latency</td>
+<td>&lt; 0.1ms</td>
+<td>1–200ms</td>
+<td>200ms–2s</td>
+</tr>
+<tr class="odd">
+<td>Count</td>
+<td>40+</td>
+<td>Unlimited</td>
+<td>3–5</td>
+</tr>
+<tr class="even">
+<td>Sandbox</td>
+<td>OS-level</td>
+<td>Server-side</td>
+<td>Managed</td>
+</tr>
+<tr class="odd">
+<td>Permission</td>
+<td>3-tier</td>
+<td>3-tier + annotations</td>
+<td>API-level</td>
+</tr>
+<tr class="even">
+<td>Language</td>
+<td>TypeScript</td>
+<td>Any</td>
+<td>N/A</td>
+</tr>
+</tbody>
+</table>
+<p>Anthropic also operates a cloud MCP proxy at <code>mcp-proxy.anthropic.com</code> that hosts managed servers, eliminating the need for local installation. The proxy supports two patterns: direct proxy (the server runs entirely in Anthropic’s cloud) and toolbox proxy (Anthropic’s infrastructure proxies to an external service). This creates a two-tier ecosystem analogous to AWS: managed services for common needs and the open protocol for everything custom.</p>
+<section id="connection-lifecycle-the-state-machine" class="level3">
+<h3 class="anchored" data-anchor-id="connection-lifecycle-the-state-machine">Connection Lifecycle: The State Machine</h3>
+<p>Each MCP server connection is managed by a state machine with six states. The state machine handles the messy reality of long-running connections: servers crash, networks drop, processes exit unexpectedly.</p>
+<p>The reconnection logic uses exponential backoff with a floor of 1,000ms and a ceiling of 30,000ms. After 5 failed attempts, the server transitions to <code>error</code> state and stops reconnecting. The user can manually retry or disable the server entirely. A disabled server is a terminal state – it will not reconnect until explicitly re-enabled. The tool call timeout is 120,000ms (2 minutes), accommodating long-running operations like database migrations or complex API queries.</p>
+<p>A subtle race condition arises when the model calls an MCP tool while the server is reconnecting. The tool call is queued and executed once the connection is re-established – or fails if the server transitions to <code>error</code> or <code>disabled</code>. This queuing prevents the model from seeing transient connection failures as permanent tool unavailability.</p>
+<div class="callout callout-style-default callout-caution callout-titled" title="Pattern Spotted">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Caution</span>Pattern Spotted
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>This is the <span class="kw-sage">Circuit Breaker pattern</span> from distributed systems. A circuit breaker has three states: closed (requests flow through), open (requests are rejected), and half-open (a test request determines if the service has recovered). MCP’s state machine has the same structure: <code>connected</code> is closed, <code>error</code>/<code>disabled</code> is open, and <code>reconnecting</code> is half-open. The exponential backoff prevents thundering herd problems, just as a circuit breaker prevents cascading failures.</p>
+</div>
+</div>
+</section>
+<section id="cache-economics-of-mcp-instructions" class="level3">
+<h3 class="anchored" data-anchor-id="cache-economics-of-mcp-instructions">Cache Economics of MCP Instructions</h3>
+<p>MCP servers can inject instructions into Claude Code’s system prompt – text explaining how to use the server’s tools, domain context (such as a database schema), or conventions (“always use parameterized queries”). This is architecturally significant: the MCP instructions section is the <span class="kw-sage">only cache-breaking region</span> in Claude Code’s entire system prompt.</p>
+<p>The system prompt is roughly <span class="kw-slate">15,000+ tokens</span> of carefully-crafted instructions. Anthropic’s <span class="kw-mauve">prompt caching</span> stores this verbatim and reuses it across turns, saving 90% of input token costs. But caching requires byte-for-byte identity. MCP servers can connect and disconnect between turns, so their instructions must be recomputed every time.</p>
+<p>A 200-token MCP instruction costs 200 tokens at full price on every turn. The same 200 tokens in the cached region would cost only 10% per turn – a 10x difference. Over a 50-turn session, that is 10,000 token-equivalents (cache-breaking) versus 1,000 token-equivalents (cached). The implication is direct: MCP server authors should keep their instructions as short as possible.</p>
+<div class="callout callout-style-default callout-warning callout-titled" title="Trade-off">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Trade-off
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>MCP instructions give server authors powerful control over how the model uses their tools – but at a direct, per-turn cost. The design deliberately accepts this cost because the alternative (no server instructions, model must figure out tools from schema alone) leads to worse tool usage and more wasted turns. The right approach is not to avoid instructions but to write them as concisely as possible.</p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="summary" class="level2">
+<h2 class="anchored" data-anchor-id="summary">Summary</h2>
+<p>The Model Context Protocol reveals several design principles that extend beyond AI agents into any system integrating with a growing ecosystem of services.</p>
+<p><strong>The <span class="math inline">\(N \times M\)</span> to <span class="math inline">\(N + M\)</span> reduction is the single most important insight in protocol design.</strong> When client-service pairs grow quadratically, a standard protocol is not a luxury – it is an economic necessity. MCP, like ODBC and LSP before it, trades protocol standardization effort (paid once) for integration effort (paid <span class="math inline">\(N \times M\)</span> times). The math always favors the standard once M exceeds 3 or 4.</p>
+<p><strong>Cache-breaking injection is the primary engineering cost.</strong> The protocol itself is simple. The transports are well-understood. The real complexity lies in the cache economics: MCP server instructions are the only volatile section in a 15K+ token system prompt, and every token there costs 10x what it would cost in the cached region. This is a concrete, measurable trade-off.</p>
+<p><strong>First-class citizenship for external tools is non-negotiable.</strong> MCP tools go through the same permission system, the same hook pipeline (see <a href="./11-hooks-lifecycle.html">Part III.4</a>), and the same result formatting as built-in tools. If they did not, the system would need <code>if (isMCPTool)</code> branches throughout the codebase, and every new feature would need to be implemented twice. The <span class="kw-sage">Liskov Substitution Principle</span> is not an academic nicety here; it is what makes MCP operationally viable.</p>
+<p><strong>Transport abstraction enables ecosystem growth.</strong> By decoupling the protocol from the transport, MCP can serve local processes (stdio), team servers (SSE), enterprise environments (HTTP + OAuth), and browser extensions (WebSocket) with the same message format. Each new transport expands the ecosystem’s reach without changing the protocol – the same insight that made TCP/IP successful.</p>
+<hr>
+<p><em>Next in the series: <a href="./11-hooks-lifecycle.html">Part III.4: Hooks &amp; Lifecycle Events</a> – over 25 lifecycle events for safety, auditing, and behavior modification without touching core code.</em></p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./09-auth-providers-flags.html" class="pagination-link" aria-label="V.2 — Auth, Providers &amp; Flags">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">V.2 — Auth, Providers &amp; Flags</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./12-skills-system.html" class="pagination-link" aria-label="VI.2 — Skills System">
+        <span class="nav-page-text">VI.2 — Skills System</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.quarto-figure img[src$=".svg"]:not(.nozoom)').forEach(function(img) {
+    fetch(img.src).then(r => r.text()).then(function(svgText) {
+      var div = document.createElement('div');
+      div.innerHTML = svgText;
+      var svg = div.querySelector('svg');
+      if (svg) {
+        var vb = svg.getAttribute('viewBox');
+        if (vb) {
+          var parts = vb.split(/\s+/);
+          var w = parseFloat(parts[2]), h = parseFloat(parts[3]);
+          var ratio = h / w;
+          var containerH = Math.max(250, Math.min(700, 900 * ratio));
+          svg.style.width = '100%';
+          svg.style.height = containerH + 'px';
+        } else {
+          svg.style.width = '100%';
+          svg.style.height = '400px';
+        }
+        svg.style.border = '1px solid var(--bs-border-color, #dee2e6)';
+        svg.style.borderRadius = '6px';
+        svg.style.cursor = 'grab';
+        svg.style.background = 'var(--bs-body-bg, #fff)';
+        img.parentNode.replaceChild(svg, img);
+        svgPanZoom(svg, {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true, minZoom: 0.5, maxZoom: 10});
+      }
+    });
+  });
+  // Mermaid post-processing: apply Palatino font + pan-zoom
+  function initMermaid() {
+    document.querySelectorAll('.cell-output-display svg').forEach(function(svg) {
+      if (svg.dataset.mInit) return;
+      svg.dataset.mInit = '1';
+      // Step 1: Apply Palatino to all text AFTER Mermaid layout
+      svg.querySelectorAll('.nodeLabel, .edgeLabel, .cluster-label span, text').forEach(function(el) {
+        el.style.fontFamily = '"Palatino Linotype", Palatino, Georgia, serif';
+      });
+      // Step 2: Ensure foreignObjects don't clip
+      svg.querySelectorAll('foreignObject').forEach(function(fo) {
+        fo.style.overflow = 'visible';
+      });
+      // Step 3: Size the container
+      var vb = svg.getAttribute('viewBox');
+      if (vb) {
+        var parts = vb.split(/[\s,]+/);
+        var w = parseFloat(parts[2]), h = parseFloat(parts[3]);
+        var ratio = h / w;
+        var containerH = Math.max(350, Math.min(800, 900 * ratio));
+        svg.style.width = '100%';
+        svg.style.height = containerH + 'px';
+      } else {
+        svg.style.width = '100%';
+        svg.style.height = '500px';
+      }
+      svg.style.border = '1px solid var(--bs-border-color, #dee2e6)';
+      svg.style.borderRadius = '6px';
+      svg.style.cursor = 'grab';
+      svg.style.background = 'var(--bs-body-bg, #fff)';
+      // Step 4: Enable pan-zoom
+      try {
+        svgPanZoom(svg, {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true, minZoom: 0.5, maxZoom: 10});
+      } catch(e) {}
+    });
+  }
+  setTimeout(initMermaid, 800);
+  setTimeout(initMermaid, 2000);
+  setTimeout(initMermaid, 4000);
+});
+</script>
+
+
+
+
+</body></html>

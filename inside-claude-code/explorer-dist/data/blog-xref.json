@@ -1,0 +1,142 @@
+[
+  {
+    "post": "00-birds-eye-architecture",
+    "title": "Bird's Eye Architecture",
+    "section": "I. Overview",
+    "modules": ["*"],
+    "url": "../00-birds-eye-architecture.html"
+  },
+  {
+    "post": "01-end-to-end-workflow",
+    "title": "End-to-End Workflow",
+    "section": "I. Overview",
+    "modules": ["query", "bridge", "services/api", "tools"],
+    "url": "../01-end-to-end-workflow.html"
+  },
+  {
+    "post": "02-agent-loop-query-engine",
+    "title": "Agent Loop & Query Engine",
+    "section": "II. Agent Harness",
+    "modules": ["query", "bridge", "tools"],
+    "url": "../02-agent-loop-query-engine.html"
+  },
+  {
+    "post": "15-agent-sdk-structured-io",
+    "title": "Agent SDK & Structured I/O",
+    "section": "II. Agent Harness",
+    "modules": ["entrypoints/sdk", "bridge", "query"],
+    "url": "../15-agent-sdk-structured-io.html"
+  },
+  {
+    "post": "07-multi-agent-orchestration",
+    "title": "Multi-Agent Orchestration",
+    "section": "II. Agent Harness",
+    "modules": ["tools/AgentTool", "tools/SendMessageTool", "tools/TeamCreateTool", "coordinator", "buddy"],
+    "url": "../07-multi-agent-orchestration.html"
+  },
+  {
+    "post": "19-plan-mode",
+    "title": "Plan Mode",
+    "section": "II. Agent Harness",
+    "modules": ["query", "bridge", "tools"],
+    "url": "../19-plan-mode.html"
+  },
+  {
+    "post": "03-prompt-assembly",
+    "title": "Prompt Assembly",
+    "section": "III. Context Engineering",
+    "modules": ["bridge", "utils", "constants", "services/api"],
+    "url": "../03-prompt-assembly.html"
+  },
+  {
+    "post": "04-context-compaction",
+    "title": "Context Compaction",
+    "section": "III. Context Engineering",
+    "modules": ["services/compact", "bridge", "utils"],
+    "url": "../04-context-compaction.html"
+  },
+  {
+    "post": "17-memory-hierarchy",
+    "title": "Memory Hierarchy",
+    "section": "III. Context Engineering",
+    "modules": ["memdir", "services/extractMemories", "services/autoDream", "services/teamMemorySync", "services/MagicDocs"],
+    "url": "../17-memory-hierarchy.html"
+  },
+  {
+    "post": "11-hooks-lifecycle",
+    "title": "Hooks & Lifecycle",
+    "section": "III. Context Engineering",
+    "modules": ["hooks", "bridge", "utils"],
+    "url": "../11-hooks-lifecycle.html"
+  },
+  {
+    "post": "05-tool-system",
+    "title": "Tool System & Registry",
+    "section": "IV. Tools",
+    "modules": ["tools", "services/tools", "utils/computerUse"],
+    "url": "../05-tool-system.html"
+  },
+  {
+    "post": "06-safety-sandbox",
+    "title": "Safety & Sandbox",
+    "section": "IV. Tools",
+    "modules": ["utils", "tools/BashTool", "services/policyLimits"],
+    "url": "../06-safety-sandbox.html"
+  },
+  {
+    "post": "08-cli-commands-ui",
+    "title": "CLI, Commands & UI",
+    "section": "V. Invocation",
+    "modules": ["cli", "commands", "components", "ink", "services/PromptSuggestion", "services/tips", "buddy", "utils/claudeInChrome", "utils/secureStorage", "utils/nativeInstaller"],
+    "url": "../08-cli-commands-ui.html"
+  },
+  {
+    "post": "09-auth-providers-flags",
+    "title": "Auth, Providers & Flags",
+    "section": "V. Invocation",
+    "modules": ["services/oauth", "services/api", "constants", "utils"],
+    "url": "../09-auth-providers-flags.html"
+  },
+  {
+    "post": "10-model-context-protocol",
+    "title": "Model Context Protocol",
+    "section": "VI. Extensions",
+    "modules": ["services/mcp", "tools/MCPTool", "tools/ListMcpResourcesTool", "tools/ReadMcpResourceTool"],
+    "url": "../10-model-context-protocol.html"
+  },
+  {
+    "post": "12-skills-system",
+    "title": "Skills System",
+    "section": "VI. Extensions",
+    "modules": ["skills", "tools/SkillTool", "commands/skills"],
+    "url": "../12-skills-system.html"
+  },
+  {
+    "post": "13-plugin-architecture",
+    "title": "Plugin Architecture",
+    "section": "VI. Extensions",
+    "modules": ["plugins", "services/plugins", "commands/plugin", "hooks"],
+    "url": "../13-plugin-architecture.html"
+  },
+  {
+    "post": "16-remote-runtime-bridge",
+    "title": "Remote Runtime & Bridge",
+    "section": "VII. Remote Runtime",
+    "modules": ["bridge", "remote", "entrypoints/sdk"],
+    "url": "../16-remote-runtime-bridge.html"
+  },
+  {
+    "post": "18-native-runtime-voice-portability",
+    "title": "Native Runtime, Voice & Portability",
+    "section": "VIII. Native Runtime",
+    "modules": ["utils/vendor", "utils/voice", "utils/nativeModules"],
+    "url": "../18-native-runtime-voice-portability.html"
+  },
+  {
+    "post": "14-hidden-costs-context-manipulation",
+    "title": "Transparency & Trust",
+    "section": "IX. Transparency & Trust",
+    "modules": ["constants/prompts", "services/analytics", "memdir", "services/autoDream", "utils/autoUpdater", "services/remoteManagedSettings", "services/policyLimits", "services/settingsSync"],
+    "url": "../14-hidden-costs-context-manipulation.html"
+  }
+]

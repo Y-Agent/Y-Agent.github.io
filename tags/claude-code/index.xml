@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Claude Code on Y-Agent Research Blog</title><link>https://Y-Agent.github.io/tags/claude-code/</link><description>Recent content in Claude Code on Y-Agent Research Blog</description><generator>Hugo</generator><language>en-US</language><lastBuildDate>Sun, 12 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://Y-Agent.github.io/tags/claude-code/index.xml" rel="self" type="application/rss+xml"/><item><title>Inside Claude Code: A Source-Level Architectural Analysis</title><link>https://Y-Agent.github.io/posts/inside-claude-code/</link><pubDate>Sun, 12 Apr 2026 00:00:00 +0000</pubDate><guid>https://Y-Agent.github.io/posts/inside-claude-code/</guid><description>&lt;script&gt;
+ window.location.href = "/inside-claude-code/index.html";
+&lt;/script&gt;
+&lt;noscript&gt;
+ &lt;meta http-equiv="refresh" content="0;url=https://Y-Agent.github.io/inside-claude-code/index.html"&gt;
+ &lt;p&gt;Please click &lt;a href="https://Y-Agent.github.io/inside-claude-code/index.html"&gt;here&lt;/a&gt; to view the blog series.&lt;/p&gt;
+&lt;/noscript&gt;
+&lt;p&gt;&lt;strong style="font-size: 0.85em; letter-spacing: 1px; color: #3B9DD9;"&gt;AUTHOR:&lt;/strong&gt;
+&lt;small&gt;
+&lt;a href="https://zhuoranyang.github.io/"&gt;Zhuoran Yang&lt;/a&gt;
+&lt;/small&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong style="font-size: 0.85em; letter-spacing: 1px; color: #3B9DD9;"&gt;AFFILIATIONS:&lt;/strong&gt;
+&lt;small&gt;Department of Statistics and Data Science, Yale University&lt;/small&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong style="font-size: 0.85em; letter-spacing: 1px; color: #3B9DD9;"&gt;LINKS:&lt;/strong&gt;
+&lt;span style="font-size: 0.9em;"&gt;
+&lt;strong style="color: #4CAF7D;"&gt;GitHub:&lt;/strong&gt; &lt;a href="https://github.com/ZhuoranYang/claude_code_analysis" target="_blank"&gt;&lt;strong&gt;Source &amp;amp; Data&lt;/strong&gt;&lt;/a&gt;  | 
+&lt;strong style="color: #A96CD5;"&gt;Explorer:&lt;/strong&gt; &lt;a href="https://Y-Agent.github.io/inside-claude-code/explorer-dist/index.html" target="_blank"&gt;&lt;strong&gt;Interactive Code Explorer&lt;/strong&gt;&lt;/a&gt;
+&lt;/span&gt;&lt;/p&gt;
+&lt;h2 id="overview"&gt;Overview&lt;/h2&gt;
+&lt;p&gt;A 20-post deep-dive into the architecture of Claude Code (v2.1.88), Anthropic&amp;rsquo;s AI coding agent — 512K lines of TypeScript, approximately 40 tools behind a three-tier permission system, and ML classifiers that gate every shell command. Topics span the agent loop, context engineering, prompt assembly, tool system, safety sandbox, multi-agent orchestration, MCP, skills, plugins, and more.&lt;/p&gt;</description></item></channel></rss>

@@ -1,0 +1,68 @@
+{
+  "version": "2.1.88",
+  "totalFiles": 1902,
+  "totalDirectories": 300,
+  "topLevelModules": 53,
+  "tools": 40,
+  "commands": 101,
+  "components": 144,
+  "hooks": 85,
+  "services": 36,
+  "prompts": 401,
+  "lifecycleEvents": 10,
+  "agentTypes": 5,
+  "featureFlags": 88,
+  "apiEndpoints": 321,
+  "keybindings": 742,
+  "models": 52,
+  "moduleBreakdown": [
+    {
+      "module": "utils",
+      "files": 564,
+      "pct": 30,
+      "color": "stone"
+    },
+    {
+      "module": "components",
+      "files": 389,
+      "pct": 20.6,
+      "color": "slate"
+    },
+    {
+      "module": "commands",
+      "files": 189,
+      "pct": 10,
+      "color": "terracotta"
+    },
+    {
+      "module": "tools",
+      "files": 184,
+      "pct": 9.8,
+      "color": "sage"
+    },
+    {
+      "module": "hooks",
+      "files": 87,
+      "pct": 4.6,
+      "color": "olive"
+    },
+    {
+      "module": "services",
+      "files": 54,
+      "pct": 2.9,
+      "color": "dustyRose"
+    },
+    {
+      "module": "bridge",
+      "files": 33,
+      "pct": 1.8,
+      "color": "clay"
+    },
+    {
+      "module": "other",
+      "files": 384,
+      "pct": 20.4,
+      "color": "mauve"
+    }
+  ]
+}

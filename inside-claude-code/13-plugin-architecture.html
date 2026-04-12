@@ -1,0 +1,2356 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Plugin Architecture – Inside Claude Code</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./16-remote-runtime-bridge.html" rel="next">
+<link href="./12-skills-system.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-f2aa3fcab4a3c0cbb1a885f128e95a4e.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-4486e80548b20dd029182ccec781b91c.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-f2aa3fcab4a3c0cbb1a885f128e95a4e.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-e429c51d478a3f7fe436edff7d8b5e18.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-89366f393ab88770656785fe4740de67.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-e429c51d478a3f7fe436edff7d8b5e18.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<meta name="mermaid-theme" content="neutral">
+<script src="site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Palatino+Linotype&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+
+
+<link rel="stylesheet" href="styles/custom.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Inside Claude Code</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="./index.html" aria-current="page"> 
+<span class="menu-text">Series Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./explorer-dist/index.html" target="_blank"> 
+<span class="menu-text">Code Explorer</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ZhuoranYang/claude_code_analysis"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./10-model-context-protocol.html">VI. Extensions</a></li><li class="breadcrumb-item"><a href="./13-plugin-architecture.html">VI.3 — Plugin Architecture</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Inside Claude Code</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./explorer-dist/index.html" class="sidebar-item-text sidebar-link" target="_blank">
+ <span class="menu-text">Code Explorer</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false">
+ <span class="menu-text">I. Overview</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./00-birds-eye-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">I.1 — Bird’s Eye Architecture</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-end-to-end-workflow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">I.2 — End-to-End Workflow</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false">
+ <span class="menu-text">II. Agent Harness</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-agent-loop-query-engine.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.1 — Agent Loop &amp; Query Engine</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./15-agent-sdk-structured-io.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.2 — Agent SDK &amp; Structured I/O</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-multi-agent-orchestration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.3 — Multi-Agent Orchestration</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./19-plan-mode.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.4 — Plan Mode</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false">
+ <span class="menu-text">III. Context Engineering</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-prompt-assembly.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.1 — Prompt Assembly</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-context-compaction.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.2 — Context Compaction</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./17-memory-hierarchy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.3 — Memory Hierarchy</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./11-hooks-lifecycle.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.4 — Hooks &amp; Lifecycle</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false">
+ <span class="menu-text">IV. Tools</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-tool-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IV.1 — Tool System &amp; Registry</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-safety-sandbox.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IV.2 — Safety &amp; Sandbox</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false">
+ <span class="menu-text">V. Invocation</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-cli-commands-ui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">V.1 — CLI, Commands &amp; UI</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-auth-providers-flags.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">V.2 — Auth, Providers &amp; Flags</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">VI. Extensions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./10-model-context-protocol.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.1 — Model Context Protocol</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./12-skills-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.2 — Skills System</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./13-plugin-architecture.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">VI.3 — Plugin Architecture</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="false">
+ <span class="menu-text">VII. Remote Runtime</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./16-remote-runtime-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VII.1 — Remote Runtime &amp; Bridge</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="false">
+ <span class="menu-text">VIII. Native Runtime</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./18-native-runtime-voice-portability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VIII.1 — Native Runtime, Voice &amp; Portability</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="false">
+ <span class="menu-text">IX. Transparency &amp; Trust</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./14-hidden-costs-context-manipulation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IX.1 — Transparency &amp; Trust</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#why-six-extension-points" id="toc-why-six-extension-points" class="nav-link active" data-scroll-target="#why-six-extension-points">Why Six Extension Points?</a></li>
+  <li><a href="#the-plugin-architecture-the-unifying-layer" id="toc-the-plugin-architecture-the-unifying-layer" class="nav-link" data-scroll-target="#the-plugin-architecture-the-unifying-layer">The Plugin Architecture – The Unifying Layer</a>
+  <ul class="collapse">
+  <li><a href="#plugin-identity" id="toc-plugin-identity" class="nav-link" data-scroll-target="#plugin-identity">Plugin Identity</a></li>
+  <li><a href="#what-a-plugin-contains" id="toc-what-a-plugin-contains" class="nav-link" data-scroll-target="#what-a-plugin-contains">What a Plugin Contains</a></li>
+  <li><a href="#the-plugin-manifest" id="toc-the-plugin-manifest" class="nav-link" data-scroll-target="#the-plugin-manifest">The Plugin Manifest</a></li>
+  <li><a href="#plugin-lifecycle" id="toc-plugin-lifecycle" class="nav-link" data-scroll-target="#plugin-lifecycle">Plugin Lifecycle</a></li>
+  <li><a href="#plugin-scoping" id="toc-plugin-scoping" class="nav-link" data-scroll-target="#plugin-scoping">Plugin Scoping</a></li>
+  </ul></li>
+  <li><a href="#custom-agents-as-extension-points" id="toc-custom-agents-as-extension-points" class="nav-link" data-scroll-target="#custom-agents-as-extension-points">Custom Agents as Extension Points</a>
+  <ul class="collapse">
+  <li><a href="#agent-definition" id="toc-agent-definition" class="nav-link" data-scroll-target="#agent-definition">Agent Definition</a></li>
+  <li><a href="#agent-sources" id="toc-agent-sources" class="nav-link" data-scroll-target="#agent-sources">Agent Sources</a></li>
+  </ul></li>
+  <li><a href="#slash-commands-as-user-level-extensions" id="toc-slash-commands-as-user-level-extensions" class="nav-link" data-scroll-target="#slash-commands-as-user-level-extensions">Slash Commands as User-Level Extensions</a>
+  <ul class="collapse">
+  <li><a href="#command-categories" id="toc-command-categories" class="nav-link" data-scroll-target="#command-categories">Command Categories</a></li>
+  <li><a href="#plugin-contributed-commands" id="toc-plugin-contributed-commands" class="nav-link" data-scroll-target="#plugin-contributed-commands">Plugin-Contributed Commands</a></li>
+  </ul></li>
+  <li><a href="#the-six-extension-points-complete-comparison" id="toc-the-six-extension-points-complete-comparison" class="nav-link" data-scroll-target="#the-six-extension-points-complete-comparison">The Six Extension Points – Complete Comparison</a></li>
+  <li><a href="#extension-composition-patterns" id="toc-extension-composition-patterns" class="nav-link" data-scroll-target="#extension-composition-patterns">Extension Composition Patterns</a>
+  <ul class="collapse">
+  <li><a href="#pattern-1-enterprise-compliance" id="toc-pattern-1-enterprise-compliance" class="nav-link" data-scroll-target="#pattern-1-enterprise-compliance">Pattern 1: Enterprise Compliance</a></li>
+  <li><a href="#pattern-2-cicd-workflow" id="toc-pattern-2-cicd-workflow" class="nav-link" data-scroll-target="#pattern-2-cicd-workflow">Pattern 2: CI/CD Workflow</a></li>
+  <li><a href="#the-three-temporal-windows" id="toc-the-three-temporal-windows" class="nav-link" data-scroll-target="#the-three-temporal-windows">The Three Temporal Windows</a></li>
+  </ul></li>
+  <li><a href="#the-configuration-surface" id="toc-the-configuration-surface" class="nav-link" data-scroll-target="#the-configuration-surface">The Configuration Surface</a>
+  <ul class="collapse">
+  <li><a href="#configuration-hierarchy" id="toc-configuration-hierarchy" class="nav-link" data-scroll-target="#configuration-hierarchy">Configuration Hierarchy</a></li>
+  </ul></li>
+  <li><a href="#the-plugin-marketplace-vision" id="toc-the-plugin-marketplace-vision" class="nav-link" data-scroll-target="#the-plugin-marketplace-vision">The Plugin Marketplace Vision</a>
+  <ul class="collapse">
+  <li><a href="#marketplace-architecture" id="toc-marketplace-architecture" class="nav-link" data-scroll-target="#marketplace-architecture">Marketplace Architecture</a></li>
+  <li><a href="#built-in-plugins" id="toc-built-in-plugins" class="nav-link" data-scroll-target="#built-in-plugins">Built-in Plugins</a></li>
+  <li><a href="#auto-update-and-versioning" id="toc-auto-update-and-versioning" class="nav-link" data-scroll-target="#auto-update-and-versioning">Auto-Update and Versioning</a></li>
+  </ul></li>
+  <li><a href="#security-considerations" id="toc-security-considerations" class="nav-link" data-scroll-target="#security-considerations">Security Considerations</a>
+  <ul class="collapse">
+  <li><a href="#plugin-specific-security" id="toc-plugin-specific-security" class="nav-link" data-scroll-target="#plugin-specific-security">Plugin-Specific Security</a></li>
+  </ul></li>
+  <li><a href="#design-patterns-and-cs-connections" id="toc-design-patterns-and-cs-connections" class="nav-link" data-scroll-target="#design-patterns-and-cs-connections">Design Patterns and CS Connections</a>
+  <ul class="collapse">
+  <li><a href="#decorator-pattern-system-level" id="toc-decorator-pattern-system-level" class="nav-link" data-scroll-target="#decorator-pattern-system-level">Decorator Pattern (System Level)</a></li>
+  <li><a href="#openclosed-principle" id="toc-openclosed-principle" class="nav-link" data-scroll-target="#openclosed-principle">Open/Closed Principle</a></li>
+  <li><a href="#strategy-pattern-tools-and-agents" id="toc-strategy-pattern-tools-and-agents" class="nav-link" data-scroll-target="#strategy-pattern-tools-and-agents">Strategy Pattern (Tools and Agents)</a></li>
+  <li><a href="#intercepting-filter-pattern-hooks" id="toc-intercepting-filter-pattern-hooks" class="nav-link" data-scroll-target="#intercepting-filter-pattern-hooks">Intercepting Filter Pattern (Hooks)</a></li>
+  <li><a href="#actor-model-custom-agents" id="toc-actor-model-custom-agents" class="nav-link" data-scroll-target="#actor-model-custom-agents">Actor Model (Custom Agents)</a></li>
+  </ul></li>
+  <li><a href="#building-your-own-extension-a-decision-tree" id="toc-building-your-own-extension-a-decision-tree" class="nav-link" data-scroll-target="#building-your-own-extension-a-decision-tree">Building Your Own Extension – A Decision Tree</a>
+  <ul class="collapse">
+  <li><a href="#minimal-examples" id="toc-minimal-examples" class="nav-link" data-scroll-target="#minimal-examples">Minimal Examples</a></li>
+  </ul></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">Summary</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./10-model-context-protocol.html">VI. Extensions</a></li><li class="breadcrumb-item"><a href="./13-plugin-architecture.html">VI.3 — Plugin Architecture</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Plugin Architecture</h1>
+<p class="subtitle lead">Six Extension Points and the Art of Composable Extensibility</p>
+  <div class="quarto-categories">
+    <div class="quarto-category">plugins</div>
+    <div class="quarto-category">extensibility</div>
+    <div class="quarto-category">architecture</div>
+  </div>
+  </div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>Claude Code has <span class="kw-sage">six extension mechanisms</span>: hooks, MCP servers, skills, custom agents, plugins, and slash commands. Each solves a different class of extensibility problem, operates at a different layer, and follows a different design pattern. The <span class="kw-terra">plugin system</span> is the unifying layer that bundles the other five into distributable packages.</p>
+<p>Why six? Because one binary must serve a solo developer debugging a React app, an enterprise team enforcing SOC 2 compliance across 200 engineers, a CI/CD pipeline running unattended, and an IDE integration embedding Claude as a coding assistant. Each audience needs different customization. No single API handles all four gracefully. Six focused mechanisms that compose are the result.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-territory" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-territory-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-territory">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart TD
+  PA["&lt;b&gt;Plugin Architecture Deep Dive&lt;/b&gt;"]
+  REG["Plugin Registry&lt;br&gt;and Lifecycle"]
+  SIX["Six Extension&lt;br&gt;Points"]
+  COMP["Composition Patterns&lt;br&gt;and Configuration"]
+  MKT["Marketplace Vision&lt;br&gt;and Security Model"]
+
+  PA --&gt; REG
+  PA --&gt; SIX
+  PA --&gt; COMP
+  REG --&gt; MKT
+  SIX --&gt; MKT
+  COMP --&gt; MKT
+  style PA fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style REG fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style SIX fill:#C2856E,color:#fff,stroke:#A06A54
+  style COMP fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style MKT fill:#C4A882,color:#fff,stroke:#A08562
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-territory-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: This post’s coverage of the plugin architecture. Four major topics connect to the central node: the plugin registry and lifecycle (discovery through uninstall), the six extension points (hooks, MCP, skills, custom agents, plugins, slash commands), composition patterns and configuration (how mechanisms combine), and the marketplace vision with its security model. All four feed into the marketplace vision, reflecting plugins as the unifying distribution layer.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Start at the central “Plugin Architecture Deep Dive” node at the top. Three branches descend to Plugin Registry and Lifecycle, Six Extension Points, and Composition Patterns and Configuration. All three branches then converge on the Marketplace Vision and Security Model node at the bottom, indicating that the marketplace is the culmination of the registry, extension points, and composition patterns.</p>
+<p><strong>Source files covered in this post:</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 28%">
+<col style="width: 42%">
+<col style="width: 28%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Purpose</th>
+<th>Size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>src/services/plugins/PluginInstallationManager.ts</code></td>
+<td>Plugin discovery, install, and lifecycle</td>
+<td>~500 LOC</td>
+</tr>
+<tr class="even">
+<td><code>src/services/plugins/pluginOperations.ts</code></td>
+<td>Plugin CRUD operations</td>
+<td>~300 LOC</td>
+</tr>
+<tr class="odd">
+<td><code>src/services/plugins/pluginCliCommands.ts</code></td>
+<td>Plugin CLI command integration</td>
+<td>~200 LOC</td>
+</tr>
+<tr class="even">
+<td><code>src/commands/plugin/</code></td>
+<td><code>/plugin</code> command handlers (install, list, remove)</td>
+<td>15 files</td>
+</tr>
+<tr class="odd">
+<td><code>src/tools/AgentTool/loadAgentsDir.ts</code></td>
+<td>Agent discovery (shared with plugins)</td>
+<td>~756 LOC</td>
+</tr>
+<tr class="even">
+<td><code>src/skills/loadSkillsDir.ts</code></td>
+<td>Skill discovery (shared with plugins)</td>
+<td>~300 LOC</td>
+</tr>
+<tr class="odd">
+<td><code>.claude-plugin/plugin.json</code></td>
+<td>Plugin manifest format</td>
+<td>Config file</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<section id="why-six-extension-points" class="level2">
+<h2 class="anchored" data-anchor-id="why-six-extension-points">Why Six Extension Points?</h2>
+<p><strong>Claude Code serves four radically different audiences, each with different extensibility needs. Six focused mechanisms beat one general-purpose API.</strong></p>
+<p>Consider what each audience needs:</p>
+<p><strong>Solo developers</strong> want behavioral customization. “When I write Python, follow PEP 8. When I write React, use functional components. After every file write, run prettier.” These are skills (behavioral rules) and hooks (automated side effects).</p>
+<p><strong>Enterprise teams</strong> need enforcement. “Block any shell command that touches production databases. Require code review before committing to main. Log every tool invocation to our audit system.” Only <span class="kw-terra">hooks</span> can enforce invariants – <span class="kw-slate">exit code 2</span> blocks the action. Skills can guide, but cannot prevent.</p>
+<p><strong>CI/CD pipelines</strong> need capabilities. “Connect to our internal JIRA instance. Query our Postgres staging database. Post results to Slack.” These are tool capabilities, and <span class="kw-terra">MCP</span> is the protocol for adding them. Any language, any runtime, discoverable at startup.</p>
+<p><strong>IDE integrations</strong> need specialized personas. “Run a security-focused review with read-only access. Generate API documentation with write access to /docs/ only. Triage bugs with access to the issue tracker.” <span class="kw-sage">Custom agents</span> provide isolated, role-specific configurations with their own prompts and tool restrictions.</p>
+<p>No single extension point could handle all four. A hooks-only system could enforce but not add capabilities. An MCP-only system could add tools but not enforce policy. A skills-only system could guide behavior but not execute side effects. Six mechanisms, each doing one thing well, compose into a system that handles all four audiences.</p>
+<hr>
+</section>
+<section id="the-plugin-architecture-the-unifying-layer" class="level2">
+<h2 class="anchored" data-anchor-id="the-plugin-architecture-the-unifying-layer">The Plugin Architecture – The Unifying Layer</h2>
+<p><strong>Plugins are bundles. A plugin can provide skills, hooks, MCP servers, custom agents, slash commands, and output styles – all in one distributable package.</strong></p>
+<p>Part III.4 covered hooks and lifecycle events as individual extension points. This post examines the plugin system that wraps them into a distribution and lifecycle layer. The key insight: plugins do not add a seventh extension mechanism. They are the packaging format for the other six.</p>
+<section id="plugin-identity" class="level3">
+<h3 class="anchored" data-anchor-id="plugin-identity">Plugin Identity</h3>
+<p>Every plugin has an identifier in the format <code>{name}@{marketplace}</code>. Built-in plugins use <code>{name}@builtin</code>. Third-party plugins reference their marketplace: <code>security-tools@acme-marketplace</code>. The <code>@</code> separator is parsed by <span class="kw-terra">parsePluginIdentifier()</span>, which splits on the first <code>@</code> and ignores subsequent ones – marketplace names should not contain <code>@</code>.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-identity" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-identity-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-identity">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart LR
+  subgraph builtin["Built-in Plugin"]
+    BN["github@builtin"]
+    BND["name: github&lt;br&gt;marketplace: builtin"]
+    BN --&gt; BND
+  end
+
+  subgraph market["Marketplace Plugin"]
+    MPN["security-tools@acme-market"]
+    MPD["name: security-tools&lt;br&gt;marketplace: acme-market"]
+    MPN --&gt; MPD
+  end
+
+  RES["&lt;b&gt;Resolution order:&lt;/b&gt;&lt;br&gt;1. Split on first @&lt;br&gt;2. No @ = bare name&lt;br&gt;3. @builtin = built-in"]
+
+  builtin ~~~ RES
+  market ~~~ RES
+  style BN fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style BND fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style MPN fill:#C2856E,color:#fff,stroke:#A06A54
+  style MPD fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style RES fill:#C4A882,color:#fff,stroke:#A08562
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-identity-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: Plugin identity format and resolution order. Two examples illustrate the name@marketplace convention: github@builtin resolves to name=‘github’ with marketplace=‘builtin’, while security-tools@acme-market splits into its respective components. The resolution rules are: split on the first @ symbol, treat bare names (no @) as unscoped, and recognize <span class="citation" data-cites="builtin">@builtin</span> as indicating a built-in plugin that ships with the CLI binary.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Two example plugin identifiers are shown side by side: <code>github@builtin</code> on the left and <code>security-tools@acme-market</code> on the right. Each decomposes into its name and marketplace components via an arrow. The resolution rules box below summarizes the parsing logic: split on the first <code>@</code>, treat bare names (no <code>@</code>) as unscoped, and recognize <code>@builtin</code> as a built-in plugin shipped with the CLI binary.</p>
+</section>
+<section id="what-a-plugin-contains" class="level3">
+<h3 class="anchored" data-anchor-id="what-a-plugin-contains">What a Plugin Contains</h3>
+<p>The <code>LoadedPlugin</code> type reveals everything a plugin can provide:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> LoadedPlugin <span class="op">=</span> {</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  name<span class="op">:</span> <span class="dt">string</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  manifest<span class="op">:</span> PluginManifest       <span class="co">// Metadata: version, description, author</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  path<span class="op">:</span> <span class="dt">string</span>                   <span class="co">// Filesystem path to plugin root</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  source<span class="op">:</span> <span class="dt">string</span>                 <span class="co">// Repository/marketplace source</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  commandsPath<span class="op">?:</span> <span class="dt">string</span>          <span class="co">// Slash commands (Markdown files)</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  commandsPaths<span class="op">?:</span> <span class="dt">string</span>[]       <span class="co">// Additional command paths</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  agentsPath<span class="op">?:</span> <span class="dt">string</span>            <span class="co">// Custom agent definitions</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  agentsPaths<span class="op">?:</span> <span class="dt">string</span>[]         <span class="co">// Additional agent paths</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  skillsPath<span class="op">?:</span> <span class="dt">string</span>            <span class="co">// SKILL.md behavioral instructions</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  skillsPaths<span class="op">?:</span> <span class="dt">string</span>[]         <span class="co">// Additional skill paths</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  outputStylesPath<span class="op">?:</span> <span class="dt">string</span>      <span class="co">// Custom output formatting</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  hooksConfig<span class="op">?:</span> HooksSettings    <span class="co">// Hook definitions (PreToolUse, etc.)</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  mcpServers<span class="op">?:</span> <span class="bu">Record</span><span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> McpServerConfig<span class="op">&gt;</span>  <span class="co">// MCP server configs</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  lspServers<span class="op">?:</span> <span class="bu">Record</span><span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> LspServerConfig<span class="op">&gt;</span>  <span class="co">// LSP server configs</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  settings<span class="op">?:</span> <span class="bu">Record</span><span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> <span class="dt">unknown</span><span class="op">&gt;</span>  <span class="co">// Plugin-specific configuration</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>A single plugin can bundle slash commands, agents, skills, hooks, MCP servers, and even LSP servers. The plugin directory structure mirrors these components:</p>
+<pre><code>my-plugin/
++-- .claude-plugin/
+|   +-- plugin.json        # Manifest: name, version, author, deps
++-- commands/              # Slash commands (Markdown files)
+|   +-- build.md
+|   +-- deploy.md
++-- agents/                # Custom agent definitions
+|   +-- security-reviewer.md
++-- skills/                # SKILL.md behavioral instructions
+|   +-- SKILL.md
++-- hooks/                 # Hook configurations
+|   +-- hooks.json
++-- output-styles/         # Custom output formatting
+    +-- my-style.md</code></pre>
+</section>
+<section id="the-plugin-manifest" class="level3">
+<h3 class="anchored" data-anchor-id="the-plugin-manifest">The Plugin Manifest</h3>
+<p>The manifest file (<code>.claude-plugin/plugin.json</code>) carries metadata validated by a comprehensive Zod schema:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"name"</span><span class="fu">:</span> <span class="st">"security-tools"</span><span class="fu">,</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"version"</span><span class="fu">:</span> <span class="st">"1.2.3"</span><span class="fu">,</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"description"</span><span class="fu">:</span> <span class="st">"Security scanning and enforcement tools"</span><span class="fu">,</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"author"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"name"</span><span class="fu">:</span> <span class="st">"Acme Security"</span><span class="fu">,</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"email"</span><span class="fu">:</span> <span class="st">"security@acme.com"</span><span class="fu">,</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"url"</span><span class="fu">:</span> <span class="st">"https://acme.com/security"</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">},</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"homepage"</span><span class="fu">:</span> <span class="st">"https://github.com/acme/security-tools"</span><span class="fu">,</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"license"</span><span class="fu">:</span> <span class="st">"MIT"</span><span class="fu">,</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"keywords"</span><span class="fu">:</span> <span class="ot">[</span><span class="st">"security"</span><span class="ot">,</span> <span class="st">"scanning"</span><span class="ot">,</span> <span class="st">"compliance"</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"dependencies"</span><span class="fu">:</span> <span class="ot">[</span><span class="st">"base-tools@acme-marketplace"</span><span class="ot">]</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><span class="kw-sage">Dependencies</span> are first-class citizens. A plugin can declare dependencies on other plugins from the same marketplace, and the system resolves them at install time. The <span class="kw-terra">verifyAndDemote</span> function checks dependencies at load time – if a dependency is missing or disabled, the dependent plugin is demoted.</p>
+</section>
+<section id="plugin-lifecycle" class="level3">
+<h3 class="anchored" data-anchor-id="plugin-lifecycle">Plugin Lifecycle</h3>
+<p>The lifecycle follows a settings-first philosophy. Installing a plugin writes to settings <em>before</em> caching the code – settings declare intent, caching materializes it.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-lifecycle" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-lifecycle-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-lifecycle">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart LR
+  START(( )) -- discover --&gt; browsed
+  browsed -- install --&gt; installed
+  installed -- enable --&gt; enabled
+  enabled -- load --&gt; active
+  active -- failure --&gt; error
+  installed -- uninstall --&gt; uninstalled
+  enabled -- disable --&gt; disabled
+  error -- user disables --&gt; disabled
+  disabled -- re-enable --&gt; enabled
+  style START fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style browsed fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style installed fill:#C2856E,color:#fff,stroke:#A06A54
+  style enabled fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style active fill:#C4A882,color:#fff,stroke:#A08562
+  style error fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style uninstalled fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style disabled fill:#9CAF88,color:#fff,stroke:#7A8D68
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-lifecycle-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: Plugin lifecycle state machine from discovery to uninstall. Plugins progress through five states: browsed (discovered in marketplace), installed (cached locally), enabled (activated in settings), and active (loaded into the running agent). Failure during loading transitions to an error state. Disabled plugins can be re-enabled without reinstalling. The settings-first philosophy means installation writes to settings before caching code.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Start at the hollow circle on the left and follow the labeled arrows through the state transitions: discover leads to browsed, install leads to installed, enable leads to enabled, and load leads to active. Failure from the active state transitions to error. The key branching paths are: installed can be uninstalled (terminal), enabled can be disabled, and disabled can be re-enabled back to enabled. The error state also transitions to disabled when the user intervenes.</p>
+<p>The update mechanism is <span class="kw-sage">non-inplace</span>: a new version is cached in a versioned directory alongside the old one. Only after the new version is cached and the installation record updated is the old version orphaned. This ensures that a failed update never leaves the user without a working plugin.</p>
+</section>
+<section id="plugin-scoping" class="level3">
+<h3 class="anchored" data-anchor-id="plugin-scoping">Plugin Scoping</h3>
+<p>Plugins operate across four scopes that form a precedence hierarchy:</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-scoping" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-scoping-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-scoping">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart TD
+  M["&lt;b&gt;managed&lt;/b&gt; (policySettings)&lt;br&gt;&lt;i&gt;Org-wide policy, can FORCE-DISABLE&lt;/i&gt;"]
+  L["&lt;b&gt;local&lt;/b&gt; (.claude/settings.local.json)&lt;br&gt;&lt;i&gt;Developer override for this machine&lt;/i&gt;"]
+  P["&lt;b&gt;project&lt;/b&gt; (.claude/settings.json)&lt;br&gt;&lt;i&gt;Team-shared, version-controlled&lt;/i&gt;"]
+  U["&lt;b&gt;user&lt;/b&gt; (~/.claude/settings.json)&lt;br&gt;&lt;i&gt;Personal preferences&lt;/i&gt;"]
+  NOTE["Resolution: local &gt; project &gt; user &gt; managed&lt;br&gt;But: managed can BLOCK plugins that&lt;br&gt;lower scopes cannot override"]
+
+  M --&gt; L --&gt; P --&gt; U
+  U -.- NOTE
+
+  style M fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style L fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style P fill:#C2856E,color:#fff,stroke:#A06A54
+  style U fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style NOTE fill:#C4A882,color:#fff,stroke:#A08562,stroke-dasharray: 5 5
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-scoping-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4: Plugin scope precedence hierarchy showing four levels from highest to lowest authority. Managed (policySettings) is org-wide policy that can force-disable plugins irrevocably. Local (.claude/settings.local.json) provides per-machine developer overrides. Project (.claude/settings.json) holds team-shared, version-controlled preferences. User (~/.claude/settings.json) is the personal defaults baseline. Resolution order for enable/disable decisions: local &gt; project &gt; user &gt; managed, but managed scope can block plugins that no lower scope can override.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Read top to bottom as a precedence chain from highest authority to lowest. Managed (policySettings) sits at the top with the power to force-disable plugins irrevocably. Below it, local overrides project, which overrides user defaults. The dashed note at the bottom clarifies the resolution rule: local &gt; project &gt; user &gt; managed for enable/disable decisions, but managed scope can block plugins that no lower scope can override.</p>
+<p>This scoping model enables a powerful pattern: an enterprise admin can <span class="kw-terra">force-disable</span> a plugin via managed settings, and no user or project setting can override that decision. But a developer can use local scope to disable a project-mandated plugin for their own machine (useful for debugging). The function <span class="kw-terra">isPluginBlockedByPolicy()</span> is the single source of truth for <span class="kw-sage">policy enforcement</span> – a <span class="kw-slate">three-line function</span> with outsized impact.</p>
+<hr>
+</section>
+</section>
+<section id="custom-agents-as-extension-points" class="level2">
+<h2 class="anchored" data-anchor-id="custom-agents-as-extension-points">Custom Agents as Extension Points</h2>
+<p><strong>Custom agents are YAML or Markdown files that define isolated personas with restricted capabilities – sandboxed expertise for specific tasks.</strong></p>
+<p>Part II.3 introduced the agent types from the capability spectrum. Here we focus on custom agents as an <em>extension mechanism</em> – how they are defined, what they can control, and how plugins distribute them.</p>
+<section id="agent-definition" class="level3">
+<h3 class="anchored" data-anchor-id="agent-definition">Agent Definition</h3>
+<p>A custom agent is a Markdown file with frontmatter metadata and a body that serves as the system prompt:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>---</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>name: security-reviewer</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>description: Reviews code for security vulnerabilities</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>model: opus</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>tools:</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>Read</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>Grep</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>Glob</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>Bash</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>permissionMode: default</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>maxTurns: 50</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>memory: project</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>---</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>You are a security-focused code reviewer. Your job is to find</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>vulnerabilities in code. Focus on:</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>SQL injection and parameterized queries</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>XSS and output encoding</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>CSRF token validation</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Authentication and authorization flaws</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Data exposure in logs and error messages</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>Be specific. Cite line numbers. Suggest fixes with code examples.</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>Never modify code directly -- report findings only.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The frontmatter fields parsed by <code>parseAgentFromMarkdown()</code> reveal the full control surface:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 31%">
+<col style="width: 27%">
+<col style="width: 40%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Field</th>
+<th>Type</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>name</code></td>
+<td>string</td>
+<td>Agent identifier (used in <code>/agent security-reviewer</code>)</td>
+</tr>
+<tr class="even">
+<td><code>description</code></td>
+<td>string</td>
+<td>When the model should delegate to this agent</td>
+</tr>
+<tr class="odd">
+<td><code>tools</code></td>
+<td>string[]</td>
+<td>Allowlist of tools (restricts, does not expand)</td>
+</tr>
+<tr class="even">
+<td><code>disallowedTools</code></td>
+<td>string[]</td>
+<td>Blocklist (inverse of tools)</td>
+</tr>
+<tr class="odd">
+<td><code>model</code></td>
+<td>string</td>
+<td>Model override (opus, sonnet, haiku, or “inherit”)</td>
+</tr>
+<tr class="even">
+<td><code>effort</code></td>
+<td>string/int</td>
+<td>Reasoning effort level</td>
+</tr>
+<tr class="odd">
+<td><code>permissionMode</code></td>
+<td>string</td>
+<td>Permission strictness</td>
+</tr>
+<tr class="even">
+<td><code>maxTurns</code></td>
+<td>int</td>
+<td>Maximum agentic turns before stopping</td>
+</tr>
+<tr class="odd">
+<td><code>mcpServers</code></td>
+<td>array</td>
+<td>MCP servers specific to this agent</td>
+</tr>
+<tr class="even">
+<td><code>hooks</code></td>
+<td>object</td>
+<td>Session-scoped hooks registered when agent starts</td>
+</tr>
+<tr class="odd">
+<td><code>skills</code></td>
+<td>string[]</td>
+<td>Skills to preload</td>
+</tr>
+<tr class="even">
+<td><code>memory</code></td>
+<td>string</td>
+<td>Persistent memory scope (user, project, local)</td>
+</tr>
+<tr class="odd">
+<td><code>background</code></td>
+<td>boolean</td>
+<td>Always run as background task</td>
+</tr>
+<tr class="even">
+<td><code>isolation</code></td>
+<td>string</td>
+<td>Git worktree isolation</td>
+</tr>
+<tr class="odd">
+<td><code>initialPrompt</code></td>
+<td>string</td>
+<td>Prepended to first user turn</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>tools</code> field is the key security mechanism. A security reviewer restricted to <code>[Read, Grep, Glob, Bash]</code> cannot call <code>Write</code> or <code>Edit</code> – even if the model tries to, the tool registry rejects the call. This is <span class="kw-sage">capability restriction</span>, not behavioral guidance. The model cannot reason its way around a missing tool.</p>
+</section>
+<section id="agent-sources" class="level3">
+<h3 class="anchored" data-anchor-id="agent-sources">Agent Sources</h3>
+<p>Agents come from four sources, loaded with clear precedence in <code>getActiveAgentsFromList()</code>:</p>
+<ol type="1">
+<li><strong>Built-in agents</strong> (Explore, Plan, etc.) – always present</li>
+<li><strong>Plugin agents</strong> – from enabled plugins</li>
+<li><strong>User agents</strong> (<code>~/.claude/agents/</code>) – personal definitions</li>
+<li><strong>Project agents</strong> (<code>.claude/agents/</code>) – team-shared definitions</li>
+<li><strong>Managed agents</strong> (policy) – enterprise-mandated</li>
+<li><strong>Flag agents</strong> (session-only) – from feature flags</li>
+</ol>
+<p>When names collide, later sources override earlier ones. A project agent named “security-reviewer” shadows a user agent of the same name. Managed agents shadow everything – ensuring enterprise policy takes priority.</p>
+<div class="callout callout-style-default callout-caution callout-titled" title="Pattern Spotted">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Caution</span>Pattern Spotted
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Custom agents implement the <strong>Actor Model</strong>. Each agent is an isolated actor with its own state (conversation context), mailbox (prompt input), and behavior (system prompt + tool restrictions). Agents communicate through message passing (the <code>Agent</code> tool sends a prompt, receives a result). No shared mutable state – the same pattern that makes Erlang processes safe to run concurrently.</p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="slash-commands-as-user-level-extensions" class="level2">
+<h2 class="anchored" data-anchor-id="slash-commands-as-user-level-extensions">Slash Commands as User-Level Extensions</h2>
+<p><strong>Over <span class="kw-slate">80 slash command directories</span> in the codebase provide deterministic, instant-response operations that bypass the model entirely.</strong></p>
+<p>Slash commands are the extension point that does not involve the LLM at all. When you type <code>/compact</code>, Claude Code does not send your request to an API. It parses the command locally, executes the handler, and returns the result. Zero tokens consumed. Zero latency from model inference. Zero hallucination risk.</p>
+<p>The command system spans over 80 subdirectories under <code>src/commands/</code>, covering operations from <code>/add-dir</code> to <code>/voice</code>. But the command system is also an extension surface: plugins can contribute their own slash commands via Markdown files in their <code>commands/</code> directory.</p>
+<section id="command-categories" class="level3">
+<h3 class="anchored" data-anchor-id="command-categories">Command Categories</h3>
+<p>Commands fall into distinct categories based on what they control:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 38%">
+<col style="width: 26%">
+<col style="width: 34%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Category</th>
+<th>Count</th>
+<th>Examples</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Session Management</td>
+<td>12</td>
+<td><code>/clear</code>, <code>/compact</code>, <code>/resume</code>, <code>/session</code>, <code>/status</code>, <code>/share</code></td>
+</tr>
+<tr class="even">
+<td>Agent Control</td>
+<td>8</td>
+<td><code>/agent</code>, <code>/tasks</code>, <code>/branch</code>, <code>/teleport</code>, <code>/worktree</code></td>
+</tr>
+<tr class="odd">
+<td>Git Workflow</td>
+<td>7</td>
+<td><code>/commit</code>, <code>/pr</code>, <code>/review</code>, <code>/diff</code>, <code>/rewind</code>, <code>/tag</code></td>
+</tr>
+<tr class="even">
+<td>Configuration</td>
+<td>10</td>
+<td><code>/config</code>, <code>/permissions</code>, <code>/model</code>, <code>/theme</code>, <code>/effort</code>, <code>/sandbox</code></td>
+</tr>
+<tr class="odd">
+<td>Mode Switching</td>
+<td>5</td>
+<td><code>/plan</code>, <code>/code</code>, <code>/architect</code>, <code>/auto</code>, <code>/fast</code></td>
+</tr>
+<tr class="even">
+<td>MCP &amp; Plugins</td>
+<td>6</td>
+<td><code>/mcp</code>, <code>/plugin</code>, <code>/skills</code>, <code>/hooks</code>, <code>/reload-plugins</code></td>
+</tr>
+<tr class="odd">
+<td>Developer Tools</td>
+<td>8</td>
+<td><code>/init</code>, <code>/install</code>, <code>/onboarding</code>, <code>/upgrade</code>, <code>/add-dir</code></td>
+</tr>
+<tr class="even">
+<td>Diagnostics</td>
+<td>6</td>
+<td><code>/doctor</code>, <code>/debug</code>, <code>/cost</code>, <code>/usage</code>, <code>/stats</code></td>
+</tr>
+<tr class="odd">
+<td>Skills</td>
+<td>5+</td>
+<td><code>/simplify</code>, <code>/loop</code>, <code>/code-review</code>, <code>/feedback</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="plugin-contributed-commands" class="level3">
+<h3 class="anchored" data-anchor-id="plugin-contributed-commands">Plugin-Contributed Commands</h3>
+<p>When a plugin is loaded, its <code>commandsPath</code> and <code>commandsPaths</code> fields point to directories containing Markdown files that define new slash commands. The loader parses these files, extracts frontmatter metadata (name, description, whenToUse), and registers them alongside built-in commands. The command’s body becomes the prompt sent to the model when the user invokes it.</p>
+<p>This means plugins can extend the <code>/</code> namespace. A security plugin might add <code>/security-scan</code>, <code>/vulnerability-report</code>, and <code>/compliance-check</code> as new slash commands – each with its own behavioral instructions, tool restrictions, and trigger conditions.</p>
+<hr>
+</section>
+</section>
+<section id="the-six-extension-points-complete-comparison" class="level2">
+<h2 class="anchored" data-anchor-id="the-six-extension-points-complete-comparison">The Six Extension Points – Complete Comparison</h2>
+<p><strong>Each mechanism solves a different problem at a different layer. The comparison table is the decision framework for choosing the right one.</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 15%">
+<col style="width: 9%">
+<col style="width: 7%">
+<col style="width: 11%">
+<col style="width: 21%">
+<col style="width: 12%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Dimension</th>
+<th>Hooks</th>
+<th>MCP</th>
+<th>Skills</th>
+<th>Custom Agents</th>
+<th>Plugins</th>
+<th>Slash Commands</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>What it does</strong></td>
+<td>Automate side effects, enforce invariants</td>
+<td>Add external tool capabilities</td>
+<td>Modify agent behavior and reasoning</td>
+<td>Create isolated personas</td>
+<td>Bundle and distribute extension packages</td>
+<td>Direct user control, bypass model</td>
+</tr>
+<tr class="even">
+<td><strong>CS Analogy</strong></td>
+<td>AOP aspects / Intercepting Filters</td>
+<td>LSP for AI tools</td>
+<td>Cognitive plugins / Template Method</td>
+<td>fork() with new env / Actor Model</td>
+<td>App store / OSGi bundles</td>
+<td>CLI commands / DSL</td>
+</tr>
+<tr class="odd">
+<td><strong>Format</strong></td>
+<td>JSON config + shell command</td>
+<td>Any language, JSON-RPC</td>
+<td>Markdown (SKILL.md)</td>
+<td>Markdown or YAML</td>
+<td>Directory + plugin.json</td>
+<td>TypeScript or Markdown</td>
+</tr>
+<tr class="even">
+<td><strong>Can block actions?</strong></td>
+<td>YES (exit code 2)</td>
+<td>No</td>
+<td>No</td>
+<td>No (restricts, does not gate)</td>
+<td>Via hooks component</td>
+<td>N/A (bypasses model)</td>
+</tr>
+<tr class="odd">
+<td><strong>Adds tools?</strong></td>
+<td>No</td>
+<td>YES (dynamic registration)</td>
+<td>No</td>
+<td>No (restricts existing)</td>
+<td>Via MCP component</td>
+<td>No</td>
+</tr>
+<tr class="even">
+<td><strong>Modifies prompt?</strong></td>
+<td>Injects reminders</td>
+<td>Server instructions (cache-breaking)</td>
+<td>YES (primary mechanism)</td>
+<td>YES (own system prompt)</td>
+<td>Via skills component</td>
+<td>No</td>
+</tr>
+<tr class="odd">
+<td><strong>When it runs</strong></td>
+<td>During execution (sync)</td>
+<td>On tool call (async, cross-process)</td>
+<td>At prompt assembly (compile-time)</td>
+<td>When spawned (async, isolated)</td>
+<td>Always loaded (lifecycle-managed)</td>
+<td>On user invocation (immediate)</td>
+</tr>
+<tr class="even">
+<td><strong>Scope</strong></td>
+<td>Per-project or per-user</td>
+<td>Cross-agent, universal protocol</td>
+<td>Claude Code specific</td>
+<td>Claude Code specific</td>
+<td>4-scope hierarchy</td>
+<td>User interface layer</td>
+</tr>
+<tr class="odd">
+<td><strong>Security model</strong></td>
+<td>Shell process, inherits perms</td>
+<td>Separate process, stdio/SSE/HTTP</td>
+<td>Prompt injection risk</td>
+<td>Tool restriction (least privilege)</td>
+<td>Marketplace trust + policy</td>
+<td>Deterministic, no model</td>
+</tr>
+</tbody>
+</table>
+<p>The table reveals the fundamental architectural truth: each extension point occupies a <span class="kw-sage">unique position in the design space</span>. No two overlap on all dimensions. This is not accidental – it is the result of identifying distinct classes of extensibility and building a focused mechanism for each.</p>
+<p>The “Can block actions?” row is the most operationally important. Of all six extension points, only hooks can prevent a tool invocation. If you need to enforce an invariant – “never delete production data,” “always run linters before committing” – hooks are the only mechanism. Skills can suggest, MCP can provide alternatives, custom agents can restrict tools, but only a PreToolUse hook returning exit code 2 can physically prevent an action from happening.</p>
+<hr>
+</section>
+<section id="extension-composition-patterns" class="level2">
+<h2 class="anchored" data-anchor-id="extension-composition-patterns">Extension Composition Patterns</h2>
+<p><strong>The six mechanisms become powerful when composed. Real-world workflows combine multiple extension points, each contributing what the others cannot.</strong></p>
+<section id="pattern-1-enterprise-compliance" class="level3">
+<h3 class="anchored" data-anchor-id="pattern-1-enterprise-compliance">Pattern 1: Enterprise Compliance</h3>
+<p>Consider an enterprise with SOC 2 compliance requirements. The composition layers five mechanisms together:</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-enterprise" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-enterprise-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-enterprise">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart TD
+  subgraph SK["SKILLS (behavioral guidance)"]
+    S1["Secure coding practices.&lt;br&gt;Never log PII. Parameterized queries."]
+  end
+
+  subgraph HK["HOOKS (enforcement)"]
+    H1["PreToolUse Bash: block rm -rf /"]
+    H2["PreToolUse Write: scan for secrets"]
+    H3["PostToolUse Write: run security linter"]
+    H4["Stop: generate compliance report"]
+  end
+
+  subgraph MC["MCP SERVERS (capabilities)"]
+    M1["vault-server: secrets management"]
+    M2["jira-server: compliance tickets"]
+    M3["splunk-server: audit log shipping"]
+  end
+
+  subgraph AG["CUSTOM AGENT (specialized review)"]
+    A1["security-reviewer&lt;br&gt;&lt;i&gt;tools: Read, Grep, Glob&lt;/i&gt;&lt;br&gt;&lt;i&gt;prompt: Focus on OWASP Top 10&lt;/i&gt;"]
+  end
+
+  subgraph PL["PLUGIN (distribution)"]
+    P1["acme-compliance@acme-marketplace&lt;br&gt;&lt;i&gt;Bundles all above, version-pinned, managed-scope&lt;/i&gt;"]
+  end
+
+  SK -- "shapes reasoning" --&gt; HK
+  HK -- "gates execution" --&gt; MC
+  MC -- "provides tools" --&gt; AG
+  AG -- "isolated persona" --&gt; PL
+  style S1 fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style H1 fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style H2 fill:#C2856E,color:#fff,stroke:#A06A54
+  style H3 fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style H4 fill:#C4A882,color:#fff,stroke:#A08562
+  style M1 fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style M2 fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style M3 fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style A1 fill:#C2856E,color:#fff,stroke:#A06A54
+  style P1 fill:#B39EB5,color:#fff,stroke:#8E7A93
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-enterprise-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5: Enterprise compliance composition across five extension layers for a SOC 2 scenario. Skills inject secure-coding behavioral guidance (never log PII, parameterized queries). Hooks enforce invariants via PreToolUse/PostToolUse interceptors (block rm -rf, scan for secrets, run security linter). MCP servers connect to infrastructure (Vault secrets management, JIRA compliance tickets, Splunk audit logging). A custom security-reviewer agent runs OWASP-focused analysis with read-only tool access. The plugin layer bundles everything into a version-pinned, managed-scope distributable package.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Five horizontal layers stack from top to bottom, each representing a different extension mechanism in a SOC 2 compliance scenario. Start at the top with Skills (behavioral guidance), then move down through Hooks (enforcement via PreToolUse/PostToolUse), MCP Servers (external capabilities like Vault and Splunk), Custom Agent (an isolated security reviewer), and finally the Plugin layer that bundles everything into a distributable package. Arrows between layers are labeled with the relationship: skills shape reasoning, hooks gate execution, MCP provides tools, and the agent runs isolated review.</p>
+<p>Each layer contributes something the others cannot. Skills shape how the model <em>thinks</em> about security. Hooks <em>enforce</em> security rules the model cannot bypass. MCP <em>connects</em> to external security infrastructure. The custom agent provides <em>isolated review</em> with restricted capabilities. The plugin <em>bundles</em> everything into a distributable, version-managed package that the enterprise can deploy via managed settings.</p>
+</section>
+<section id="pattern-2-cicd-workflow" class="level3">
+<h3 class="anchored" data-anchor-id="pattern-2-cicd-workflow">Pattern 2: CI/CD Workflow</h3>
+<p>A CI/CD workflow composes differently:</p>
+<ul>
+<li><strong>Skill</strong>: “Never deploy on Fridays. Run migrations before schema changes. Follow the team’s deployment checklist.”</li>
+<li><strong>Hook (PreToolUse)</strong>: Check day of week before deploy commands; validate migration files exist before schema changes.</li>
+<li><strong>Hook (PostToolUse)</strong>: Run <code>prettier --write</code> after every file write; post deployment status to Slack.</li>
+<li><strong>MCP Server</strong>: Wraps the CI/CD API (<code>get_build_status</code>, <code>trigger_deploy</code>, <code>rollback</code>).</li>
+<li><strong>Custom Agent</strong>: A deployment-reviewer with read-only access that validates the deployment plan.</li>
+<li><strong>Slash Command</strong>: <code>/deploy-status</code> for instant build information without model involvement.</li>
+</ul>
+</section>
+<section id="the-three-temporal-windows" class="level3">
+<h3 class="anchored" data-anchor-id="the-three-temporal-windows">The Three Temporal Windows</h3>
+<p>The composition works because each mechanism operates in a different temporal window:</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-temporal" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-temporal-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-temporal">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart LR
+  subgraph PRE["PRE-REASONING"]
+    P1["Skills inject instructions"]
+    P2["MCP injects server instructions"]
+    P3["Agent prompt assembled"]
+  end
+
+  subgraph DUR["DURING-EXECUTION"]
+    D1["Hooks intercept PreToolUse"]
+    D2["Can BLOCK (exit 2)"]
+    D3["Tool executes"]
+  end
+
+  subgraph POST["POST-EXECUTION"]
+    D4["Hooks observe PostToolUse"]
+    D5["Hook reminders injected&lt;br&gt;back into conversation"]
+  end
+
+  PRE --&gt; DUR --&gt; POST
+  style P1 fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style P2 fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style P3 fill:#C2856E,color:#fff,stroke:#A06A54
+  style D1 fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style D2 fill:#C4A882,color:#fff,stroke:#A08562
+  style D3 fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style D4 fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style D5 fill:#9CAF88,color:#fff,stroke:#7A8D68
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-temporal-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;6: Three temporal windows of extension in the agent lifecycle. Pre-reasoning: skills inject instructions and MCP injects server instructions into the assembled prompt. During-execution: hooks intercept via PreToolUse (with the unique ability to block actions via exit code 2) and the tool executes. Post-execution: hooks observe via PostToolUse and inject reminders back into the conversation for the model’s next turn. The temporal separation is why the six mechanisms compose without conflict.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Read left to right through three temporal phases. PRE-REASONING (left) is where skills and MCP inject instructions into the prompt before the model reasons. DURING-EXECUTION (center) is where hooks intercept tool calls – notably, only this phase can block actions via exit code 2. POST-EXECUTION (right) is where hooks observe outcomes and inject reminders back into the conversation for the model’s next turn. The temporal separation explains why the six extension mechanisms compose without conflict.</p>
+<p>Skills and MCP instructions operate in the <span class="kw-sage">pre-reasoning</span> window – they shape the model’s understanding before it decides what to do. Hooks operate in the <span class="kw-sage">during-execution</span> window – they intercept actions after the model decides but before (or after) execution. <span class="kw-terra">Hook reminders</span> operate in the <span class="kw-sage">post-execution</span> window – they feed results back into the conversation so the model can adjust its next action.</p>
+<p>This temporal separation is why the six mechanisms compose without conflict. They do not compete for the same insertion point; they each own a distinct phase of the agent’s decision-execution-feedback loop.</p>
+<hr>
+</section>
+</section>
+<section id="the-configuration-surface" class="level2">
+<h2 class="anchored" data-anchor-id="the-configuration-surface">The Configuration Surface</h2>
+<p><strong><code>settings.json</code> is the unifying configuration layer. Every extension point reads its configuration from the same hierarchical settings system.</strong></p>
+<section id="configuration-hierarchy" class="level3">
+<h3 class="anchored" data-anchor-id="configuration-hierarchy">Configuration Hierarchy</h3>
+<p>All six extension points are configured through a single settings infrastructure with four-level precedence:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 31%">
+<col style="width: 27%">
+<col style="width: 40%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Level</th>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1 (highest)</td>
+<td><code>managed-settings.json</code> (policySettings)</td>
+<td>Org-wide, admin-controlled, cannot override</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td><code>.claude/settings.local.json</code> (localSettings)</td>
+<td>Per-machine overrides, not version-controlled</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td><code>.claude/settings.json</code> (projectSettings)</td>
+<td>Team-shared, version-controlled</td>
+</tr>
+<tr class="even">
+<td>4 (lowest)</td>
+<td><code>~/.claude/settings.json</code> (userSettings)</td>
+<td>User-wide defaults and preferences</td>
+</tr>
+</tbody>
+</table>
+<p>Each extension point reads from this hierarchy:</p>
+<ul>
+<li><strong>Hooks</strong>: Configured in <code>settings.hooks</code> – merged across scopes, policy hooks cannot be overridden</li>
+<li><strong>MCP Servers</strong>: Configured in <code>settings.mcpServers</code> – per-scope server definitions</li>
+<li><strong>Plugins</strong>: Configured in <code>settings.enabledPlugins</code> – <code>{pluginId: true/false}</code> per scope</li>
+<li><strong>Custom Agents</strong>: Loaded from <code>agents/</code> subdirectories at each scope level</li>
+<li><strong>Skills</strong>: Loaded from <code>skills/</code> subdirectories plus plugin-contributed skills</li>
+<li><strong>Slash Commands</strong>: Built-in plus plugin-contributed commands</li>
+</ul>
+<p>The settings merge is not simple concatenation. Policy settings can <em>block</em> lower-scope settings. A policy that sets <code>enabledPlugins["dangerous-tool@marketplace"] = false</code> prevents any user or project setting from enabling that plugin. The <code>isPluginBlockedByPolicy()</code> function – just three lines – is the enforcement gate:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">export</span> <span class="kw">function</span> <span class="fu">isPluginBlockedByPolicy</span>(pluginId<span class="op">:</span> <span class="dt">string</span>)<span class="op">:</span> <span class="dt">boolean</span> {</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> policyEnabled <span class="op">=</span> <span class="fu">getSettingsForSource</span>(<span class="st">'policySettings'</span>)<span class="op">?.</span><span class="at">enabledPlugins</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> policyEnabled<span class="op">?.</span>[pluginId] <span class="op">===</span> <span class="kw">false</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Three lines of code, but they implement the entire enterprise policy enforcement for plugins.</p>
+<hr>
+</section>
+</section>
+<section id="the-plugin-marketplace-vision" class="level2">
+<h2 class="anchored" data-anchor-id="the-plugin-marketplace-vision">The Plugin Marketplace Vision</h2>
+<p><strong>The marketplace system transforms Claude Code from a tool with extensions into a platform with an ecosystem.</strong></p>
+<section id="marketplace-architecture" class="level3">
+<h3 class="anchored" data-anchor-id="marketplace-architecture">Marketplace Architecture</h3>
+<p>A marketplace is a Git repository containing a <code>marketplace.json</code> file that lists available plugins with their metadata and source locations. Claude Code supports multiple simultaneous marketplaces.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-marketplace" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-marketplace-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-marketplace">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart TD
+  OFF["&lt;b&gt;Official Marketplace&lt;/b&gt;&lt;br&gt;&lt;i&gt;Anthropic&lt;/i&gt;"]
+  ENT["&lt;b&gt;Enterprise Marketplace&lt;/b&gt;&lt;br&gt;&lt;i&gt;acme-corp&lt;/i&gt;"]
+  COM["&lt;b&gt;Community Marketplace&lt;/b&gt;&lt;br&gt;&lt;i&gt;open-source&lt;/i&gt;"]
+
+  MJ1["marketplace.json&lt;br&gt;plugins: name, source, version"]
+  MJ2["marketplace.json&lt;br&gt;plugins: name, source, version"]
+  MJ3["marketplace.json&lt;br&gt;plugins: name, source, version"]
+
+  OFF --&gt; MJ1
+  ENT --&gt; MJ2
+  COM --&gt; MJ3
+
+  PL["&lt;b&gt;Plugin Loader&lt;/b&gt;&lt;br&gt;&lt;i&gt;unified&lt;/i&gt;"]
+  SET["&lt;b&gt;Settings&lt;/b&gt;&lt;br&gt;&lt;i&gt;scoped&lt;/i&gt;"]
+
+  MJ1 --&gt; PL
+  MJ2 --&gt; PL
+  MJ3 --&gt; PL
+  PL --&gt; SET
+  style OFF fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style ENT fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style COM fill:#C2856E,color:#fff,stroke:#A06A54
+  style MJ1 fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style MJ2 fill:#C4A882,color:#fff,stroke:#A08562
+  style MJ3 fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style PL fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style SET fill:#9CAF88,color:#fff,stroke:#7A8D68
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-marketplace-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;7: Marketplace architecture supporting multiple simultaneous marketplaces. Three marketplace types are shown: Official (Anthropic-controlled, 8 reserved names), Enterprise (org-specific, e.g., acme-corp), and Community (open-source). Each marketplace is a Git repository containing a marketplace.json that lists plugin names, source locations, and versions. All three feed into a unified Plugin Loader, which resolves and merges plugin definitions into the four-scope settings hierarchy.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Three marketplace types sit at the top: Official (Anthropic), Enterprise (org-specific), and Community (open-source). Each connects to its own <code>marketplace.json</code> file containing plugin listings. All three marketplace JSON files feed into the unified Plugin Loader in the center, which resolves and merges plugin definitions into the scoped Settings system at the bottom. The key insight is that multiple marketplaces coexist and are unified through a single loader.</p>
+<p><span class="kw-slate">Eight official marketplace names</span> are reserved for Anthropic: <code>claude-code-marketplace</code>, <code>claude-code-plugins</code>, <code>claude-plugins-official</code>, <code>anthropic-marketplace</code>, <code>anthropic-plugins</code>, <code>agent-skills</code>, <code>life-sciences</code>, and <code>knowledge-work-plugins</code>. These names are protected by <span class="kw-terra">impersonation pattern matching</span> and verified against the <code>anthropics</code> GitHub organization.</p>
+</section>
+<section id="built-in-plugins" class="level3">
+<h3 class="anchored" data-anchor-id="built-in-plugins">Built-in Plugins</h3>
+<p>Built-in plugins ship with the CLI binary and use the <code>@builtin</code> marketplace namespace. They differ from marketplace plugins in that they require no network fetch, no Git clone, no cache management. The <code>BuiltinPluginDefinition</code> type shows what they can provide:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> BuiltinPluginDefinition <span class="op">=</span> {</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  name<span class="op">:</span> <span class="dt">string</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  description<span class="op">:</span> <span class="dt">string</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  version<span class="op">?:</span> <span class="dt">string</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  skills<span class="op">?:</span> BundledSkillDefinition[]   <span class="co">// Behavioral instructions</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  hooks<span class="op">?:</span> HooksSettings               <span class="co">// Lifecycle hooks</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  mcpServers<span class="op">?:</span> <span class="bu">Record</span><span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> McpServerConfig<span class="op">&gt;</span>  <span class="co">// Tool servers</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  isAvailable<span class="op">?:</span> () <span class="kw">=&gt;</span> <span class="dt">boolean</span>         <span class="co">// System capability check</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  defaultEnabled<span class="op">?:</span> <span class="dt">boolean</span>            <span class="co">// Default state before user sets preference</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Built-in plugins appear in the <code>/plugin</code> UI under a “Built-in” section. Users can enable or disable them, and preferences are persisted to user settings. The <code>isAvailable</code> function allows conditional availability – a plugin that wraps a system-specific capability can hide itself on unsupported platforms.</p>
+</section>
+<section id="auto-update-and-versioning" class="level3">
+<h3 class="anchored" data-anchor-id="auto-update-and-versioning">Auto-Update and Versioning</h3>
+<p>Official marketplaces auto-update by default (except those in the <code>NO_AUTO_UPDATE_OFFICIAL_MARKETPLACES</code> set). Plugin versions are calculated by <code>calculatePluginVersion()</code> which synthesizes version strings from multiple sources: the manifest version field, Git commit SHAs, and marketplace-declared versions.</p>
+<p>The update mechanism is <span class="kw-sage">atomic</span>. <span class="kw-terra">updatePluginOp()</span> downloads the new version to a temporary directory, calculates its version hash, copies it to a versioned cache directory, updates the installation record, and only then marks the old version as orphaned. If any step fails, the old version remains intact. This is the same strategy used by container orchestration systems for <span class="kw-sage">rolling deployments</span>.</p>
+<hr>
+</section>
+</section>
+<section id="security-considerations" class="level2">
+<h2 class="anchored" data-anchor-id="security-considerations">Security Considerations</h2>
+<p><strong>Each extension point has a different security model. Understanding the threat surface of each is essential for safe extensibility.</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 13%">
+<col style="width: 13%">
+<col style="width: 20%">
+<col style="width: 15%">
+<col style="width: 16%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Extension Point</th>
+<th>Execution</th>
+<th>Isolation</th>
+<th>Primary Threat</th>
+<th>Mitigation</th>
+<th>Trust Level</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Hooks</strong></td>
+<td>Shell process</td>
+<td>Inherits agent permissions</td>
+<td>Shell injection if unvalidated input</td>
+<td>Policy settings; fixed exit code semantics</td>
+<td>HIGH (same process)</td>
+</tr>
+<tr class="even">
+<td><strong>MCP Servers</strong></td>
+<td>Separate process</td>
+<td>Process-level, own memory</td>
+<td>Malicious server exfiltrating data</td>
+<td>Tool annotations; permission system gates calls</td>
+<td>MEDIUM (process boundary)</td>
+</tr>
+<tr class="odd">
+<td><strong>Skills</strong></td>
+<td>Text injection into prompt</td>
+<td>None – direct model context</td>
+<td>Prompt injection overriding guidelines</td>
+<td>Trusted sources only; review content</td>
+<td>LOW (no execution boundary)</td>
+</tr>
+<tr class="even">
+<td><strong>Custom Agents</strong></td>
+<td>Isolated agent context</td>
+<td>Separate conversation, restricted tools</td>
+<td>Too-broad tool access</td>
+<td>Least privilege via tools allowlist; maxTurns</td>
+<td>MEDIUM (tool restriction)</td>
+</tr>
+<tr class="odd">
+<td><strong>Plugins</strong></td>
+<td>Composed: hooks + MCP + skills</td>
+<td>Inherits component levels</td>
+<td>Malicious bundle</td>
+<td>Marketplace trust, policy, homograph detection</td>
+<td>VARIES (per component)</td>
+</tr>
+<tr class="even">
+<td><strong>Slash Commands</strong></td>
+<td>Direct function call, no model</td>
+<td>Same process as CLI</td>
+<td>Minimal – deterministic</td>
+<td>Static code, not dynamic content</td>
+<td>HIGH (deterministic)</td>
+</tr>
+</tbody>
+</table>
+<p>The security models form a gradient from <span class="kw-terra">lowest isolation</span> (skills, which inject text directly into the prompt) to <span class="kw-terra">highest isolation</span> (MCP servers, which run in separate processes). This gradient is not accidental – it reflects the inherent trade-off between power and safety. Skills have the most direct influence on model behavior (they literally become part of the system prompt) but the least execution isolation. MCP servers have the strongest isolation (separate process, defined protocol) but influence the model only indirectly through tool availability and server instructions.</p>
+<section id="plugin-specific-security" class="level3">
+<h3 class="anchored" data-anchor-id="plugin-specific-security">Plugin-Specific Security</h3>
+<p>Plugins inherit the security characteristics of their components, but add marketplace trust as an additional layer. The defenses are layered:</p>
+<ol type="1">
+<li><p><strong>Name impersonation protection</strong>: <code>BLOCKED_OFFICIAL_NAME_PATTERN</code> catches attempts to register marketplaces with names like “claude-official-plugins”. <span class="kw-terra">Non-ASCII homograph detection</span> catches Unicode-based impersonation.</p></li>
+<li><p><strong>Source org verification</strong>: Reserved marketplace names (the eight official names) can only be used by repositories from the <code>anthropics</code> GitHub organization. <code>validateOfficialNameSource()</code> enforces this.</p></li>
+<li><p><strong>Policy blocking</strong>: Enterprise admins can force-disable specific plugins via <code>policySettings</code>. The <code>isPluginBlockedByPolicy()</code> function is checked at install, enable, and load time.</p></li>
+<li><p><strong>Dependency verification</strong>: <code>verifyAndDemote()</code> checks that all declared dependencies are present and enabled. A plugin with an unsatisfied dependency is demoted to disabled.</p></li>
+</ol>
+<div class="callout callout-style-default callout-warning callout-titled" title="Trade-off">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Trade-off
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Skills have the weakest security boundary because their mechanism <em>is</em> prompt injection – they inject text into the system prompt. A malicious skill could potentially override safety instructions, change behavioral guidelines, or inject harmful patterns. The mitigation is trust at the source level (marketplace verification, policy controls) rather than at the execution level (there is no execution boundary for text injection). This is a deliberate trade-off: skills need direct prompt access to work, and sandboxing prompt content would eliminate their utility.</p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="design-patterns-and-cs-connections" class="level2">
+<h2 class="anchored" data-anchor-id="design-patterns-and-cs-connections">Design Patterns and CS Connections</h2>
+<p><strong>Claude Code’s extension architecture instantiates half a dozen classic design patterns, each applied at a different layer.</strong></p>
+<section id="decorator-pattern-system-level" class="level3">
+<h3 class="anchored" data-anchor-id="decorator-pattern-system-level">Decorator Pattern (System Level)</h3>
+<p>The entire extension architecture is the Decorator pattern applied at the system level. The core agent has fixed behavior: receive prompt, reason, call tools, return response. Each extension point wraps additional behavior around this core:</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-decorator" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-decorator-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-decorator">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart TD
+  CMD["Slash Commands&lt;br&gt;&lt;i&gt;user interface wrapper&lt;/i&gt;"]
+  HK["Hooks&lt;br&gt;&lt;i&gt;execution pipeline wrapper&lt;/i&gt;"]
+  PL["Plugins&lt;br&gt;&lt;i&gt;composition + distribution wrapper&lt;/i&gt;"]
+  MCP["MCP&lt;br&gt;&lt;i&gt;capability wrapper&lt;/i&gt;"]
+  SK["Skills&lt;br&gt;&lt;i&gt;reasoning wrapper&lt;/i&gt;"]
+  AG["Custom Agents&lt;br&gt;&lt;i&gt;persona wrapper&lt;/i&gt;"]
+  CORE["&lt;b&gt;Core Agent&lt;/b&gt;&lt;br&gt;prompt --&gt; reason --&gt; tools"]
+
+  CMD --&gt; HK --&gt; PL --&gt; MCP --&gt; SK --&gt; AG --&gt; CORE
+
+  style CMD fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style HK fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style PL fill:#C2856E,color:#fff,stroke:#A06A54
+  style MCP fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style SK fill:#C4A882,color:#fff,stroke:#A08562
+  style AG fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style CORE fill:#8B9DAF,color:#fff,stroke:#6E7F91,stroke-width:3px
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-decorator-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;8: Decorator pattern at system scale, shown as concentric wrappers around a central core. The innermost node is the Core Agent (prompt-reason-tools loop, highlighted with a thick border). Six independent wrapper layers surround it: Custom Agents (persona wrapper), Skills (reasoning wrapper), MCP (capability wrapper), Plugins (composition and distribution wrapper), Hooks (execution pipeline wrapper), and Slash Commands (user interface wrapper). Each layer is independently removable – the core agent executes the same loop regardless of which wrappers are active.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Start at the top with Slash Commands (the outermost wrapper) and follow the arrows inward through Hooks, Plugins, MCP, Skills, and Custom Agents, arriving at the Core Agent node at the bottom (highlighted with a thick border). Each node is a decorator layer that wraps the one below it. The core agent executes the same prompt-reason-tools loop regardless of which wrapper layers are active – any layer can be removed independently without affecting the others.</p>
+<p>Each wrapper layer is independent. You can remove skills without affecting hooks. You can add MCP servers without changing custom agents. The core agent code is <em>unaware</em> of specific extensions – it executes the same loop regardless of which wrappers are active.</p>
+</section>
+<section id="openclosed-principle" class="level3">
+<h3 class="anchored" data-anchor-id="openclosed-principle">Open/Closed Principle</h3>
+<p>The extension architecture is a textbook implementation of the <span class="kw-sage">Open/Closed Principle</span>: open for extension, closed for modification. Adding a new hook does not require modifying the tool execution code. Adding a new MCP server does not require modifying the tool registry code. Adding a new skill does not require modifying the prompt assembly code. Each extension point has a registration interface (settings configuration, file system conventions) that does not touch the core.</p>
+</section>
+<section id="strategy-pattern-tools-and-agents" class="level3">
+<h3 class="anchored" data-anchor-id="strategy-pattern-tools-and-agents">Strategy Pattern (Tools and Agents)</h3>
+<p>The tool registry uses the Strategy pattern: each tool is a strategy for performing a specific operation, and the model selects which strategy to invoke. MCP extends this by dynamically registering new strategies at runtime. Custom agents apply the same pattern to the agent itself – each agent type is a strategy for handling a class of tasks, and the orchestrator selects the appropriate one.</p>
+</section>
+<section id="intercepting-filter-pattern-hooks" class="level3">
+<h3 class="anchored" data-anchor-id="intercepting-filter-pattern-hooks">Intercepting Filter Pattern (Hooks)</h3>
+<p>Hooks are the <span class="kw-sage">Intercepting Filter</span> pattern from enterprise Java. <span class="kw-terra">PreToolUse</span> and <span class="kw-terra">PostToolUse</span> form a filter chain that wraps every tool execution. Each filter can observe, modify, or reject the request. The chain is configurable (via settings) and extensible (add a new hook without modifying existing ones). Spring’s <code>HandlerInterceptor.preHandle()</code> / <code>postHandle()</code> is the direct analogue.</p>
+</section>
+<section id="actor-model-custom-agents" class="level3">
+<h3 class="anchored" data-anchor-id="actor-model-custom-agents">Actor Model (Custom Agents)</h3>
+<p>Each custom agent runs in isolation with its own conversation context, tool permissions, and system prompt. Communication happens through message passing (the <code>Agent</code> tool). No shared mutable state between agents. This is the Actor Model – the same concurrency primitive used by Erlang’s processes, Akka’s actors, and Go’s goroutines-with-channels.</p>
+<hr>
+</section>
+</section>
+<section id="building-your-own-extension-a-decision-tree" class="level2">
+<h2 class="anchored" data-anchor-id="building-your-own-extension-a-decision-tree">Building Your Own Extension – A Decision Tree</h2>
+<p><strong>Choosing the right extension point depends on what you need to accomplish. The decision tree is simple once you understand what each mechanism can and cannot do.</strong></p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-decision" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-decision-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-decision">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart TD
+  Q["&lt;b&gt;What do you need?&lt;/b&gt;"]
+
+  DO["Agent needs to DO&lt;br&gt;something new?"]
+  THINK["Agent needs to THINK&lt;br&gt;differently?"]
+  ENFORCE["Need to ENFORCE&lt;br&gt;rules?"]
+  ROLE["Need a SPECIALIZED&lt;br&gt;ROLE?"]
+  CTRL["Need DETERMINISTIC&lt;br&gt;CONTROL?"]
+  DIST["Need to DISTRIBUTE&lt;br&gt;a combination?"]
+
+  MCP["&lt;b&gt;MCP Server&lt;/b&gt;&lt;br&gt;&lt;i&gt;Any language + JSON-RPC&lt;/i&gt;"]
+  SKILL["&lt;b&gt;Skill&lt;/b&gt; (SKILL.md)&lt;br&gt;&lt;i&gt;Markdown with frontmatter&lt;/i&gt;"]
+  HOOK["&lt;b&gt;Hook&lt;/b&gt; (Pre/PostToolUse)&lt;br&gt;&lt;i&gt;JSON config + shell cmd&lt;/i&gt;"]
+  AGENT["&lt;b&gt;Custom Agent&lt;/b&gt;&lt;br&gt;&lt;i&gt;Markdown or YAML&lt;/i&gt;"]
+  CMD["&lt;b&gt;Slash Command&lt;/b&gt;&lt;br&gt;&lt;i&gt;Markdown file&lt;/i&gt;"]
+  PLUGIN["&lt;b&gt;Plugin&lt;/b&gt;&lt;br&gt;&lt;i&gt;Directory + plugin.json&lt;/i&gt;"]
+
+  Q --&gt; DO --&gt; MCP
+  Q --&gt; THINK --&gt; SKILL
+  Q --&gt; ENFORCE --&gt; HOOK
+  Q --&gt; ROLE --&gt; AGENT
+  Q --&gt; CTRL --&gt; CMD
+  Q --&gt; DIST --&gt; PLUGIN
+  style Q fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style DO fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style THINK fill:#C2856E,color:#fff,stroke:#A06A54
+  style ENFORCE fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style ROLE fill:#C4A882,color:#fff,stroke:#A08562
+  style CTRL fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style DIST fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style MCP fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style SKILL fill:#C2856E,color:#fff,stroke:#A06A54
+  style HOOK fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style AGENT fill:#C4A882,color:#fff,stroke:#A08562
+  style CMD fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style PLUGIN fill:#8B9DAF,color:#fff,stroke:#6E7F91
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-decision-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;9: Extension point decision tree for choosing the right mechanism. The central question ‘What do you need?’ branches into six needs, each mapping to exactly one extension point with its implementation format: new capabilities map to MCP Server (any language + JSON-RPC), behavioral changes to Skill (SKILL.md with Markdown frontmatter), enforcement to Hook (JSON config + shell command), specialized roles to Custom Agent (Markdown or YAML), deterministic control to Slash Command (Markdown file), and distribution to Plugin (directory + plugin.json). The one-to-one mapping ensures no ambiguity in extension point selection.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Start at the central question “What do you need?” at the top. Six branches descend to six distinct needs (DO something new, THINK differently, ENFORCE rules, SPECIALIZED ROLE, DETERMINISTIC CONTROL, DISTRIBUTE a combination), and each maps to exactly one extension point at the bottom (MCP Server, Skill, Hook, Custom Agent, Slash Command, Plugin respectively). The one-to-one mapping is the point: there is no ambiguity about which mechanism to use for a given need.</p>
+<section id="minimal-examples" class="level3">
+<h3 class="anchored" data-anchor-id="minimal-examples">Minimal Examples</h3>
+<p><strong>Hook</strong> – Block Bash commands that reference production:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"hooks"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"PreToolUse"</span><span class="fu">:</span> <span class="ot">[</span><span class="fu">{</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"matcher"</span><span class="fu">:</span> <span class="fu">{</span> <span class="dt">"tool"</span><span class="fu">:</span> <span class="st">"Bash"</span> <span class="fu">},</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"hooks"</span><span class="fu">:</span> <span class="ot">[</span><span class="fu">{</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"command"</span><span class="fu">,</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"command"</span><span class="fu">:</span> <span class="st">"echo $TOOL_INPUT | grep -q 'production' &amp;&amp; exit 2 || exit 0"</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>      <span class="fu">}</span><span class="ot">]</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span><span class="ot">]</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Skill</strong> – Python coding guidelines:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>---</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>name: python-style</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>description: Enforce Python coding standards</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>---</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>When writing Python code:</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Use type hints on all function signatures</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Follow PEP 8 naming conventions</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Prefer f-strings over .format()</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Use pathlib instead of os.path</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Custom Agent</strong> – Documentation writer:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>---</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>name: doc-writer</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>description: Writes API documentation</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>tools:</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>Read</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>Grep</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>Write</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>model: sonnet</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>maxTurns: 30</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>---</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>You are a technical writer. Generate clear, accurate API</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>documentation. Read the source code, identify public APIs,</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>and write docs in JSDoc/docstring format.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Plugin</strong> – Bundle all three:</p>
+<pre><code>my-team-plugin/
++-- .claude-plugin/
+|   +-- plugin.json          # {"name": "my-team-tools", ...}
++-- agents/
+|   +-- doc-writer.md        # Custom agent
++-- skills/
+|   +-- SKILL.md             # Python guidelines
++-- hooks/
+    +-- hooks.json           # Production guard hook</code></pre>
+<hr>
+</section>
+</section>
+<section id="summary" class="level2">
+<h2 class="anchored" data-anchor-id="summary">Summary</h2>
+<p><strong>Extensibility is a layered architecture, not a single API.</strong> Claude Code’s six extension points operate at different layers – prompt assembly (skills), tool registry (MCP), execution pipeline (hooks), persona isolation (custom agents), distribution (plugins), and user interface (slash commands). This layering means extensions compose naturally: a skill shapes reasoning, a hook enforces the decision, an MCP server provides the capability, a custom agent runs the review, a plugin bundles the package, and a slash command gives the user direct control. No single-API design could achieve this composition.</p>
+<p><strong>Focused extension points are easier to use correctly and harder to misuse.</strong> A hook that can <em>only</em> intercept tool execution and return an exit code is much harder to misuse than a general-purpose callback that receives the full agent state. The constraint is the value. If your hook can block actions (exit 2) but cannot modify the prompt, you know exactly what it does and what it cannot do. If your skill can inject prompt text but cannot block actions, you know its power and its limits. Focused mechanisms are self-documenting.</p>
+<p><strong>The composition of focused mechanisms is more powerful than one general-purpose API.</strong> A general-purpose plugin API that handles everything – capabilities, enforcement, behavior, personas, distribution – would be complex, error-prone, and hard to reason about. Six focused mechanisms that compose achieve more because each is simple enough to understand completely. The complexity lives in the composition, not in any individual mechanism.</p>
+<p><strong>Hooks are the only enforcement mechanism.</strong> This is the single most important fact about the extension architecture. Skills suggest. MCP provides. Custom agents restrict. Slash commands control. But only hooks can say “no” – exit code 2 blocks the action, period. If you need a guarantee that something will not happen, hooks are your only option.</p>
+<p><strong>Plugins are the packaging format, not a seventh mechanism.</strong> The plugin system does not add new capabilities. It bundles the other five into distributable packages with lifecycle management, versioning, dependency resolution, and marketplace distribution. Understanding this distinction prevents the confusion of treating plugins as “super-extensions” rather than “extension bundles.”</p>
+<p><strong>Configuration is the composition glue.</strong> The four-scope settings hierarchy (managed &gt; local &gt; project &gt; user) determines which extensions are active, how they are configured, and who can override whom. Enterprise policy enforcement happens through configuration scope precedence, not through special-case code. Three lines of <code>isPluginBlockedByPolicy()</code> enforce enterprise compliance because the settings system already handles precedence.</p>
+<hr>
+<p><em>For the foundational treatment of hooks and lifecycle events, see <a href="./11-hooks-lifecycle.html">Part III.4: Hooks &amp; Lifecycle</a>. For multi-agent coordination and custom agent types, see <a href="./07-multi-agent-orchestration.html">Part II.3: Multi-Agent Orchestration</a>. For slash commands and the terminal UI, see <a href="./08-cli-commands-ui.html">Part V.1: CLI, Commands &amp; Terminal UI</a>. For system reminders that feed hook results back to the model, see <a href="./04-context-compaction.html">Part III.2: Context Compaction</a>.</em></p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./12-skills-system.html" class="pagination-link" aria-label="VI.2 — Skills System">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">VI.2 — Skills System</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./16-remote-runtime-bridge.html" class="pagination-link" aria-label="VII.1 — Remote Runtime &amp; Bridge">
+        <span class="nav-page-text">VII.1 — Remote Runtime &amp; Bridge</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.quarto-figure img[src$=".svg"]:not(.nozoom)').forEach(function(img) {
+    fetch(img.src).then(r => r.text()).then(function(svgText) {
+      var div = document.createElement('div');
+      div.innerHTML = svgText;
+      var svg = div.querySelector('svg');
+      if (svg) {
+        var vb = svg.getAttribute('viewBox');
+        if (vb) {
+          var parts = vb.split(/\s+/);
+          var w = parseFloat(parts[2]), h = parseFloat(parts[3]);
+          var ratio = h / w;
+          var containerH = Math.max(250, Math.min(700, 900 * ratio));
+          svg.style.width = '100%';
+          svg.style.height = containerH + 'px';
+        } else {
+          svg.style.width = '100%';
+          svg.style.height = '400px';
+        }
+        svg.style.border = '1px solid var(--bs-border-color, #dee2e6)';
+        svg.style.borderRadius = '6px';
+        svg.style.cursor = 'grab';
+        svg.style.background = 'var(--bs-body-bg, #fff)';
+        img.parentNode.replaceChild(svg, img);
+        svgPanZoom(svg, {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true, minZoom: 0.5, maxZoom: 10});
+      }
+    });
+  });
+  // Mermaid post-processing: apply Palatino font + pan-zoom
+  function initMermaid() {
+    document.querySelectorAll('.cell-output-display svg').forEach(function(svg) {
+      if (svg.dataset.mInit) return;
+      svg.dataset.mInit = '1';
+      // Step 1: Apply Palatino to all text AFTER Mermaid layout
+      svg.querySelectorAll('.nodeLabel, .edgeLabel, .cluster-label span, text').forEach(function(el) {
+        el.style.fontFamily = '"Palatino Linotype", Palatino, Georgia, serif';
+      });
+      // Step 2: Ensure foreignObjects don't clip
+      svg.querySelectorAll('foreignObject').forEach(function(fo) {
+        fo.style.overflow = 'visible';
+      });
+      // Step 3: Size the container
+      var vb = svg.getAttribute('viewBox');
+      if (vb) {
+        var parts = vb.split(/[\s,]+/);
+        var w = parseFloat(parts[2]), h = parseFloat(parts[3]);
+        var ratio = h / w;
+        var containerH = Math.max(350, Math.min(800, 900 * ratio));
+        svg.style.width = '100%';
+        svg.style.height = containerH + 'px';
+      } else {
+        svg.style.width = '100%';
+        svg.style.height = '500px';
+      }
+      svg.style.border = '1px solid var(--bs-border-color, #dee2e6)';
+      svg.style.borderRadius = '6px';
+      svg.style.cursor = 'grab';
+      svg.style.background = 'var(--bs-body-bg, #fff)';
+      // Step 4: Enable pan-zoom
+      try {
+        svgPanZoom(svg, {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true, minZoom: 0.5, maxZoom: 10});
+      } catch(e) {}
+    });
+  }
+  setTimeout(initMermaid, 800);
+  setTimeout(initMermaid, 2000);
+  setTimeout(initMermaid, 4000);
+});
+</script>
+
+
+
+
+</body></html>

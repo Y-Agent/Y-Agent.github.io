@@ -1,0 +1,1330 @@
+{
+  "components": [
+    {
+      "name": "AgentProgressLine",
+      "type": "file",
+      "area": "agents",
+      "description": null
+    },
+    {
+      "name": "App",
+      "type": "file",
+      "area": "core",
+      "description": null
+    },
+    {
+      "name": "ApproveApiKey",
+      "type": "file",
+      "area": "auth",
+      "description": null
+    },
+    {
+      "name": "AutoModeOptInDialog",
+      "type": "file",
+      "area": "dialogs",
+      "description": null
+    },
+    {
+      "name": "AutoUpdater",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "AutoUpdaterWrapper",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "AwsAuthStatusBox",
+      "type": "file",
+      "area": "auth",
+      "description": null
+    },
+    {
+      "name": "BaseTextInput",
+      "type": "file",
+      "area": "core",
+      "description": null
+    },
+    {
+      "name": "BashModeProgress",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "BridgeDialog",
+      "type": "file",
+      "area": "dialogs",
+      "description": null
+    },
+    {
+      "name": "BypassPermissionsModeDialog",
+      "type": "file",
+      "area": "dialogs",
+      "description": null
+    },
+    {
+      "name": "ChannelDowngradeDialog",
+      "type": "file",
+      "area": "dialogs",
+      "description": null
+    },
+    {
+      "name": "ClaudeCodeHint",
+      "type": "directory",
+      "area": "onboarding",
+      "fileCount": 1,
+      "description": null
+    },
+    {
+      "name": "ClaudeInChromeOnboarding",
+      "type": "file",
+      "area": "onboarding",
+      "description": null
+    },
+    {
+      "name": "ClaudeMdExternalIncludesDialog",
+      "type": "file",
+      "area": "dialogs",
+      "description": null
+    },
+    {
+      "name": "ClickableImageRef",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "CompactSummary",
+      "type": "file",
+      "area": "messages",
+      "description": null
+    },
+    {
+      "name": "ConfigurableShortcutHint",
+      "type": "file",
+      "area": "onboarding",
+      "description": null
+    },
+    {
+      "name": "ConsoleOAuthFlow",
+      "type": "file",
+      "area": "auth",
+      "description": null
+    },
+    {
+      "name": "ContextSuggestions",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "ContextVisualization",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "CoordinatorAgentStatus",
+      "type": "file",
+      "area": "agents",
+      "description": null
+    },
+    {
+      "name": "CostThresholdDialog",
+      "type": "file",
+      "area": "dialogs",
+      "description": null
+    },
+    {
+      "name": "CtrlOToExpand",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "CustomSelect",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 10,
+      "description": null
+    },
+    {
+      "name": "DesktopHandoff",
+      "type": "file",
+      "area": "auth",
+      "description": null
+    },
+    {
+      "name": "DesktopUpsell",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 1,
+      "description": null
+    },
+    {
+      "name": "DevBar",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "DevChannelsDialog",
+      "type": "file",
+      "area": "dialogs",
+      "description": null
+    },
+    {
+      "name": "DiagnosticsDisplay",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "EffortCallout",
+      "type": "file",
+      "area": "settings",
+      "description": null
+    },
+    {
+      "name": "EffortIndicator",
+      "type": "file",
+      "area": "settings",
+      "description": null
+    },
+    {
+      "name": "ExitFlow",
+      "type": "file",
+      "area": "dialogs",
+      "description": null
+    },
+    {
+      "name": "ExportDialog",
+      "type": "file",
+      "area": "dialogs",
+      "description": null
+    },
+    {
+      "name": "FallbackToolUseErrorMessage",
+      "type": "file",
+      "area": "tools",
+      "description": null
+    },
+    {
+      "name": "FallbackToolUseRejectedMessage",
+      "type": "file",
+      "area": "tools",
+      "description": null
+    },
+    {
+      "name": "FastIcon",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "Feedback",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "FeedbackSurvey",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 9,
+      "description": null
+    },
+    {
+      "name": "FileEditToolDiff",
+      "type": "file",
+      "area": "tools",
+      "description": null
+    },
+    {
+      "name": "FileEditToolUpdatedMessage",
+      "type": "file",
+      "area": "tools",
+      "description": null
+    },
+    {
+      "name": "FileEditToolUseRejectedMessage",
+      "type": "file",
+      "area": "tools",
+      "description": null
+    },
+    {
+      "name": "FilePathLink",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "FullscreenLayout",
+      "type": "file",
+      "area": "core",
+      "description": null
+    },
+    {
+      "name": "GlobalSearchDialog",
+      "type": "file",
+      "area": "navigation",
+      "description": null
+    },
+    {
+      "name": "HelpV2",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 3,
+      "description": null
+    },
+    {
+      "name": "HighlightedCode",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 1,
+      "description": null
+    },
+    {
+      "name": "HighlightedCode",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "HistorySearchDialog",
+      "type": "file",
+      "area": "navigation",
+      "description": null
+    },
+    {
+      "name": "IdeAutoConnectDialog",
+      "type": "file",
+      "area": "onboarding",
+      "description": null
+    },
+    {
+      "name": "IdeOnboardingDialog",
+      "type": "file",
+      "area": "onboarding",
+      "description": null
+    },
+    {
+      "name": "IdeStatusIndicator",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "IdleReturnDialog",
+      "type": "file",
+      "area": "dialogs",
+      "description": null
+    },
+    {
+      "name": "InterruptedByUser",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "InvalidConfigDialog",
+      "type": "file",
+      "area": "dialogs",
+      "description": null
+    },
+    {
+      "name": "InvalidSettingsDialog",
+      "type": "file",
+      "area": "dialogs",
+      "description": null
+    },
+    {
+      "name": "KeybindingWarnings",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "LanguagePicker",
+      "type": "file",
+      "area": "settings",
+      "description": null
+    },
+    {
+      "name": "LogSelector",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "LogoV2",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 15,
+      "description": null
+    },
+    {
+      "name": "LspRecommendation",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 1,
+      "description": null
+    },
+    {
+      "name": "MCPServerApprovalDialog",
+      "type": "file",
+      "area": "dialogs",
+      "description": null
+    },
+    {
+      "name": "MCPServerDesktopImportDialog",
+      "type": "file",
+      "area": "dialogs",
+      "description": null
+    },
+    {
+      "name": "MCPServerDialogCopy",
+      "type": "file",
+      "area": "dialogs",
+      "description": null
+    },
+    {
+      "name": "MCPServerMultiselectDialog",
+      "type": "file",
+      "area": "dialogs",
+      "description": null
+    },
+    {
+      "name": "ManagedSettingsSecurityDialog",
+      "type": "directory",
+      "area": "dialogs",
+      "fileCount": 2,
+      "description": null
+    },
+    {
+      "name": "Markdown",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "MarkdownTable",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "MemoryUsageIndicator",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "Message",
+      "type": "file",
+      "area": "messages",
+      "description": null
+    },
+    {
+      "name": "MessageModel",
+      "type": "file",
+      "area": "messages",
+      "description": null
+    },
+    {
+      "name": "MessageResponse",
+      "type": "file",
+      "area": "messages",
+      "description": null
+    },
+    {
+      "name": "MessageRow",
+      "type": "file",
+      "area": "messages",
+      "description": null
+    },
+    {
+      "name": "MessageSelector",
+      "type": "file",
+      "area": "messages",
+      "description": null
+    },
+    {
+      "name": "MessageTimestamp",
+      "type": "file",
+      "area": "messages",
+      "description": null
+    },
+    {
+      "name": "Messages",
+      "type": "file",
+      "area": "messages",
+      "description": null
+    },
+    {
+      "name": "ModelPicker",
+      "type": "file",
+      "area": "settings",
+      "description": null
+    },
+    {
+      "name": "NativeAutoUpdater",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "NotebookEditToolUseRejectedMessage",
+      "type": "file",
+      "area": "tools",
+      "description": null
+    },
+    {
+      "name": "OffscreenFreeze",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "Onboarding",
+      "type": "file",
+      "area": "onboarding",
+      "description": null
+    },
+    {
+      "name": "OutputStylePicker",
+      "type": "file",
+      "area": "settings",
+      "description": null
+    },
+    {
+      "name": "PackageManagerAutoUpdater",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "Passes",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 1,
+      "description": null
+    },
+    {
+      "name": "PrBadge",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "PressEnterToContinue",
+      "type": "file",
+      "area": "dialogs",
+      "description": null
+    },
+    {
+      "name": "PromptInput",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 21,
+      "description": null
+    },
+    {
+      "name": "QuickOpenDialog",
+      "type": "file",
+      "area": "navigation",
+      "description": null
+    },
+    {
+      "name": "RemoteCallout",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "RemoteEnvironmentDialog",
+      "type": "file",
+      "area": "dialogs",
+      "description": null
+    },
+    {
+      "name": "ResumeTask",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "SandboxViolationExpandedView",
+      "type": "file",
+      "area": "tools",
+      "description": null
+    },
+    {
+      "name": "ScrollKeybindingHandler",
+      "type": "file",
+      "area": "navigation",
+      "description": null
+    },
+    {
+      "name": "SearchBox",
+      "type": "file",
+      "area": "navigation",
+      "description": null
+    },
+    {
+      "name": "SentryErrorBoundary",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "SessionBackgroundHint",
+      "type": "file",
+      "area": "onboarding",
+      "description": null
+    },
+    {
+      "name": "SessionPreview",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "Settings",
+      "type": "directory",
+      "area": "settings",
+      "fileCount": 4,
+      "description": null
+    },
+    {
+      "name": "ShowInIDEPrompt",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "SkillImprovementSurvey",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "Spinner",
+      "type": "directory",
+      "area": "core",
+      "fileCount": 12,
+      "description": null
+    },
+    {
+      "name": "Spinner",
+      "type": "file",
+      "area": "core",
+      "description": null
+    },
+    {
+      "name": "Stats",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "StatusLine",
+      "type": "file",
+      "area": "core",
+      "description": null
+    },
+    {
+      "name": "StatusNotices",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "StructuredDiff",
+      "type": "directory",
+      "area": "tools",
+      "fileCount": 2,
+      "description": null
+    },
+    {
+      "name": "StructuredDiff",
+      "type": "file",
+      "area": "tools",
+      "description": null
+    },
+    {
+      "name": "StructuredDiffList",
+      "type": "file",
+      "area": "tools",
+      "description": null
+    },
+    {
+      "name": "TagTabs",
+      "type": "file",
+      "area": "navigation",
+      "description": null
+    },
+    {
+      "name": "TaskListV2",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "TeammateViewHeader",
+      "type": "file",
+      "area": "agents",
+      "description": null
+    },
+    {
+      "name": "TeleportError",
+      "type": "file",
+      "area": "navigation",
+      "description": null
+    },
+    {
+      "name": "TeleportProgress",
+      "type": "file",
+      "area": "navigation",
+      "description": null
+    },
+    {
+      "name": "TeleportRepoMismatchDialog",
+      "type": "file",
+      "area": "dialogs",
+      "description": null
+    },
+    {
+      "name": "TeleportResumeWrapper",
+      "type": "file",
+      "area": "navigation",
+      "description": null
+    },
+    {
+      "name": "TeleportStash",
+      "type": "file",
+      "area": "navigation",
+      "description": null
+    },
+    {
+      "name": "TextInput",
+      "type": "file",
+      "area": "core",
+      "description": null
+    },
+    {
+      "name": "ThemePicker",
+      "type": "file",
+      "area": "settings",
+      "description": null
+    },
+    {
+      "name": "ThinkingToggle",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "TokenWarning",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "ToolUseLoader",
+      "type": "file",
+      "area": "tools",
+      "description": null
+    },
+    {
+      "name": "TrustDialog",
+      "type": "directory",
+      "area": "dialogs",
+      "fileCount": 2,
+      "description": null
+    },
+    {
+      "name": "ValidationErrorsList",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "VimTextInput",
+      "type": "file",
+      "area": "core",
+      "description": null
+    },
+    {
+      "name": "VirtualMessageList",
+      "type": "file",
+      "area": "core",
+      "description": null
+    },
+    {
+      "name": "WorkflowMultiselectDialog",
+      "type": "file",
+      "area": "dialogs",
+      "description": null
+    },
+    {
+      "name": "WorktreeExitDialog",
+      "type": "file",
+      "area": "dialogs",
+      "description": null
+    },
+    {
+      "name": "agents",
+      "type": "directory",
+      "area": "agents",
+      "fileCount": 26,
+      "description": null
+    },
+    {
+      "name": "design-system",
+      "type": "directory",
+      "area": "design-system",
+      "fileCount": 16,
+      "description": null
+    },
+    {
+      "name": "diff",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 3,
+      "description": null
+    },
+    {
+      "name": "grove",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 1,
+      "description": null
+    },
+    {
+      "name": "hooks",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 6,
+      "description": "React hooks that wire together the REPL's runtime behavior -- from input handling and keybindings to IDE integration, voice mode, background task navigation, and notification scheduling."
+    },
+    {
+      "name": "mcp",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 13,
+      "description": null
+    },
+    {
+      "name": "memory",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 2,
+      "description": null
+    },
+    {
+      "name": "messageActions",
+      "type": "file",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "messages",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 41,
+      "description": null
+    },
+    {
+      "name": "permissions",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 51,
+      "description": null
+    },
+    {
+      "name": "sandbox",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 5,
+      "description": null
+    },
+    {
+      "name": "shell",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 4,
+      "description": null
+    },
+    {
+      "name": "skills",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 1,
+      "description": "The skill system that discovers and loads SKILL.md files from project directories and bundled sources, builds tool-like wrappers for MCP-provided skills, and manages the skill registry."
+    },
+    {
+      "name": "tasks",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 12,
+      "description": "Task type implementations for background work: local shell commands, local agent subprocesses, remote agent sessions, in-process teammates, dream tasks, and workflow script execution."
+    },
+    {
+      "name": "teams",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 2,
+      "description": null
+    },
+    {
+      "name": "ui",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 3,
+      "description": null
+    },
+    {
+      "name": "wizard",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 5,
+      "description": null
+    }
+  ],
+  "hooks": [
+    {
+      "name": "fileSuggestions",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "notifs",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 16,
+      "description": null
+    },
+    {
+      "name": "renderPlaceholder",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "toolPermission",
+      "type": "directory",
+      "area": "other",
+      "fileCount": 5,
+      "description": null
+    },
+    {
+      "name": "unifiedSuggestions",
+      "area": "other",
+      "description": null
+    },
+    {
+      "name": "useAfterFirstRender",
+      "area": "lifecycle",
+      "description": "Executes a callback after the first Ink render cycle completes, used for initialization that depends on the terminal being fully mounted."
+    },
+    {
+      "name": "useApiKeyVerification",
+      "area": "other",
+      "description": "Validates the configured API key on startup and surfaces authentication errors as banner notifications when the key is missing, invalid, or expired."
+    },
+    {
+      "name": "useArrowKeyHistory",
+      "area": "input",
+      "description": "Enables up/down arrow key navigation through command history in the prompt input, matching shell-like behavior for recalling previous messages."
+    },
+    {
+      "name": "useAssistantHistory",
+      "area": "other",
+      "description": "Tracks and provides access to the conversation's assistant message history, enabling features that need to reference or navigate past model responses."
+    },
+    {
+      "name": "useAwaySummary",
+      "area": "session",
+      "description": "Triggers the away-summary generation when a user returns to a session after a period of inactivity, displaying a brief recap of recent context."
+    },
+    {
+      "name": "useBackgroundTaskNavigation",
+      "area": "navigation",
+      "description": "Handles keyboard navigation between background task panels, allowing users to cycle through and inspect running sub-agents and shell tasks."
+    },
+    {
+      "name": "useBlink",
+      "area": "lifecycle",
+      "description": "A simple timer hook that toggles a boolean value at a fixed interval, used for cursor blinking and other pulsing UI indicators."
+    },
+    {
+      "name": "useCanUseTool",
+      "area": "agent",
+      "description": "The permission evaluation hook that determines whether a specific tool invocation is allowed based on the current permission mode, user rules, and policy limits, returning allow/deny/ask decisions."
+    },
+    {
+      "name": "useCancelRequest",
+      "area": "other",
+      "description": "Handles Ctrl+C behavior during active API requests, managing the abort signal lifecycle and distinguishing between canceling the current request vs. exiting."
+    },
+    {
+      "name": "useChromeExtensionNotification",
+      "area": "integration",
+      "description": "Displays a notification prompting users to install or update the Chrome extension when the Claude-in-Chrome integration would be beneficial."
+    },
+    {
+      "name": "useClaudeCodeHintRecommendation",
+      "area": "suggestions",
+      "description": "Shows contextual hints recommending Claude Code features that the user might not know about, based on their usage patterns."
+    },
+    {
+      "name": "useClipboardImageHint",
+      "area": "suggestions",
+      "description": "Detects when an image is in the clipboard and shows a hint about pasting images into the conversation for visual analysis."
+    },
+    {
+      "name": "useCommandKeybindings",
+      "area": "navigation",
+      "description": "Binds keyboard shortcuts to slash commands, enabling direct key combinations (like Ctrl+K for /compact) without typing the command."
+    },
+    {
+      "name": "useCommandQueue",
+      "area": "session",
+      "description": "Manages a queue of commands to be executed sequentially, ensuring that queued slash commands don't overlap or interfere with each other."
+    },
+    {
+      "name": "useCopyOnSelect",
+      "area": "input",
+      "description": "Automatically copies selected text to the clipboard when the user makes a selection in the terminal output."
+    },
+    {
+      "name": "useDeferredHookMessages",
+      "area": "plugins",
+      "description": "Collects and delivers system messages from lifecycle hooks that fire during turns, deferring their display until an appropriate point in the conversation flow."
+    },
+    {
+      "name": "useDiffData",
+      "area": "data",
+      "description": "Computes and caches diff data for files changed during the session, providing the data model behind the /diff command and diff-related UI components."
+    },
+    {
+      "name": "useDiffInIDE",
+      "area": "data",
+      "description": "Opens file diffs in the connected IDE when available, leveraging the IDE integration to show richer diff views than the terminal can provide."
+    },
+    {
+      "name": "useDirectConnect",
+      "area": "integration",
+      "description": "Manages the direct WebSocket connection to an external client, handling the lifecycle of the direct-connect server for IDE and remote control integration."
+    },
+    {
+      "name": "useDoublePress",
+      "area": "input",
+      "description": "Detects double-press of a key within a time window, used for gestures like double-Escape to force-exit or double-Enter to submit."
+    },
+    {
+      "name": "useDynamicConfig",
+      "area": "state",
+      "description": "Polls for and applies dynamic configuration changes from the server, enabling runtime feature flag updates and A/B test assignment without restarting."
+    },
+    {
+      "name": "useElapsedTime",
+      "area": "lifecycle",
+      "description": "Tracks elapsed time since a reference point (typically request start), providing a ticking counter for the progress display during model responses."
+    },
+    {
+      "name": "useExitOnCtrlCD",
+      "area": "navigation",
+      "description": "Implements the Ctrl+C/Ctrl+D exit behavior in the base input handler, distinguishing between interrupt and EOF signals for graceful shutdown."
+    },
+    {
+      "name": "useExitOnCtrlCDWithKeybindings",
+      "area": "navigation",
+      "description": "Extended exit handler that respects custom keybinding overrides for Ctrl+C and Ctrl+D, ensuring the customized bindings don't break exit behavior."
+    },
+    {
+      "name": "useFileHistorySnapshotInit",
+      "area": "data",
+      "description": "Initializes the file history snapshot system on session start, creating the baseline snapshot that enables /rewind to restore files to their pre-session state."
+    },
+    {
+      "name": "useGlobalKeybindings",
+      "area": "navigation",
+      "description": "Registers and dispatches global keyboard shortcuts that work regardless of which component has focus, providing application-wide hotkey support."
+    },
+    {
+      "name": "useHistorySearch",
+      "area": "input",
+      "description": "Implements Ctrl+R reverse history search in the input, filtering past commands as the user types a search pattern."
+    },
+    {
+      "name": "useIDEIntegration",
+      "area": "integration",
+      "description": "Orchestrates the full IDE integration lifecycle including MCP server discovery, connection management, file sync, and bidirectional RPC between Claude Code and the connected editor."
+    },
+    {
+      "name": "useIdeAtMentioned",
+      "area": "integration",
+      "description": "Detects when the user @-mentions a file from the IDE's active editor context, automatically resolving the file path for inclusion in the conversation."
+    },
+    {
+      "name": "useIdeConnectionStatus",
+      "area": "integration",
+      "description": "Monitors and reports the connection status of the IDE integration, surfacing connection/disconnection events as UI indicators."
+    },
+    {
+      "name": "useIdeLogging",
+      "area": "integration",
+      "description": "Forwards Claude Code log events to the connected IDE's output channel, providing visibility into agent behavior from within the editor."
+    },
+    {
+      "name": "useIdeSelection",
+      "area": "integration",
+      "description": "Captures text selection events from the connected IDE and makes them available as context for the current conversation turn."
+    },
+    {
+      "name": "useInboxPoller",
+      "area": "suggestions",
+      "description": "Periodically polls for incoming messages in the session inbox (from remote sessions, teammates, or bridge connections), delivering them to the appropriate handlers."
+    },
+    {
+      "name": "useInputBuffer",
+      "area": "input",
+      "description": "Manages the text input buffer with cursor position tracking, supporting insertion, deletion, and cursor movement operations for the REPL prompt."
+    },
+    {
+      "name": "useIssueFlagBanner",
+      "area": "suggestions",
+      "description": "Displays a banner when there's an active issue flag on the session, alerting the user to known problems or degraded service conditions."
+    },
+    {
+      "name": "useLogMessages",
+      "area": "other",
+      "description": "Captures and surfaces log messages from internal systems as visible notifications in the terminal UI, bridging the gap between debug logs and user-visible output."
+    },
+    {
+      "name": "useLspPluginRecommendation",
+      "area": "integration",
+      "description": "Recommends LSP-related plugins when the user's project could benefit from language server features that aren't currently configured."
+    },
+    {
+      "name": "useMailboxBridge",
+      "area": "integration",
+      "description": "Bridges the mailbox messaging system with the React component tree, routing inter-component messages through the centralized mailbox context."
+    },
+    {
+      "name": "useMainLoopModel",
+      "area": "state",
+      "description": "Tracks and provides the currently active model for the main conversation loop, handling model switches and ensuring components react to model changes."
+    },
+    {
+      "name": "useManagePlugins",
+      "area": "plugins",
+      "description": "Monitors plugin state changes and manages the plugin lifecycle within the React component tree, handling installation, updates, and removal events."
+    },
+    {
+      "name": "useMemoryUsage",
+      "area": "state",
+      "description": "Monitors JavaScript heap memory usage and surfaces warnings when memory consumption approaches dangerous levels, helping detect memory leaks."
+    },
+    {
+      "name": "useMergedClients",
+      "area": "agent",
+      "description": "Combines API clients from multiple sources (built-in, plugin-provided, MCP) into a unified client interface that the query engine can use transparently."
+    },
+    {
+      "name": "useMergedCommands",
+      "area": "agent",
+      "description": "Merges commands from all sources (built-in, plugins, skills) into a single command registry, resolving naming conflicts and providing the complete command list."
+    },
+    {
+      "name": "useMergedTools",
+      "area": "agent",
+      "description": "Assembles the complete tool set by merging built-in tools, MCP-provided tools, plugin tools, and feature-gated tools into the unified tool array passed to the model."
+    },
+    {
+      "name": "useMinDisplayTime",
+      "area": "lifecycle",
+      "description": "Ensures UI elements (like progress indicators) stay visible for a minimum duration even if the underlying operation completes quickly, preventing visual flicker."
+    },
+    {
+      "name": "useNotifyAfterTimeout",
+      "area": "lifecycle",
+      "description": "Sends a system notification when the model's response takes longer than a configurable threshold, alerting the user that a long-running operation is still in progress."
+    },
+    {
+      "name": "useOfficialMarketplaceNotification",
+      "area": "plugins",
+      "description": "Displays a notification about the official plugin marketplace when the user might benefit from discovering available extensions."
+    },
+    {
+      "name": "usePasteHandler",
+      "area": "input",
+      "description": "Intercepts paste events to detect and handle large text pastes and image pastes, converting them to the appropriate message format with content references."
+    },
+    {
+      "name": "usePluginRecommendationBase",
+      "area": "suggestions",
+      "description": "Base hook that evaluates plugin recommendation rules and manages the recommendation state, powering the various plugin recommendation notification hooks."
+    },
+    {
+      "name": "usePrStatus",
+      "area": "data",
+      "description": "Monitors the status of GitHub pull requests related to the current session, displaying CI check results and review states."
+    },
+    {
+      "name": "usePromptSuggestion",
+      "area": "suggestions",
+      "description": "Feeds the PromptSuggestion service's output into the UI, showing contextual suggestions below the input prompt based on conversation state."
+    },
+    {
+      "name": "usePromptsFromClaudeInChrome",
+      "area": "integration",
+      "description": "Receives prompts forwarded from the Claude-in-Chrome extension, enabling users to send tasks from their browser to the CLI session."
+    },
+    {
+      "name": "useQueueProcessor",
+      "area": "session",
+      "description": "Processes the command queue by dequeuing and executing commands one at a time, managing the sequential execution contract for queued operations."
+    },
+    {
+      "name": "useRemoteSession",
+      "area": "integration",
+      "description": "Manages the lifecycle of a remote session connection, handling authentication, message routing, and reconnection for teleported sessions."
+    },
+    {
+      "name": "useReplBridge",
+      "area": "agent",
+      "description": "Establishes and manages the REPL bridge connection that enables external control of the REPL from IDE extensions and other surfaces."
+    },
+    {
+      "name": "useSSHSession",
+      "area": "integration",
+      "description": "Detects and handles SSH session characteristics, adjusting terminal behavior and feature availability when Claude Code is running over an SSH connection."
+    },
+    {
+      "name": "useScheduledTasks",
+      "area": "session",
+      "description": "Monitors and triggers scheduled (cron) tasks at their configured intervals, managing the cron scheduler lifecycle within the React component tree."
+    },
+    {
+      "name": "useSearchInput",
+      "area": "input",
+      "description": "Implements the search-mode input handler for Ctrl+R history search, managing search state, result filtering, and navigation between matches."
+    },
+    {
+      "name": "useSessionBackgrounding",
+      "area": "session",
+      "description": "Handles session backgrounding events (terminal losing focus, SSH disconnects) by pausing non-essential work and preparing for potential resume."
+    },
+    {
+      "name": "useSettings",
+      "area": "state",
+      "description": "Loads and provides reactive access to the full settings state, triggering re-renders when settings change through any source (config files, commands, remote sync)."
+    },
+    {
+      "name": "useSettingsChange",
+      "area": "state",
+      "description": "Detects and responds to settings file changes (from external edits or other sessions), applying updates to the running session in real time."
+    },
+    {
+      "name": "useSkillImprovementSurvey",
+      "area": "plugins",
+      "description": "Occasionally prompts users with a survey about skill quality after skill invocations, collecting feedback to improve skill effectiveness."
+    },
+    {
+      "name": "useSkillsChange",
+      "area": "plugins",
+      "description": "Monitors the filesystem for changes to SKILL.md files and reloads the skill registry when skills are added, modified, or removed."
+    },
+    {
+      "name": "useSwarmInitialization",
+      "area": "agent",
+      "description": "Initializes the multi-agent swarm infrastructure when swarm mode is enabled, setting up the messaging channels and agent registry."
+    },
+    {
+      "name": "useSwarmPermissionPoller",
+      "area": "agent",
+      "description": "Polls for pending permission requests from agents in the swarm, surfacing them to the user for approval when teammates need elevated access."
+    },
+    {
+      "name": "useTaskListWatcher",
+      "area": "data",
+      "description": "Watches the background task list for state changes (task completion, failure, new output) and triggers UI updates when task status changes."
+    },
+    {
+      "name": "useTasksV2",
+      "area": "data",
+      "description": "The next-generation task management hook that handles the full lifecycle of background tasks including creation, monitoring, output streaming, and cleanup."
+    },
+    {
+      "name": "useTeammateViewAutoExit",
+      "area": "agent",
+      "description": "Automatically exits the teammate detail view when the observed teammate terminates, returning the user to the main conversation view."
+    },
+    {
+      "name": "useTeleportResume",
+      "area": "session",
+      "description": "Handles resuming a session after teleporting back from a remote environment, reconciling local and remote state and restoring the conversation context."
+    },
+    {
+      "name": "useTerminalSize",
+      "area": "other",
+      "description": "Tracks terminal dimensions and triggers re-renders when the terminal is resized, providing responsive layout information to all components."
+    },
+    {
+      "name": "useTextInput",
+      "area": "input",
+      "description": "The core text input hook that handles character insertion, cursor movement, line editing, history navigation, and paste events for the REPL prompt."
+    },
+    {
+      "name": "useTimeout",
+      "area": "lifecycle",
+      "description": "A declarative timeout hook that calls a callback after a delay, automatically cleaning up on unmount -- the React-idiomatic alternative to setTimeout."
+    },
+    {
+      "name": "useTurnDiffs",
+      "area": "data",
+      "description": "Computes per-turn file diffs by comparing file states before and after each assistant turn, powering the inline diff display in the conversation output."
+    },
+    {
+      "name": "useTypeahead",
+      "area": "input",
+      "description": "Provides typeahead/autocomplete suggestions in the input prompt, drawing from file paths, command names, agent names, and MCP resources."
+    },
+    {
+      "name": "useUpdateNotification",
+      "area": "lifecycle",
+      "description": "Checks for available Claude Code updates and displays a notification when a new version is available, with update action options."
+    },
+    {
+      "name": "useVimInput",
+      "area": "input",
+      "description": "Replaces the standard text input handler with a Vim-emulation layer when Vim mode is active, routing keystrokes through the Vim motion/operator state machine."
+    },
+    {
+      "name": "useVirtualScroll",
+      "area": "other",
+      "description": "Implements virtual scrolling for long content areas, rendering only the visible portion of large outputs to maintain terminal performance."
+    },
+    {
+      "name": "useVoice",
+      "area": "voice",
+      "description": "The primary voice mode hook that coordinates push-to-talk recording, speech-to-text transcription, and audio submission into the conversation flow."
+    },
+    {
+      "name": "useVoiceEnabled",
+      "area": "voice",
+      "description": "Evaluates all preconditions for voice mode availability (feature flags, auth, platform support) and provides a reactive enabled/disabled status."
+    },
+    {
+      "name": "useVoiceIntegration",
+      "area": "voice",
+      "description": "Wires the voice recording and transcription pipeline into the React component tree, managing the UI state transitions between listening, transcribing, and submitting."
+    }
+  ]
+}

@@ -1,0 +1,148 @@
+/* ── Hero image ── */
+.hero-image {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+/* ── TikZ / SVG figure styling ── */
+.quarto-figure {
+  margin: 1.5rem 0;
+}
+
+.quarto-figure svg {
+  display: block;
+  margin: 0 auto;
+}
+
+.quarto-figure-center > figure > p {
+  text-align: center;
+}
+
+figcaption {
+  font-size: 0.88rem;
+  color: var(--bs-secondary-color, #6c757d);
+  text-align: center;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+/* ── Series badge ── */
+.series-badge {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  background: rgba(139, 157, 175, 0.15);
+  color: inherit;
+}
+
+/* ── Post subtitle styling ── */
+.quarto-title .quarto-title-subtitle {
+  font-style: italic;
+  opacity: 0.85;
+}
+
+/* ── Tabset panel styling ── */
+.panel-tabset .nav-link {
+  font-family: "Palatino Linotype", "Palatino", serif;
+  font-size: 0.9rem;
+}
+
+/* ── Morandi keyword highlighting ── */
+.kw-slate { color: #6B7D8F; font-weight: 600; }
+.kw-terra { color: #C2856E; font-weight: 600; }
+.kw-sage  { color: #7C8F68; font-weight: 600; }
+.kw-mauve { color: #9A87A0; font-weight: 600; }
+
+/* ── Mermaid diagram sizing & pan-zoom ── */
+.cell-output-display {
+  overflow: visible;
+}
+.cell[data-engine="mermaid"] .cell-output-display,
+.cell-output-display:has(svg[id^="mermaid-"]) {
+  overflow: auto;
+  max-width: 100%;
+}
+.cell[data-engine="mermaid"] svg,
+.cell-output-display svg[id^="mermaid-"],
+.quarto-figure .mermaid svg {
+  max-width: 100%;
+  min-height: 300px;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 6px;
+  cursor: grab;
+  background: var(--bs-body-bg, #fff);
+  padding: 0.5rem;
+}
+
+/* ── Mermaid node styling ── */
+.cell[data-engine="mermaid"] .node rect,
+.cell[data-engine="mermaid"] .node polygon,
+.cell[data-engine="mermaid"] .node circle,
+.cell-output-display .node rect,
+.cell-output-display .node polygon,
+.cell-output-display .node circle {
+  rx: 6px !important;
+  ry: 6px !important;
+  filter: drop-shadow(1px 2px 3px rgba(0,0,0,0.08));
+}
+
+/* Prevent text clipping inside nodes */
+.cell-output-display foreignObject,
+.cell[data-engine="mermaid"] foreignObject {
+  overflow: visible !important;
+}
+.cell-output-display .nodeLabel,
+.cell-output-display .edgeLabel,
+.cell-output-display .cluster-label span {
+  overflow: visible !important;
+}
+
+/* ── Edge label background matches page (covers the arrow line) ── */
+.cell-output-display .edgeLabel rect,
+.cell[data-engine="mermaid"] .edgeLabel rect,
+.mermaid .edgeLabel rect {
+  fill: var(--bs-body-bg, #FAF8F5) !important;
+  stroke: none !important;
+}
+.cell-output-display .edgeLabel span,
+.cell-output-display .edgeLabel p,
+.cell-output-display .edgeLabel div,
+.cell[data-engine="mermaid"] .edgeLabel span,
+.cell[data-engine="mermaid"] .edgeLabel div,
+.mermaid .edgeLabel span,
+.mermaid .edgeLabel div {
+  background: var(--bs-body-bg, #FAF8F5) !important;
+  background-color: var(--bs-body-bg, #FAF8F5) !important;
+}
+
+/* ── Mermaid thicker arrows and lines ── */
+.cell[data-engine="mermaid"] .flowchart-link,
+.cell[data-engine="mermaid"] .edge-pattern-solid,
+.cell[data-engine="mermaid"] .path,
+.mermaid .flowchart-link,
+.mermaid .edge-pattern-solid,
+.mermaid .path {
+  stroke-width: 2px !important;
+}
+.cell[data-engine="mermaid"] .edge-pattern-dotted,
+.mermaid .edge-pattern-dotted {
+  stroke-width: 2px !important;
+}
+.cell[data-engine="mermaid"] marker path,
+.mermaid marker path {
+  stroke-width: 1px !important;
+}
+
+/* ── Smooth theme toggle transition ── */
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}

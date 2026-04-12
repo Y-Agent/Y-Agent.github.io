@@ -1,0 +1,2018 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Bird’s Eye Architecture – Inside Claude Code</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./01-end-to-end-workflow.html" rel="next">
+<link href="./explorer-dist/index.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-f2aa3fcab4a3c0cbb1a885f128e95a4e.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-4486e80548b20dd029182ccec781b91c.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-f2aa3fcab4a3c0cbb1a885f128e95a4e.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-e429c51d478a3f7fe436edff7d8b5e18.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-89366f393ab88770656785fe4740de67.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-e429c51d478a3f7fe436edff7d8b5e18.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Palatino+Linotype&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="styles/custom.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Inside Claude Code</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="./index.html" aria-current="page"> 
+<span class="menu-text">Series Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./explorer-dist/index.html" target="_blank"> 
+<span class="menu-text">Code Explorer</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ZhuoranYang/claude_code_analysis"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./00-birds-eye-architecture.html">I. Overview</a></li><li class="breadcrumb-item"><a href="./00-birds-eye-architecture.html">I.1 — Bird’s Eye Architecture</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Inside Claude Code</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./explorer-dist/index.html" class="sidebar-item-text sidebar-link" target="_blank">
+ <span class="menu-text">Code Explorer</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">I. Overview</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./00-birds-eye-architecture.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">I.1 — Bird’s Eye Architecture</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-end-to-end-workflow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">I.2 — End-to-End Workflow</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false">
+ <span class="menu-text">II. Agent Harness</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-agent-loop-query-engine.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.1 — Agent Loop &amp; Query Engine</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./15-agent-sdk-structured-io.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.2 — Agent SDK &amp; Structured I/O</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-multi-agent-orchestration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.3 — Multi-Agent Orchestration</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./19-plan-mode.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.4 — Plan Mode</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false">
+ <span class="menu-text">III. Context Engineering</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-prompt-assembly.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.1 — Prompt Assembly</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-context-compaction.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.2 — Context Compaction</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./17-memory-hierarchy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.3 — Memory Hierarchy</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./11-hooks-lifecycle.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.4 — Hooks &amp; Lifecycle</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false">
+ <span class="menu-text">IV. Tools</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-tool-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IV.1 — Tool System &amp; Registry</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-safety-sandbox.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IV.2 — Safety &amp; Sandbox</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false">
+ <span class="menu-text">V. Invocation</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-cli-commands-ui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">V.1 — CLI, Commands &amp; UI</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-auth-providers-flags.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">V.2 — Auth, Providers &amp; Flags</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false">
+ <span class="menu-text">VI. Extensions</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./10-model-context-protocol.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.1 — Model Context Protocol</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./12-skills-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.2 — Skills System</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./13-plugin-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.3 — Plugin Architecture</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="false">
+ <span class="menu-text">VII. Remote Runtime</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./16-remote-runtime-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VII.1 — Remote Runtime &amp; Bridge</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="false">
+ <span class="menu-text">VIII. Native Runtime</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./18-native-runtime-voice-portability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VIII.1 — Native Runtime, Voice &amp; Portability</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="false">
+ <span class="menu-text">IX. Transparency &amp; Trust</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./14-hidden-costs-context-manipulation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IX.1 — Transparency &amp; Trust</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#background-and-scope" id="toc-background-and-scope" class="nav-link active" data-scroll-target="#background-and-scope">1. Background and Scope</a>
+  <ul class="collapse">
+  <li><a href="#utility-platform-layer" id="toc-utility-platform-layer" class="nav-link" data-scroll-target="#utility-platform-layer">Utility &amp; Platform Layer</a></li>
+  <li><a href="#frontend-terminal-ui" id="toc-frontend-terminal-ui" class="nav-link" data-scroll-target="#frontend-terminal-ui">Frontend / Terminal UI</a></li>
+  <li><a href="#backend-agent-engine" id="toc-backend-agent-engine" class="nav-link" data-scroll-target="#backend-agent-engine">Backend / Agent Engine</a></li>
+  <li><a href="#agent-orchestration-context" id="toc-agent-orchestration-context" class="nav-link" data-scroll-target="#agent-orchestration-context">Agent Orchestration &amp; Context</a></li>
+  <li><a href="#memory-context-management" id="toc-memory-context-management" class="nav-link" data-scroll-target="#memory-context-management">Memory &amp; Context Management</a></li>
+  <li><a href="#remote-native-runtime" id="toc-remote-native-runtime" class="nav-link" data-scroll-target="#remote-native-runtime">Remote &amp; Native Runtime</a></li>
+  <li><a href="#configuration-entry-points" id="toc-configuration-entry-points" class="nav-link" data-scroll-target="#configuration-entry-points">Configuration &amp; Entry Points</a></li>
+  <li><a href="#top-level-root-files" id="toc-top-level-root-files" class="nav-link" data-scroll-target="#top-level-root-files">Top-Level Root Files</a></li>
+  <li><a href="#vendor-directory" id="toc-vendor-directory" class="nav-link" data-scroll-target="#vendor-directory">Vendor Directory</a></li>
+  </ul></li>
+  <li><a href="#shared-engine-multiple-interfaces" id="toc-shared-engine-multiple-interfaces" class="nav-link" data-scroll-target="#shared-engine-multiple-interfaces">2. Shared Engine, Multiple Interfaces</a>
+  <ul class="collapse">
+  <li><a href="#shared-agent-engine-320k-loc-62" id="toc-shared-agent-engine-320k-loc-62" class="nav-link" data-scroll-target="#shared-agent-engine-320k-loc-62">Shared Agent Engine (~320K LOC, 62%)</a></li>
+  <li><a href="#three-entry-modes-over-the-shared-engine" id="toc-three-entry-modes-over-the-shared-engine" class="nav-link" data-scroll-target="#three-entry-modes-over-the-shared-engine">Three Entry Modes Over the Shared Engine</a></li>
+  </ul></li>
+  <li><a href="#the-six-layer-architecture" id="toc-the-six-layer-architecture" class="nav-link" data-scroll-target="#the-six-layer-architecture">3. The Six-Layer Architecture</a>
+  <ul class="collapse">
+  <li><a href="#layer-1-entry-bootstrap" id="toc-layer-1-entry-bootstrap" class="nav-link" data-scroll-target="#layer-1-entry-bootstrap">Layer 1: Entry &amp; Bootstrap</a></li>
+  <li><a href="#layer-2-agent-loop-the-kernel" id="toc-layer-2-agent-loop-the-kernel" class="nav-link" data-scroll-target="#layer-2-agent-loop-the-kernel">Layer 2: Agent Loop – The Kernel</a></li>
+  <li><a href="#layer-3-tool-execution-the-system-call-interface" id="toc-layer-3-tool-execution-the-system-call-interface" class="nav-link" data-scroll-target="#layer-3-tool-execution-the-system-call-interface">Layer 3: Tool Execution – The System Call Interface</a></li>
+  <li><a href="#layer-4-permission-security-defense-in-depth" id="toc-layer-4-permission-security-defense-in-depth" class="nav-link" data-scroll-target="#layer-4-permission-security-defense-in-depth">Layer 4: Permission &amp; Security – Defense in Depth</a></li>
+  <li><a href="#layer-5-services-the-infrastructure" id="toc-layer-5-services-the-infrastructure" class="nav-link" data-scroll-target="#layer-5-services-the-infrastructure">Layer 5: Services – The Infrastructure</a></li>
+  <li><a href="#layer-6-terminal-ui-the-application-layer" id="toc-layer-6-terminal-ui-the-application-layer" class="nav-link" data-scroll-target="#layer-6-terminal-ui-the-application-layer">Layer 6: Terminal UI – The Application Layer</a></li>
+  </ul></li>
+  <li><a href="#what-differentiates-claude-code" id="toc-what-differentiates-claude-code" class="nav-link" data-scroll-target="#what-differentiates-claude-code">4. What Differentiates Claude Code</a>
+  <ul class="collapse">
+  <li><a href="#prompt-assembly-a-65-fragment-middleware-pipeline" id="toc-prompt-assembly-a-65-fragment-middleware-pipeline" class="nav-link" data-scroll-target="#prompt-assembly-a-65-fragment-middleware-pipeline">Prompt Assembly: A 65-Fragment Middleware Pipeline</a></li>
+  <li><a href="#system-reminders-real-time-notification-architecture" id="toc-system-reminders-real-time-notification-architecture" class="nav-link" data-scroll-target="#system-reminders-real-time-notification-architecture">System Reminders: Real-Time Notification Architecture</a></li>
+  <li><a href="#the-command-surface-80-slash-commands" id="toc-the-command-surface-80-slash-commands" class="nav-link" data-scroll-target="#the-command-surface-80-slash-commands">The Command Surface: 80+ Slash Commands</a></li>
+  <li><a href="#context-as-a-managed-resource" id="toc-context-as-a-managed-resource" class="nav-link" data-scroll-target="#context-as-a-managed-resource">Context as a Managed Resource</a></li>
+  <li><a href="#memory-that-outlives-sessions" id="toc-memory-that-outlives-sessions" class="nav-link" data-scroll-target="#memory-that-outlives-sessions">Memory That Outlives Sessions</a></li>
+  <li><a href="#feature-flags-as-partial-evaluation" id="toc-feature-flags-as-partial-evaluation" class="nav-link" data-scroll-target="#feature-flags-as-partial-evaluation">Feature Flags as Partial Evaluation</a></li>
+  </ul></li>
+  <li><a href="#series-roadmap" id="toc-series-roadmap" class="nav-link" data-scroll-target="#series-roadmap">5. Series Roadmap</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./00-birds-eye-architecture.html">I. Overview</a></li><li class="breadcrumb-item"><a href="./00-birds-eye-architecture.html">I.1 — Bird’s Eye Architecture</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Bird’s Eye Architecture</h1>
+<p class="subtitle lead">Architectural overview of Claude Code: a 512K-line React-in-terminal AI agent</p>
+  <div class="quarto-categories">
+    <div class="quarto-category">architecture</div>
+    <div class="quarto-category">overview</div>
+  </div>
+  </div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="background-and-scope" class="level2">
+<h2 class="anchored" data-anchor-id="background-and-scope">1. Background and Scope</h2>
+<p>Claude Code v2.1.88 shipped with a 59.8 MB source map bundled in the npm package. A source map is a file that maps minified production code back to the original, human-readable source. This accidental inclusion exposed the complete unminified architecture of Anthropic’s production AI coding agent: every module path, function name, and feature flag.</p>
+<p>The codebase comprises approximately <span class="kw-slate">512K lines of TypeScript</span> across 1,884 files. It is built with <span class="kw-sage">React and Ink</span> (a terminal renderer), orchestrates <span class="kw-terra">40 tools</span> through a <span class="kw-terra">three-tier permission system</span>, and uses <span class="kw-mauve">ML classifiers</span> for shell command safety classification. The scale is comparable to the Linux kernel v1.0.</p>
+<p>This series analyzes that architecture across 19 parts organized into nine sections. This opening part provides the architectural overview: it identifies the shared agent engine and traces how the six-layer architecture propagates through every subsystem. Subsequent parts examine each subsystem in detail.</p>
+<p>The extraction yields the directory structure shown in the interactive explorer below. Click any folder to expand it and see its contents, LOC count, and which part covers it.</p>
+<style>
+.tree-explorer {
+  font-family: "JetBrains Mono", "Consolas", monospace;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 6px;
+  padding: 1rem 1.2rem;
+  background: var(--bs-body-bg, #fff);
+  max-height: 600px;
+  overflow-y: auto;
+}
+.tree-explorer ul { list-style: none; padding-left: 1.4em; margin: 0; }
+.tree-explorer > ul { padding-left: 0; }
+.tree-explorer li { position: relative; }
+.tree-explorer .folder {
+  cursor: pointer; user-select: none;
+  padding: 1px 0;
+  display: flex; align-items: baseline; gap: 0.4em;
+}
+.tree-explorer .folder:hover { background: rgba(139,157,175,0.08); border-radius: 3px; }
+.tree-explorer .folder .arrow {
+  display: inline-block; width: 1em; text-align: center;
+  transition: transform 0.15s; color: #B5A99A; font-size: 0.7em;
+}
+.tree-explorer .folder.open > .arrow { transform: rotate(90deg); }
+.tree-explorer .fname { font-weight: 500; color: var(--bs-body-color, #2c2c2c); }
+.tree-explorer .fmeta { color: #9a9088; font-size: 0.72rem; font-weight: 400; }
+.tree-explorer .fdesc { color: #9a9088; font-size: 0.72rem; font-style: italic; font-weight: 400; }
+.tree-explorer .fpart {
+  background: rgba(194,133,110,0.15); color: #A06B56; font-size: 0.68rem;
+  padding: 0 0.4em; border-radius: 3px; font-weight: 600; font-style: normal;
+}
+.tree-explorer .children { display: none; }
+.tree-explorer .folder.open + .children { display: block; }
+.tree-explorer .folder > .fname { cursor: pointer; }
+.tree-explorer .folder:hover > .fname { text-decoration: underline; text-underline-offset: 2px; }
+.tree-explorer .file {
+  padding: 1px 0 1px 1.4em;
+  display: flex; align-items: baseline; gap: 0.4em;
+  font-size: 0.78rem;
+}
+.tree-explorer .file .fname { font-weight: 500; }
+</style>
+
+<div class="tree-explorer" id="src-explorer"></div>
+
+<script>
+(function() {
+  var tree = {
+    name: "/", desc: "Claude Code v2.1.88 extracted source", children: [
+      { name: "src/", loc: "512K", files: "1,884", desc: "Main source tree", children: [
+        { name: "utils/", loc: "180,472", files: "564", desc: "Parsers, validators, platform abstraction", part: "Various",
+          children: [
+            { name: "prompt*", desc: "Prompt fragment utilities", part: "Part III.1" },
+            { name: "sandbox/", desc: "OS-level sandboxing (Seatbelt/Bubblewrap)", part: "Part IV.2" },
+            { name: "config/", desc: "Configuration loaders", part: "Part V.2" },
+            { name: "hooks/", desc: "Lifecycle hook utilities", part: "Part III.4" },
+            { name: "ink-*/", desc: "Forked Ink terminal renderer", part: "Part V.1" },
+            { name: "...", desc: "329 files: parsers, Shell, Cursor, guards, etc." }
+          ]},
+        { name: "components/", loc: "81,546", files: "389", desc: "React/Ink UI components", part: "Part V.1",
+          children: [
+            { name: "App.tsx", desc: "Root component: assembles the full TUI" },
+            { name: "PermissionDialog/", desc: "Modal permission prompts" },
+            { name: "MessageStream/", desc: "Streaming markdown + tool output" },
+            { name: "InputArea/", desc: "Multi-line input with history" },
+            { name: "StatusBar/", desc: "Model indicator, token count" },
+            { name: "ToolViews/", desc: "Per-tool output renderers" },
+            { name: "...", desc: "144 component files total" }
+          ]},
+        { name: "services/", loc: "53,680", files: "130", desc: "Backend services", part: "Various",
+          children: [
+            { name: "api/", desc: "Claude API adapter, streaming SSE", part: "Part II.1" },
+            { name: "compact/", desc: "Context compaction cascade", part: "Part III.2" },
+            { name: "mcp/", desc: "MCP server lifecycle management", part: "Part VI.1" },
+            { name: "analytics/", desc: "Segment + Datadog telemetry", part: "Part IX.1" },
+            { name: "oauth/", desc: "OAuth PKCE + device code flows", part: "Part V.2" },
+            { name: "teamMemorySync/", desc: "Teammate shared memory", part: "Part III.3" },
+            { name: "lsp/", desc: "Language Server Protocol client", part: "Part IV.1" },
+            { name: "tools/", desc: "Tool runtime helpers", part: "Part IV.1" },
+            { name: "AgentSummary/", desc: "Agent conversation summaries", part: "Part II.3" },
+            { name: "MagicDocs/", desc: "Auto-documentation service", part: "Part VI.2" },
+            { name: "SessionMemory/", desc: "Persistent session memory", part: "Part III.3" },
+            { name: "extractMemories/", desc: "Memory extraction from conversations", part: "Part III.3" },
+            { name: "plugins/", desc: "Plugin service layer", part: "Part VI.3" },
+            { name: "settingsSync/", desc: "Settings synchronization", part: "Part V.2" },
+            { name: "voice.ts", desc: "Voice input/output", part: "Part VIII.1" },
+            { name: "...", desc: "36 items total" }
+          ]},
+        { name: "tools/", loc: "50,828", files: "184", desc: "40 tool implementations", part: "Part IV.1",
+          children: [
+            { name: "AgentTool/", desc: "Sub-agent spawning (6K LOC)", part: "Part II.3" },
+            { name: "BashTool/", desc: "Shell execution + sandbox", part: "Parts IV.1, IV.2" },
+            { name: "FileReadTool/", desc: "File reading with line ranges", part: "Part IV.1" },
+            { name: "FileEditTool/", desc: "String-replace editing", part: "Part IV.1" },
+            { name: "FileWriteTool/", desc: "File creation/overwrite", part: "Part IV.1" },
+            { name: "GlobTool/", desc: "File pattern matching", part: "Part IV.1" },
+            { name: "GrepTool/", desc: "Content search (ripgrep)", part: "Part IV.1" },
+            { name: "WebFetchTool/", desc: "HTTP requests", part: "Part IV.1" },
+            { name: "WebSearchTool/", desc: "Web search", part: "Part IV.1" },
+            { name: "MCPTool/", desc: "MCP tool proxy", part: "Part VI.1" },
+            { name: "SkillTool/", desc: "Skill invocation", part: "Part VI.2" },
+            { name: "TaskCreateTool/", desc: "Task management", part: "Part IV.1" },
+            { name: "NotebookEditTool/", desc: "Jupyter notebook editing", part: "Part IV.1" },
+            { name: "LSPTool/", desc: "Language server queries", part: "Part IV.1" },
+            { name: "SendMessageTool/", desc: "Inter-agent messaging", part: "Part II.3" },
+            { name: "TodoWriteTool/", desc: "Todo list management", part: "Part IV.1" },
+            { name: "...", desc: "43 items total (40 tools + shared/ + testing/)" }
+          ]},
+        { name: "commands/", loc: "26,428", files: "189", desc: "CLI slash commands", part: "Part V.1",
+          children: [
+            { name: "agents/", desc: "Agent management commands" },
+            { name: "branch/", desc: "Git branch commands" },
+            { name: "add-dir/", desc: "Add directory to context" },
+            { name: "advisor.ts", desc: "/advisor command" },
+            { name: "autofix-pr/", desc: "Auto-fix PR command" },
+            { name: "...", desc: "101 items total" }
+          ]},
+        { name: "hooks/", loc: "19,204", files: "104", desc: "React hooks (state management)", part: "Part V.1",
+          children: [
+            { name: "notifs/", desc: "Notification hooks", part: "Part III.4" },
+            { name: "toolPermission/", desc: "Permission dialog hooks", part: "Part IV.2" },
+            { name: "useAfterFirstRender.ts", desc: "Lifecycle hook" },
+            { name: "useApiKeyVerification.ts", desc: "API key validation" },
+            { name: "useArrowKeyHistory.tsx", desc: "Input history navigation" },
+            { name: "...", desc: "85 items total" }
+          ]},
+        { name: "ink/", loc: "19,842", files: "96", desc: "Forked Ink terminal renderer", part: "Part V.1",
+          children: [
+            { name: "components/", desc: "Custom Ink components" },
+            { name: "dom.ts", desc: "Terminal DOM abstraction" },
+            { name: "events/", desc: "Input event handling" },
+            { name: "colorize.ts", desc: "Terminal color utilities" },
+            { name: "...", desc: "48 items total" }
+          ]},
+        { name: "bridge/", loc: "12,613", files: "31", desc: "IDE bridge (VS Code / JetBrains)", part: "Part VII.1" },
+        { name: "cli/", loc: "12,353", files: "19", desc: "CLI transport, exit handling, printing", part: "Part V.1" },
+        { name: "screens/", loc: "5,977", files: "3", desc: "Top-level screen components", part: "Part V.1",
+          children: [
+            { name: "Doctor.tsx", desc: "Diagnostic screen", part: "Part V.1" },
+            { name: "REPL.tsx", desc: "Main REPL screen", part: "Part V.1" },
+            { name: "ResumeConversation.tsx", desc: "Session resume screen", part: "Part V.1" }
+          ]},
+        { name: "native-ts/", loc: "4,081", files: "4", desc: "Native TypeScript modules", part: "Part VIII.1",
+          children: [
+            { name: "color-diff/", desc: "Color diffing algorithm" },
+            { name: "file-index/", desc: "File indexing (tree-sitter)" },
+            { name: "yoga-layout/", desc: "Yoga layout bindings" }
+          ]},
+        { name: "skills/", loc: "4,066", files: "20", desc: "SKILL.md loader and registry", part: "Part VI.2" },
+        { name: "entrypoints/", loc: "4,051", files: "8", desc: "Application entry points", part: "Part I.2",
+          children: [
+            { name: "cli.tsx", desc: "CLI entry point" },
+            { name: "mcp.ts", desc: "MCP server entry" },
+            { name: "init.ts", desc: "Initialization logic" },
+            { name: "sdk/", desc: "SDK entry point", part: "Part II.2" }
+          ]},
+        { name: "types/", loc: "3,446", files: "11", desc: "Shared TypeScript type definitions", part: "Part II.1" },
+        { name: "tasks/", loc: "3,286", files: "12", desc: "Task execution (agents, shells)", part: "Part II.3",
+          children: [
+            { name: "LocalAgentTask/", desc: "Local agent subprocess" },
+            { name: "InProcessTeammateTask/", desc: "Teammate task runner" },
+            { name: "RemoteAgentTask/", desc: "Remote agent connection" },
+            { name: "LocalShellTask/", desc: "Local shell task" },
+            { name: "DreamTask/", desc: "Background dream/summary task" }
+          ]},
+        { name: "keybindings/", loc: "3,159", files: "14", desc: "Keyboard shortcut system", part: "Part V.1" },
+        { name: "constants/", loc: "2,648", files: "21", desc: "Feature flags, model lists, limits", part: "Part V.2",
+          children: [
+            { name: "betas.ts", desc: "Beta feature flags", part: "Part IX.1" },
+            { name: "apiLimits.ts", desc: "API rate limits" },
+            { name: "figures.ts", desc: "ASCII art / branding" },
+            { name: "...", desc: "21 files total" }
+          ]},
+        { name: "bootstrap/", loc: "1,758", files: "1", desc: "Application bootstrap state", part: "Part I.2" },
+        { name: "memdir/", loc: "1,736", files: "8", desc: "CLAUDE.md memory directory system", part: "Part III.3" },
+        { name: "vim/", loc: "1,513", files: "5", desc: "Vim mode (motions, operators, text objects)", part: "Part V.1" },
+        { name: "buddy/", loc: "1,298", files: "6", desc: "Animated companion pet (18 species, rarity system, speech bubbles)", part: "Part V.1" },
+        { name: "state/", loc: "1,190", files: "6", desc: "Global app state (Zustand store)", part: "Part V.1" },
+        { name: "remote/", loc: "1,127", files: "4", desc: "Remote session management", part: "Part VII.1" },
+        { name: "context/", loc: "1,004", files: "9", desc: "React context providers", part: "Part V.1",
+          children: [
+            { name: "notifications.tsx", desc: "Notification context", part: "Part III.4" },
+            { name: "modalContext.tsx", desc: "Modal dialog context", part: "Part V.1" },
+            { name: "overlayContext.tsx", desc: "Overlay management", part: "Part V.1" },
+            { name: "...", desc: "9 files total" }
+          ]},
+        { name: "upstreamproxy/", loc: "740", files: "2", desc: "HTTP proxy relay", part: "Part VII.1" },
+        { name: "query/", loc: "652", files: "4", desc: "Query engine config and token budgets", part: "Part II.1" },
+        { name: "migrations/", loc: "603", files: "11", desc: "Settings migration scripts", part: "Part V.2" },
+        { name: "coordinator/", loc: "369", files: "1", desc: "Coordinator mode (multi-agent)", part: "Part II.3" },
+        { name: "server/", loc: "358", files: "3", desc: "Direct-connect server mode", part: "Part VII.1" },
+        { name: "schemas/", loc: "222", files: "1", desc: "Hook schema definitions", part: "Part III.4" },
+        { name: "plugins/", loc: "182", files: "2", desc: "Plugin discovery and lifecycle", part: "Part VI.3" },
+        { name: "outputStyles/", loc: "98", files: "1", desc: "Output style loader", part: "Part V.1" },
+        { name: "assistant/", loc: "87", files: "1", desc: "Session history", part: "Part III.2" },
+        { name: "voice/", loc: "54", files: "1", desc: "Voice mode feature flag", part: "Part VIII.1" },
+        { name: "moreright/", loc: "25", files: "1", desc: "Horizontal scroll hook", part: "Part V.1" },
+        { name: "main.tsx", desc: "Application root", part: "Part I.2" },
+        { name: "QueryEngine.ts", desc: "Query engine class", part: "Part II.1" },
+        { name: "Task.ts", desc: "Task base class", part: "Part II.3" },
+        { name: "Tool.ts", desc: "Tool base class", part: "Part IV.1" },
+        { name: "query.ts", desc: "Query orchestration", part: "Part II.1" },
+        { name: "tools.ts", desc: "Tool registry", part: "Part IV.1" },
+        { name: "commands.ts", desc: "Command registry", part: "Part V.1" },
+        { name: "context.ts", desc: "Context type definitions", part: "Part III.1" },
+        { name: "cost-tracker.ts", desc: "Token cost tracking", part: "Part IX.1" },
+        { name: "setup.ts", desc: "Setup and initialization", part: "Part I.2" },
+        { name: "ink.ts", desc: "Ink renderer setup", part: "Part V.1" }
+      ]},
+      { name: "vendor/", loc: "438", files: "4", desc: "Vendored native N-API modules", part: "Part VIII.1", children: [
+        { name: "audio-capture-src/", desc: "Audio recording/playback (macOS/Linux/Windows), 151 LOC" },
+        { name: "image-processor-src/", desc: "Sharp-compatible image processing, 162 LOC" },
+        { name: "modifiers-napi-src/", desc: "Keyboard modifier detection (macOS), 67 LOC" },
+        { name: "url-handler-src/", desc: "URL event handler (Apple Events, macOS), 58 LOC" }
+      ]}
+    ]
+  };
+
+  function renderNode(node, depth) {
+    var isDir = !!node.children;
+    var isEllipsis = node.name === "...";
+    if (isEllipsis) {
+      return '<div class="file"><span class="fdesc">' + node.desc + '</span></div>';
+    }
+    if (!isDir) {
+      var html = '<div class="file"><span class="fname">' + node.name + '</span>';
+      if (node.desc) html += ' <span class="fdesc">' + node.desc + '</span>';
+      if (node.part) html += ' <span class="fpart">' + node.part + '</span>';
+      return html + '</div>';
+    }
+    var meta = '';
+    if (node.loc) meta += node.loc + ' LOC';
+    if (node.files) meta += (meta ? ', ' : '') + node.files + ' files';
+    var html = '<div class="folder' + (depth < 1 ? ' open' : '') + '" onclick="this.classList.toggle(\'open\')">';
+    html += '<span class="arrow">&#9654;</span>';
+    html += '<span class="fname">' + node.name + '</span>';
+    if (meta) html += ' <span class="fmeta">(' + meta + ')</span>';
+    if (node.desc) html += ' <span class="fdesc">' + node.desc + '</span>';
+    if (node.part) html += ' <span class="fpart">' + node.part + '</span>';
+    html += '</div>';
+    html += '<ul class="children">';
+    for (var i = 0; i < node.children.length; i++) {
+      html += '<li>' + renderNode(node.children[i], depth + 1) + '</li>';
+    }
+    html += '</ul>';
+    return html;
+  }
+
+  var container = document.getElementById('src-explorer');
+  if (container) {
+    var html = '<ul>';
+    for (var i = 0; i < tree.children.length; i++) {
+      html += '<li>' + renderNode(tree.children[i], 0) + '</li>';
+    }
+    html += '</ul>';
+    container.innerHTML = html;
+  }
+})();
+</script>
+<p>Every directory in the tree above carries a <span style="background:rgba(194,133,110,0.15);color:#A06B56;font-size:0.8rem;padding:0 0.4em;border-radius:3px;font-weight:600;">Part N</span> badge linking it to the post that covers it. Below is a brief walkthrough of each top-level <code>src/</code> subdirectory, grouped by function.</p>
+<section id="utility-platform-layer" class="level3">
+<h3 class="anchored" data-anchor-id="utility-platform-layer">Utility &amp; Platform Layer</h3>
+<ul>
+<li><strong><code>utils/</code></strong> (180K LOC, 564 files) — The largest directory at 35% of the codebase. Contains parsers, validators, platform abstraction, and shared helpers consumed by every other module. Sub-areas include prompt fragment utilities (<a href="./03-prompt-assembly.html">Part III.1</a>), OS-level sandboxing via Seatbelt/Bubblewrap (<a href="./06-safety-sandbox.html">Part IV.2</a>), configuration loaders (<a href="./09-auth-providers-flags.html">Part V.2</a>), lifecycle hook utilities (<a href="./11-hooks-lifecycle.html">Part III.4</a>), and a forked Ink terminal renderer (<a href="./08-cli-commands-ui.html">Part V.1</a>). This directory is typical of mature production systems: visible features sit on deep parsing, validation, and platform abstraction.</li>
+</ul>
+</section>
+<section id="frontend-terminal-ui" class="level3">
+<h3 class="anchored" data-anchor-id="frontend-terminal-ui">Frontend / Terminal UI</h3>
+<p>The frontend layer totals ~140K LOC (27% of the codebase) — larger than most competing tools in their entirety.</p>
+<ul>
+<li><strong><code>components/</code></strong> (81K LOC, 389 files) — React/Ink components that form the terminal UI. Includes the root <code>App.tsx</code>, permission dialogs, streaming markdown output, multi-line input, status bar, and per-tool output renderers. Covered in <a href="./08-cli-commands-ui.html">Part V.1</a>.</li>
+<li><strong><code>hooks/</code></strong> (19K LOC, 104 files) — Custom React hooks for state management: input history, API key verification, tool permissions (<a href="./06-safety-sandbox.html">Part IV.2</a>), and notification delivery (<a href="./11-hooks-lifecycle.html">Part III.4</a>). Covered in <a href="./08-cli-commands-ui.html">Part V.1</a>.</li>
+<li><strong><code>ink/</code></strong> (20K LOC, 96 files) — A forked copy of the Ink terminal renderer with custom components, DOM abstraction, input event handling, and terminal color utilities. Covered in <a href="./08-cli-commands-ui.html">Part V.1</a>.</li>
+<li><strong><code>commands/</code></strong> (26K LOC, 189 files) — Over 80 slash commands (<code>/branch</code>, <code>/advisor</code>, <code>/autofix-pr</code>, etc.) that users invoke during a session. Covered in <a href="./08-cli-commands-ui.html">Part V.1</a>.</li>
+<li><strong><code>keybindings/</code></strong> (3K LOC, 14 files) — Keyboard shortcut system for mode cycling, navigation, and custom bindings. Covered in <a href="./08-cli-commands-ui.html">Part V.1</a>.</li>
+<li><strong><code>screens/</code></strong> (6K LOC, 3 files) — Top-level screen components: <code>REPL.tsx</code> (main interaction), <code>Doctor.tsx</code> (diagnostics), and <code>ResumeConversation.tsx</code> (session resume). Covered in <a href="./08-cli-commands-ui.html">Part V.1</a>.</li>
+<li><strong><code>vim/</code></strong> (1.5K LOC, 5 files) — Vim mode with motions, operators, and text objects for terminal input. Covered in <a href="./08-cli-commands-ui.html">Part V.1</a>.</li>
+<li><strong><code>buddy/</code></strong> (1.3K LOC, 6 files) — Companion sprite and notification buddy that provides visual feedback during long operations. Covered in <a href="./08-cli-commands-ui.html">Part V.1</a>.</li>
+<li><strong><code>state/</code></strong> (1.2K LOC, 6 files) — Global application state via Zustand store. Covered in <a href="./08-cli-commands-ui.html">Part V.1</a>.</li>
+<li><strong><code>context/</code></strong> (1K LOC, 9 files) — React context providers for notifications (<a href="./11-hooks-lifecycle.html">Part III.4</a>), modals, and overlays. Covered in <a href="./08-cli-commands-ui.html">Part V.1</a>.</li>
+<li><strong><code>outputStyles/</code></strong> (98 LOC, 1 file) — Output style loader for customizing rendering format. Covered in <a href="./08-cli-commands-ui.html">Part V.1</a>.</li>
+<li><strong><code>moreright/</code></strong> (25 LOC, 1 file) — Horizontal scroll hook for wide output. Covered in <a href="./08-cli-commands-ui.html">Part V.1</a>.</li>
+</ul>
+</section>
+<section id="backend-agent-engine" class="level3">
+<h3 class="anchored" data-anchor-id="backend-agent-engine">Backend / Agent Engine</h3>
+<p>The backend totals ~320K LOC (62%), encompassing the agent loop, tool execution, API communication, and prompt assembly.</p>
+<ul>
+<li><strong><code>services/</code></strong> (54K LOC, 130 files) — Backend services split across many concerns: the Claude API adapter (<a href="./02-agent-loop-query-engine.html">Part II.1</a>), context compaction cascade (<a href="./04-context-compaction.html">Part III.2</a>), MCP server lifecycle (<a href="./10-model-context-protocol.html">Part VI.1</a>), telemetry (<a href="./14-hidden-costs-context-manipulation.html">Part IX.1</a>), OAuth flows (<a href="./09-auth-providers-flags.html">Part V.2</a>), memory extraction and team sync (<a href="./17-memory-hierarchy.html">Part III.3</a>), plugin service layer (<a href="./13-plugin-architecture.html">Part VI.3</a>), agent conversation summaries (<a href="./07-multi-agent-orchestration.html">Part II.3</a>), auto-documentation (<a href="./12-skills-system.html">Part VI.2</a>), settings synchronization (<a href="./09-auth-providers-flags.html">Part V.2</a>), and voice I/O (<a href="./18-native-runtime-voice-portability.html">Part VIII.1</a>).</li>
+<li><strong><code>tools/</code></strong> (51K LOC, 184 files) — Approximately 40 tool implementations following a uniform Strategy-pattern interface. Includes file I/O tools (Read, Edit, Write, Glob, Grep), the sub-agent spawner <code>AgentTool</code> (<a href="./07-multi-agent-orchestration.html">Part II.3</a>), shell execution with sandboxing (<a href="./05-tool-system.html">Parts 5</a>, <a href="./06-safety-sandbox.html">6</a>), MCP proxy (<a href="./10-model-context-protocol.html">Part VI.1</a>), skill invocation (<a href="./12-skills-system.html">Part VI.2</a>), and task/notebook/LSP tools. Covered in <a href="./05-tool-system.html">Part IV.1</a>.</li>
+<li><strong><code>cli/</code></strong> (12K LOC, 19 files) — CLI transport layer: argument parsing, exit handling, and terminal printing. Covered in <a href="./08-cli-commands-ui.html">Part V.1</a>.</li>
+</ul>
+</section>
+<section id="agent-orchestration-context" class="level3">
+<h3 class="anchored" data-anchor-id="agent-orchestration-context">Agent Orchestration &amp; Context</h3>
+<ul>
+<li><strong><code>query/</code></strong> (652 LOC, 4 files) — Query engine configuration and token budget calculations that determine how conversation context is allocated. Covered in <a href="./02-agent-loop-query-engine.html">Part II.1</a>.</li>
+<li><strong><code>tasks/</code></strong> (3.3K LOC, 12 files) — Task execution framework for local agent subprocesses, teammate tasks, remote agents, local shells, and background “dream” summarization tasks. Covered in <a href="./07-multi-agent-orchestration.html">Part II.3</a>.</li>
+<li><strong><code>coordinator/</code></strong> (369 LOC, 1 file) — Coordinator mode for multi-agent orchestration, where a parent agent dispatches subtasks to child agents. Covered in <a href="./07-multi-agent-orchestration.html">Part II.3</a>.</li>
+<li><strong><code>skills/</code></strong> (4K LOC, 20 files) — The SKILL.md loader and registry: discovers, parses, and injects domain-specific expertise into the system prompt. Covered in <a href="./12-skills-system.html">Part VI.2</a>.</li>
+<li><strong><code>schemas/</code></strong> (222 LOC, 1 file) — Hook schema definitions that validate hook configuration files. Covered in <a href="./11-hooks-lifecycle.html">Part III.4</a>.</li>
+<li><strong><code>plugins/</code></strong> (182 LOC, 2 files) — Plugin discovery and lifecycle management for distributable extension packages. Covered in <a href="./13-plugin-architecture.html">Part VI.3</a>.</li>
+</ul>
+</section>
+<section id="memory-context-management" class="level3">
+<h3 class="anchored" data-anchor-id="memory-context-management">Memory &amp; Context Management</h3>
+<ul>
+<li><strong><code>memdir/</code></strong> (1.7K LOC, 8 files) — The CLAUDE.md memory directory system: reads, writes, and indexes persistent memory files that survive across sessions. Covered in <a href="./17-memory-hierarchy.html">Part III.3</a>.</li>
+<li><strong><code>assistant/</code></strong> (87 LOC, 1 file) — Session history persistence, allowing conversations to be resumed after disconnection. Covered in <a href="./04-context-compaction.html">Part III.2</a>.</li>
+</ul>
+</section>
+<section id="remote-native-runtime" class="level3">
+<h3 class="anchored" data-anchor-id="remote-native-runtime">Remote &amp; Native Runtime</h3>
+<ul>
+<li><strong><code>bridge/</code></strong> (12.6K LOC, 31 files) — IDE bridge subsystem for VS Code and JetBrains integration: WebSocket transport, message routing, and session handoff. Covered in <a href="./16-remote-runtime-bridge.html">Part VII.1</a>.</li>
+<li><strong><code>remote/</code></strong> (1.1K LOC, 4 files) — Remote session management for cloud-based agent execution. Covered in <a href="./16-remote-runtime-bridge.html">Part VII.1</a>.</li>
+<li><strong><code>server/</code></strong> (358 LOC, 3 files) — Direct-connect server mode enabling IDE clients to connect without the bridge relay. Covered in <a href="./16-remote-runtime-bridge.html">Part VII.1</a>.</li>
+<li><strong><code>upstreamproxy/</code></strong> (740 LOC, 2 files) — HTTP proxy relay for routing API traffic through corporate proxies. Covered in <a href="./16-remote-runtime-bridge.html">Part VII.1</a>.</li>
+<li><strong><code>native-ts/</code></strong> (4K LOC, 4 files) — Native TypeScript modules: color-diff algorithm, tree-sitter file indexing, and Yoga layout bindings. Covered in <a href="./18-native-runtime-voice-portability.html">Part VIII.1</a>.</li>
+<li><strong><code>voice/</code></strong> (54 LOC, 1 file) — Voice mode feature flag that enables speech input/output. Covered in <a href="./18-native-runtime-voice-portability.html">Part VIII.1</a>.</li>
+</ul>
+</section>
+<section id="configuration-entry-points" class="level3">
+<h3 class="anchored" data-anchor-id="configuration-entry-points">Configuration &amp; Entry Points</h3>
+<ul>
+<li><strong><code>entrypoints/</code></strong> (4K LOC, 8 files) — Application entry points for CLI (<code>cli.tsx</code>), MCP server (<code>mcp.ts</code>), initialization (<code>init.ts</code>), and the SDK (<code>sdk/</code>, <a href="./15-agent-sdk-structured-io.html">Part II.2</a>). Covered in <a href="./01-end-to-end-workflow.html">Part I.2</a>.</li>
+<li><strong><code>constants/</code></strong> (2.6K LOC, 21 files) — Feature flags, model lists, API rate limits, and beta flags (<a href="./14-hidden-costs-context-manipulation.html">Part IX.1</a>). Covered in <a href="./09-auth-providers-flags.html">Part V.2</a>.</li>
+<li><strong><code>migrations/</code></strong> (603 LOC, 11 files) — Settings migration scripts that upgrade configuration across Claude Code versions. Covered in <a href="./09-auth-providers-flags.html">Part V.2</a>.</li>
+<li><strong><code>bootstrap/</code></strong> (1.8K LOC, 1 file) — Application bootstrap state that initializes the runtime environment. Covered in <a href="./01-end-to-end-workflow.html">Part I.2</a>.</li>
+<li><strong><code>types/</code></strong> (3.4K LOC, 11 files) — Shared TypeScript type definitions used across the codebase. Covered in <a href="./02-agent-loop-query-engine.html">Part II.1</a>.</li>
+</ul>
+</section>
+<section id="top-level-root-files" class="level3">
+<h3 class="anchored" data-anchor-id="top-level-root-files">Top-Level Root Files</h3>
+<ul>
+<li><strong><code>main.tsx</code></strong> — Application root that wires together entrypoints and React rendering (<a href="./01-end-to-end-workflow.html">Part I.2</a>).</li>
+<li><strong><code>QueryEngine.ts</code></strong>, <strong><code>query.ts</code></strong> — The query engine class and orchestration logic (<a href="./02-agent-loop-query-engine.html">Part II.1</a>).</li>
+<li><strong><code>Tool.ts</code></strong>, <strong><code>tools.ts</code></strong> — Tool base class and registry (<a href="./05-tool-system.html">Part IV.1</a>).</li>
+<li><strong><code>Task.ts</code></strong> — Task base class for agent subprocess management (<a href="./07-multi-agent-orchestration.html">Part II.3</a>).</li>
+<li><strong><code>commands.ts</code></strong> — Command registry for slash commands (<a href="./08-cli-commands-ui.html">Part V.1</a>).</li>
+<li><strong><code>context.ts</code></strong> — Context type definitions for prompt assembly (<a href="./03-prompt-assembly.html">Part III.1</a>).</li>
+<li><strong><code>cost-tracker.ts</code></strong> — Token cost tracking and reporting (<a href="./14-hidden-costs-context-manipulation.html">Part IX.1</a>).</li>
+<li><strong><code>setup.ts</code></strong> — Setup and initialization logic (<a href="./01-end-to-end-workflow.html">Part I.2</a>).</li>
+<li><strong><code>ink.ts</code></strong> — Ink renderer setup (<a href="./08-cli-commands-ui.html">Part V.1</a>).</li>
+</ul>
+</section>
+<section id="vendor-directory" class="level3">
+<h3 class="anchored" data-anchor-id="vendor-directory">Vendor Directory</h3>
+<ul>
+<li><strong><code>vendor/</code></strong> (438 LOC, 4 files) — Four vendored N-API native modules written in C/C++ and Rust: <code>audio-capture-src/</code> (cross-platform audio, 151 LOC), <code>image-processor-src/</code> (Sharp-compatible image processing, 162 LOC), <code>modifiers-napi-src/</code> (macOS keyboard modifier detection, 67 LOC), and <code>url-handler-src/</code> (macOS Apple Events URL handler, 58 LOC). These are compiled to platform-specific binaries and accessed through TypeScript wrappers in <code>src/native-ts/</code>. Covered in <a href="./18-native-runtime-voice-portability.html">Part VIII.1</a>.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="shared-engine-multiple-interfaces" class="level2">
+<h2 class="anchored" data-anchor-id="shared-engine-multiple-interfaces">2. Shared Engine, Multiple Interfaces</h2>
+<p>Like most production AI coding agents, Claude Code runs as a terminal application (TUI). The key architectural insight is the clean separation between a <strong>shared agent engine</strong> (~320K LOC) and multiple <strong>interface adapters</strong> that consume its output. The engine produces a stream of events (model tokens, tool calls, results, errors); each adapter renders those events to a different medium. The engine has no knowledge of the display layer, and the UI has no knowledge of the API protocol. The codebase is written in TypeScript (512K LOC) and runs on the Bun runtime (~150ms cold start).</p>
+<section id="shared-agent-engine-320k-loc-62" class="level3">
+<h3 class="anchored" data-anchor-id="shared-agent-engine-320k-loc-62">Shared Agent Engine (~320K LOC, 62%)</h3>
+<p>The core of Claude Code is a <strong>shared agent engine</strong> that is independent of any user interface. It contains the <span class="kw-sage">ReAct loop</span> (alternating model reasoning with tool execution), ~40 tool implementations, the Claude API client, prompt assembly, context compaction, permission enforcement, and multi-agent orchestration. The primary directories are <code>src/tools/</code> (51K LOC), <code>src/services/</code> (54K LOC), and <code>src/utils/</code> (180K LOC). The agent loop is covered in <a href="./02-agent-loop-query-engine.html">Part II.1</a>.</p>
+</section>
+<section id="three-entry-modes-over-the-shared-engine" class="level3">
+<h3 class="anchored" data-anchor-id="three-entry-modes-over-the-shared-engine">Three Entry Modes Over the Shared Engine</h3>
+<p>The engine exposes a streaming event interface — it yields events (model tokens, tool calls, tool results, errors) as they are produced. Three different entry modes consume this interface, each targeting a different use case:</p>
+<ol type="1">
+<li><p><strong>CLI</strong> (~140K LOC) — The interactive terminal UI. A full declarative UI application with 389 components, modal permission dialogs, streaming markdown rendering, over 80 slash commands, and vim keybindings. This is what users interact with when they run <code>claude</code> in a terminal. Covered in <a href="./08-cli-commands-ui.html">Part V.1</a>.</p></li>
+<li><p><strong>SDK</strong> — A headless programmatic interface for embedding Claude Code in scripts, CI/CD pipelines, and custom applications. The SDK exposes the same agent engine through a structured API: callers send tasks, receive streaming results, and control execution without any terminal UI. This is what enables <code>claude -p "fix the bug"</code> in a shell script or <code>import { query } from "@anthropic-ai/claude-code"</code> in a Node.js program. Covered in <a href="./15-agent-sdk-structured-io.html">Part II.2</a>.</p></li>
+<li><p><strong>Bridge / MCP</strong> — Protocol adapters for IDE integrations (VS Code, JetBrains) and the Model Context Protocol. The bridge subsystem (12.6K LOC) manages WebSocket connections between IDE extensions and a running Claude Code instance. The MCP entry point turns Claude Code itself into an MCP server that other agents can call. Covered in <a href="./10-model-context-protocol.html">Parts 10</a> and <a href="./16-remote-runtime-bridge.html">16</a>.</p></li>
+</ol>
+<p>This three-entry-mode design is the reason the codebase splits cleanly into engine and interface code. The engine has no knowledge of terminals, IDEs, or HTTP — it only produces events. Each entry mode adapts those events to its medium.</p>
+<hr>
+</section>
+</section>
+<section id="the-six-layer-architecture" class="level2">
+<h2 class="anchored" data-anchor-id="the-six-layer-architecture">3. The Six-Layer Architecture</h2>
+<p><strong>Claude Code’s architecture stacks six layers with strict downward dependency — each layer depends only on those below it, the same principle used in operating system kernels and network protocol stacks.</strong></p>
+<p>This layered design is important because it makes the system modular: the tool execution engine can be tested without the UI, the permission system can be tested without the API, and new tools can be added without touching the agent loop. The invariant holds consistently across 512K lines.</p>
+<div id="fig-six-layers" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-six-layers-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="00-birds-eye-architecture_files/mediabag/six-layers.svg" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-six-layers-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: The six-layer architecture. Each layer depends only on those below it.
+</figcaption>
+</figure>
+</div>
+<p>The subsections below trace each layer from bottom to top. The layer numbering is analytical, not literal: the source code does not name these layers, but the dependency structure is visible in import graphs.</p>
+<section id="layer-1-entry-bootstrap" class="level3">
+<h3 class="anchored" data-anchor-id="layer-1-entry-bootstrap">Layer 1: Entry &amp; Bootstrap</h3>
+<p>Before the agent can do anything, it must authenticate the user, load configuration, detect the platform, and select an entry mode — all within ~150ms. <code>src/main.tsx</code> is the single entry point. It runs I/O-bound initialization steps in parallel (configuration reads, credential prefetches, profiling checkpoints) to keep startup fast. Configuration follows a strict priority hierarchy: environment variables &gt; local <code>.claude/settings.json</code> &gt; project <code>CLAUDE.md</code> &gt; user settings &gt; defaults. This hierarchy lets enterprise admins override local preferences (e.g., forcing sandbox mode) without modifying user config.</p>
+<p>The bootstrap also resolves which <strong>entry mode</strong> to launch: interactive REPL (the default <code>claude</code> command), one-shot SDK execution (<code>claude -p "task"</code>), or MCP server mode (<code>claude mcp</code>). Each mode shares the same agent engine but wires different I/O adapters. See <a href="./01-end-to-end-workflow.html">Part I.2</a> and <a href="./09-auth-providers-flags.html">Part V.2</a>.</p>
+</section>
+<section id="layer-2-agent-loop-the-kernel" class="level3">
+<h3 class="anchored" data-anchor-id="layer-2-agent-loop-the-kernel">Layer 2: Agent Loop – The Kernel</h3>
+<p>The heart of the system. The agent loop implements the <strong>ReAct (Reason + Act) pattern</strong> — a cycle where the model alternates between reasoning about what to do and acting through tools.</p>
+<p>The core implementation lives in two files:</p>
+<ul>
+<li><strong><code>src/query.ts</code></strong> — The <code>queryLoop()</code> function (line 241) is the inner <code>while(true)</code> loop. On each iteration it calls the Claude API, checks whether the response contains <code>tool_use</code> blocks (line 829), executes any requested tools sequentially, and decides whether to continue (<code>needsFollowUp = true</code>, line 834) or exit (<code>if (!needsFollowUp)</code>, line 1062).</li>
+<li><strong><code>src/QueryEngine.ts</code></strong> — The <code>submitMessage()</code> method (line 209) wraps <code>queryLoop()</code> as an asynchronous generator, yielding each event to the caller as it is produced.</li>
+</ul>
+<p>The generator-based design is the key architectural choice. The figure below compares two approaches: a blocking loop that runs to completion before returning all results at once, versus the generator pattern that yields each event as it is produced.</p>
+<div id="fig-blocking-vs-generator" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-blocking-vs-generator-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="00-birds-eye-architecture_files/mediabag/blocking-vs-generator.svg" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-blocking-vs-generator-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: Blocking loop vs.&nbsp;generator-based loop. The generator yields events incrementally, enabling the UI to render in real time and apply backpressure.
+</figcaption>
+</figure>
+</div>
+<p>In the blocking model (a), the agent runs to completion — calling the API, executing tools, calling the API again — and the UI is idle until all results arrive in a single batch. In the generator model (b), the agent <strong>yields</strong> each event (a model token, a tool result, an error) as it is produced. The UI renders incrementally in real time: the user sees tokens streaming as the model generates them, and tool output appearing as tools complete. This is the <strong>producer-consumer pattern</strong> — the agent produces events; the UI consumes and renders them; the generator protocol provides natural flow control (backpressure) without explicit buffer management.</p>
+<p>The same generator also enables the three entry modes discussed above: the CLI subscribes and renders to the terminal, the SDK subscribes and emits structured JSON, and the bridge subscribes and forwards over WebSocket — all consuming the same event stream.</p>
+</section>
+<section id="layer-3-tool-execution-the-system-call-interface" class="level3">
+<h3 class="anchored" data-anchor-id="layer-3-tool-execution-the-system-call-interface">Layer 3: Tool Execution – The System Call Interface</h3>
+<p>An LLM can only generate text. To become an agent, it needs a bridge between reasoning (“I should check this file”) and action (actually reading the file). Claude Code implements ~40 such bridges — called <strong>tools</strong> — behind a uniform interface (defined in <code>src/Tool.ts</code>, line 362): every tool has a <code>name</code> for dispatch, an <code>inputSchema</code> (JSON Schema) that the model must satisfy, and an <code>execute()</code> function that performs the action. The agent loop dispatches by name and validates against the schema, so adding a new tool requires no changes to the loop.</p>
+<p>The tools span six categories:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 34%">
+<col style="width: 34%">
+<col style="width: 31%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Category</th>
+<th>Examples</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>File I/O</td>
+<td>Read, Edit, Write, Glob, Grep</td>
+<td>Navigate and modify codebases</td>
+</tr>
+<tr class="even">
+<td>Execution</td>
+<td>BashTool (12K LOC), NotebookEdit</td>
+<td>Run commands, scripts, notebooks</td>
+</tr>
+<tr class="odd">
+<td>Agent</td>
+<td>AgentTool, SendMessage</td>
+<td>Spawn sub-agents, inter-agent communication</td>
+</tr>
+<tr class="even">
+<td>External</td>
+<td>WebFetch, WebSearch, MCPTool</td>
+<td>Access the internet and MCP servers</td>
+</tr>
+<tr class="odd">
+<td>Knowledge</td>
+<td>LSPTool, SkillTool, TodoWrite</td>
+<td>Language servers, skills, task tracking</td>
+</tr>
+<tr class="even">
+<td>Meta</td>
+<td>TaskCreate, ToolSearch</td>
+<td>Manage the agent’s own workflow</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Key design choice: sequential execution.</strong> The <code>runToolsSerially()</code> function in <code>src/services/tools/toolOrchestration.ts</code> (line 118) processes tool calls one at a time. When the model edits a file and then reads it, the read must see the edit. Parallel execution would introduce race conditions that cascade into wasted tokens and broken trust. The sole exception is streaming tool execution, which overlaps network I/O with computation.</p>
+<p><strong>Deferred loading</strong> keeps context cost low: not all 40 tool schemas are sent to the model at once. The system uses <span class="kw-sage">BM25 relevance ranking</span> to load only the schemas likely needed for the current task, functioning as a form of <span class="kw-terra">virtual memory for tool definitions</span> — schemas are “paged in” on demand rather than resident at all times, saving thousands of tokens per turn. See <a href="./05-tool-system.html">Part IV.1</a>.</p>
+</section>
+<section id="layer-4-permission-security-defense-in-depth" class="level3">
+<h3 class="anchored" data-anchor-id="layer-4-permission-security-defense-in-depth">Layer 4: Permission &amp; Security – Defense in Depth</h3>
+<p>An AI agent that can run <code>rm -rf /</code>, commit to <code>main</code>, or <code>curl</code> sensitive data to an external server is inherently dangerous. Unlike traditional software where the developer controls all actions, here the <em>model</em> decides what to execute — and the model can be wrong, hallucinate, or be manipulated via prompt injection. Claude Code addresses this with <strong>four layers of defense</strong>:</p>
+<div id="fig-permission" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-permission-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="00-birds-eye-architecture_files/mediabag/permission-tiers.svg" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-permission-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: Three-tier permission system with OS-level sandbox as a containment backstop.
+</figcaption>
+</figure>
+</div>
+<p>As a concrete example: when the model requests <code>BashTool</code> with the command <code>git push --force origin main</code>, the system first checks static rules (Tier 1: is force-push allowed in this project’s config?). In parallel, the ML classifier (Tier 2) parses the command into an AST via tree-sitter and scores its risk. If either tier flags the command, the interactive approval dialog (Tier 3) presents the full command with context to the user. Even if the user approves, the OS sandbox (Seatbelt on macOS, Bubblewrap on Linux) constrains the blast radius — the process cannot access files outside the project directory.</p>
+<p><code>src/tools/BashTool/</code> alone is 12,411 lines — more code than many entire CLI tools. The three-tier permission check is implemented in <code>src/utils/permissions/permissions.ts</code> (<code>hasPermissionsToUseTool()</code>, line 473). See <a href="./06-safety-sandbox.html">Part IV.2</a>.</p>
+</section>
+<section id="layer-5-services-the-infrastructure" class="level3">
+<h3 class="anchored" data-anchor-id="layer-5-services-the-infrastructure">Layer 5: Services – The Infrastructure</h3>
+<p>The agent loop (Layer 2) and tools (Layer 3) both depend on shared infrastructure: API communication, context window management, memory persistence, telemetry, and extension protocols. The services layer (<code>src/services/</code>, 54K LOC) centralizes these into five subsystems:</p>
+<ol type="1">
+<li><p><strong>API Client</strong> (<code>src/services/api/claude.ts</code>, 3,419 lines) — Manages the streaming connection to the Claude API. Handles prompt caching (reusing cached prefixes to reduce cost and latency by up to 90%), automatic model fallback (if one model is overloaded, switch to another), retry logic with exponential backoff, and server-sent event (SSE) parsing. See <a href="./02-agent-loop-query-engine.html">Part II.1</a>.</p></li>
+<li><p><strong>Context Compaction</strong> (<code>src/services/compact/</code>) — The most architecturally interesting service. A 200K-token context window sounds large, but a busy coding session generates 400K+ tokens in two hours. The compaction system applies progressively aggressive summarization: <code>autoCompactIfNeeded()</code> triggers at ~75% capacity, <code>microcompactMessages()</code> preserves the prompt cache prefix, and reactive compact fires when the API returns a “prompt too long” error. This is directly analogous to <strong>cache eviction</strong> — multiple policies with different quality/latency trade-offs, triggered by memory pressure. See <a href="./04-context-compaction.html">Part III.2</a>.</p></li>
+<li><p><strong>Memory Hierarchy</strong> (<code>src/services/SessionMemory/</code>, <code>src/services/extractMemories/</code>, <code>src/services/teamMemorySync/</code>, <code>src/memdir/</code>) — Five tiers of persistent memory: project-level <code>CLAUDE.md</code> files, session memory that survives restarts, auto-extracted memories from conversations, background “dream” consolidation, and team-shared memory. See <a href="./17-memory-hierarchy.html">Part III.3</a>.</p></li>
+<li><p><strong>MCP Server Management</strong> (<code>src/services/mcp/</code>) — Discovers, launches, and manages Model Context Protocol servers that extend the agent with external tools. Each MCP server runs as a separate process with its own lifecycle. See <a href="./10-model-context-protocol.html">Part VI.1</a>.</p></li>
+<li><p><strong>Telemetry &amp; Analytics</strong> (<code>src/services/analytics/</code>) — Segment + Datadog telemetry that tracks token usage, tool call patterns, error rates, and session metrics. This data feeds back into Claude Code’s development — understanding how real users interact with the agent informs which tools to optimize and where safety checks are too aggressive or too lenient. See <a href="./14-hidden-costs-context-manipulation.html">Part IX.1</a>.</p></li>
+</ol>
+</section>
+<section id="layer-6-terminal-ui-the-application-layer" class="level3">
+<h3 class="anchored" data-anchor-id="layer-6-terminal-ui-the-application-layer">Layer 6: Terminal UI – The Application Layer</h3>
+<p>The agent produces a stream of events — model tokens, tool calls, tool results, errors, permission requests — and the user needs to see them in real time, approve or deny actions, provide input, and monitor progress. Claude Code builds a full interactive UI with 389 components (<code>src/components/</code>), 104 custom state management hooks (<code>src/hooks/</code>), and a forked terminal rendering engine (<code>src/ink/</code>, 20K LOC). Key capabilities:</p>
+<ul>
+<li><strong>Streaming markdown</strong> — Model output renders as formatted markdown (syntax highlighting, headers, lists) token by token, in real time.</li>
+<li><strong>Permission dialogs</strong> — When the agent requests a dangerous action, a modal dialog shows the full command, its risk level, and the relevant context. The user approves or denies with keyboard shortcuts.</li>
+<li><strong>Slash commands</strong> — Over 80 commands (<code>/compact</code>, <code>/branch</code>, <code>/advisor</code>, etc.) that users invoke during a session to control the agent, manage context, or trigger workflows.</li>
+<li><strong>Double buffering</strong> — The screen renderer writes to an off-screen buffer, computes the diff against the current display, and only updates changed characters — preventing flickering during rapid output.</li>
+<li><strong>Vim mode</strong> — Full vim-style input with motions, operators, and text objects for users who prefer modal editing.</li>
+</ul>
+<p>The full terminal UI architecture — component hierarchy, rendering pipeline, slash command system, and keyboard navigation — is covered in <a href="./08-cli-commands-ui.html">Part V.1: CLI, Commands &amp; UI</a>.</p>
+<hr>
+</section>
+</section>
+<section id="what-differentiates-claude-code" class="level2">
+<h2 class="anchored" data-anchor-id="what-differentiates-claude-code">4. What Differentiates Claude Code</h2>
+<p>Most AI coding agents share a common skeleton: an LLM, a dozen tools, and a REPL. What distinguishes Claude Code is the <em>depth of investment</em> across every axis — not just more tools, but an entire middleware pipeline assembling 65+ prompt fragments; not just a system prompt, but 50+ adaptive notifications injecting real-time state every turn; not just basic commands, but 80+ slash commands organized into a taxonomy that rivals a full IDE.</p>
+<div id="fig-feature-surface" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-feature-surface-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="00-birds-eye-architecture_files/mediabag/feature-surface.svg" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-feature-surface-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4: Claude Code’s feature surface vs.&nbsp;typical AI coding agents. Counts from the v2.1.88 source; “typical agent” values reflect open-source tools like Aider, Continue, and Cline.
+</figcaption>
+</figure>
+</div>
+<p>Three of these subsystems are qualitatively — not just quantitatively — different from any published competitor. The sections below examine each one, followed by the cross-cutting themes (context management, memory, feature flags) that amplify them.</p>
+<section id="prompt-assembly-a-65-fragment-middleware-pipeline" class="level3">
+<h3 class="anchored" data-anchor-id="prompt-assembly-a-65-fragment-middleware-pipeline">Prompt Assembly: A 65-Fragment Middleware Pipeline</h3>
+<p>Before the model sees a single user token, a middleware pipeline assembles 65+ fragments into the context window. These fragments are <em>ordered</em> so that the first ~55K tokens form a <strong>stable prefix</strong> that qualifies for Anthropic’s prompt caching (up to 90% cost reduction on cache hits). Every fragment added, removed, or reordered can invalidate the cache — so the pipeline’s ordering is a load-bearing architectural constraint, not a convenience.</p>
+<div id="fig-prompt-pipeline" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-prompt-pipeline-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="00-birds-eye-architecture_files/mediabag/prompt-pipeline.svg" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-prompt-pipeline-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5: The prompt assembly pipeline. Fragments are ordered so the top ~55K tokens form a stable prefix eligible for prompt caching. The cache boundary separates the stable prefix from the volatile message stream. See <a href="./03-prompt-assembly.html">Part III.1</a> for the full analysis.
+</figcaption>
+</figure>
+</div>
+</section>
+<section id="system-reminders-real-time-notification-architecture" class="level3">
+<h3 class="anchored" data-anchor-id="system-reminders-real-time-notification-architecture">System Reminders: Real-Time Notification Architecture</h3>
+<p>Most agents are blind between turns — they know what the user said and what they’ve done, but nothing about the environment changing around them. Claude Code injects <strong>50+ system reminders</strong> after each user message, carrying volatile state (git status, file changes, task progress, permission decisions) to the model without disturbing the cached prompt prefix. This is the notification system that keeps the agent aware of its environment.</p>
+<div id="fig-reminder-timeline" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-reminder-timeline-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="00-birds-eye-architecture_files/mediabag/reminder-timeline.svg" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-reminder-timeline-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;6: System reminder injection timeline. Reminders are appended after each user message in the message stream, carrying real-time state to the model without invalidating the cached system prompt prefix. See <a href="./11-hooks-lifecycle.html">Part III.4</a>.
+</figcaption>
+</figure>
+</div>
+<p>The reminder categories include environment state (git branch, uncommitted changes, working directory), task tracking (in-progress steps, pending actions), tool feedback (recent results, permission decisions), user preferences (active mode, output style), and context hints (recently viewed files, conversation summaries).</p>
+</section>
+<section id="the-command-surface-80-slash-commands" class="level3">
+<h3 class="anchored" data-anchor-id="the-command-surface-80-slash-commands">The Command Surface: 80+ Slash Commands</h3>
+<p>Where most agents offer 5–10 commands for basic session control, Claude Code exposes <strong>80+ slash commands</strong> spanning eight categories — a command surface closer to an IDE than a chatbot.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 34%">
+<col style="width: 34%">
+<col style="width: 31%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Category</th>
+<th>Examples</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Context</td>
+<td><code>/compact</code>, <code>/add-dir</code>, <code>/memory</code></td>
+<td>Manage the context window</td>
+</tr>
+<tr class="even">
+<td>Agent</td>
+<td><code>/agents</code>, <code>/advisor</code>, <code>/autofix-pr</code></td>
+<td>Dispatch agent workflows</td>
+</tr>
+<tr class="odd">
+<td>Mode</td>
+<td><code>/plan</code>, <code>/fast</code>, <code>/vim</code>, <code>/diff</code></td>
+<td>Cycle interaction modes</td>
+</tr>
+<tr class="even">
+<td>Session</td>
+<td><code>/resume</code>, <code>/clear</code>, <code>/save</code></td>
+<td>Control session lifecycle</td>
+</tr>
+<tr class="odd">
+<td>Git</td>
+<td><code>/branch</code>, <code>/commit</code>, <code>/pr</code></td>
+<td>Direct git integration</td>
+</tr>
+<tr class="even">
+<td>Extension</td>
+<td><code>/mcp</code>, <code>/skills</code>, <code>/plugin</code></td>
+<td>Manage extensions</td>
+</tr>
+<tr class="odd">
+<td>Config</td>
+<td><code>/settings</code>, <code>/model</code>, <code>/permissions</code></td>
+<td>Configure behavior</td>
+</tr>
+<tr class="even">
+<td>Diagnostics</td>
+<td><code>/help</code>, <code>/doctor</code>, <code>/cost</code></td>
+<td>Inspect agent state</td>
+</tr>
+</tbody>
+</table>
+<p>The implementation spans 26K LOC across 189 files in <code>src/commands/</code>. Each command registers through a uniform interface — the same Strategy pattern used for tools — enabling consistent discovery, tab completion, and help text. See <a href="./08-cli-commands-ui.html">Part V.1: CLI, Commands &amp; UI</a> for the full command system architecture.</p>
+</section>
+<section id="context-as-a-managed-resource" class="level3">
+<h3 class="anchored" data-anchor-id="context-as-a-managed-resource">Context as a Managed Resource</h3>
+<p>A 200K-token context window sounds large until you watch it fill up. A single large source file consumes 8K–12K tokens. A <code>grep</code> across a monorepo returns 30K tokens. Two hours of active coding generates 400K+ tokens of raw conversation — double the window. Claude Code treats context like RAM in an operating system: a scarce resource that requires explicit management.</p>
+<p>The constraint is always:</p>
+<p><span class="math display">\[|S_{\text{system}}| + |H_{\text{history}}| + |T_{\text{tools}}| + |R_{\text{reminders}}| \;\leq\; W\]</span></p>
+<p>where <span class="math inline">\(W = 200\text{K}\)</span> tokens. Four subsystems collaborate to satisfy this constraint:</p>
+<ol type="1">
+<li><p><strong>Prompt Assembly</strong> (<a href="./03-prompt-assembly.html">Part III.1</a>) — A middleware pipeline that constructs the system prompt from 12+ sources: base instructions, <code>CLAUDE.md</code> project files, active skills, tool schemas, and cached fragments. The pipeline is ordered so that the first ~15K tokens form a stable prefix that qualifies for <span class="kw-sage">prompt caching</span> (up to 90% cost reduction on cache hits).</p></li>
+<li><p><strong>Context Compaction</strong> (<a href="./04-context-compaction.html">Part III.2</a>) — When conversation history approaches the budget limit, progressively aggressive summarization kicks in: auto-compact at ~75% capacity, micro-compact that preserves the cache prefix, and reactive compact on API errors. This is directly analogous to cache eviction policies — multiple strategies with different quality/latency trade-offs, triggered by memory pressure.</p></li>
+<li><p><strong>System Reminders</strong> (<a href="./11-hooks-lifecycle.html">Part III.4</a>) — 50+ adaptive mid-conversation injections that carry volatile state (git status, file changes, task progress, user preferences) to the model <em>without disturbing the cached prompt prefix</em>. Reminders are appended after user messages, so they don’t invalidate the cache but still reach the model’s attention. This is the mechanism by which the agent stays aware of its environment between turns.</p></li>
+<li><p><strong>Deferred Tool Loading</strong> (<a href="./05-tool-system.html">Part IV.1</a>) — Not all ~40 tool schemas are sent to the model at once. The system uses <span class="kw-sage">BM25 relevance ranking</span> to load only the schemas likely needed for the current task — <span class="kw-terra">virtual memory for tool definitions</span>, paging schemas in on demand rather than keeping them all resident.</p></li>
+</ol>
+<p>Together, these four subsystems implement what could be called an <strong>operating system for context</strong>: allocation, eviction, caching, and demand paging — all applied to the token budget rather than bytes of RAM.</p>
+</section>
+<section id="memory-that-outlives-sessions" class="level3">
+<h3 class="anchored" data-anchor-id="memory-that-outlives-sessions">Memory That Outlives Sessions</h3>
+<p>Most agents are stateless — they forget everything when the session ends. Claude Code implements a <strong>five-tier memory hierarchy</strong> that persists knowledge across sessions, projects, and even teams:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 29%">
+<col style="width: 45%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Tier</th>
+<th>Scope</th>
+<th>Mechanism</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Project memory</td>
+<td>Per-repo</td>
+<td><code>CLAUDE.md</code> files checked into the codebase</td>
+</tr>
+<tr class="even">
+<td>Session memory</td>
+<td>Per-conversation</td>
+<td>SQLite-backed conversation history</td>
+</tr>
+<tr class="odd">
+<td>Extracted memory</td>
+<td>Cross-session</td>
+<td>Auto-extraction of user preferences and project facts</td>
+</tr>
+<tr class="even">
+<td>Dream consolidation</td>
+<td>Background</td>
+<td>Offline summarization of past sessions (named after neuroscience’s sleep consolidation)</td>
+</tr>
+<tr class="odd">
+<td>Team sync</td>
+<td>Cross-user</td>
+<td>Shared memory across team members via <code>teamMemorySync</code></td>
+</tr>
+</tbody>
+</table>
+<p>The agent carries forward learned project knowledge, coding preferences, and team conventions. When a user says “remember to always use pytest, not unittest,” that preference is extracted, stored, and injected into future sessions. See <a href="./17-memory-hierarchy.html">Part III.3</a>.</p>
+</section>
+<section id="feature-flags-as-partial-evaluation" class="level3">
+<h3 class="anchored" data-anchor-id="feature-flags-as-partial-evaluation">Feature Flags as Partial Evaluation</h3>
+<p>The shipped binary is not a single program — it is a family of programs, selected by <span class="kw-sage">88 compile-time flags</span> and <span class="kw-terra">50+ runtime gates</span>. This two-tier system controls which features exist in the binary and which are active for a given user.</p>
+<p><strong>Compile-time flags</strong> are resolved by the Bun bundler during build. When a flag evaluates to <code>false</code>, the bundler eliminates the entire conditional block — including all imports, string literals, and side effects — from the bundle. This is <span class="kw-sage">partial evaluation</span>: resolving parameters at compile time to specialize a general program into a specific one, the same principle as <code>#ifdef</code> in C or template specialization in C++. The result is that unreleased features are not just disabled — they are <em>absent</em> from the binary, invisible to reverse engineering. The most heavily gated build-time features are:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 18%">
+<col style="width: 34%">
+<col style="width: 46%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Flag</th>
+<th>References</th>
+<th>What It Gates</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>KAIROS</code></td>
+<td>~154</td>
+<td>Background asynchronous agent work (touches agent loop, UI, session, SDK)</td>
+</tr>
+<tr class="even">
+<td><code>TRANSCRIPT_CLASSIFIER</code></td>
+<td>~107</td>
+<td>ML-based automatic mode selection</td>
+</tr>
+<tr class="odd">
+<td><code>TEAMMATE</code></td>
+<td>~51</td>
+<td>Team memory synchronization</td>
+</tr>
+<tr class="even">
+<td><code>VOICE_MODE</code></td>
+<td>~46</td>
+<td>Speech-to-text streaming input</td>
+</tr>
+<tr class="odd">
+<td><code>PROACTIVE</code></td>
+<td>~37</td>
+<td>Agent suggests actions unprompted</td>
+</tr>
+<tr class="even">
+<td><code>COORDINATOR_MODE</code></td>
+<td>~32</td>
+<td>Multi-agent swarm orchestration</td>
+</tr>
+</tbody>
+</table>
+<p>A flag like <code>KAIROS</code> with 154 code references represents an entire subsystem — background agent execution — threaded through the agent loop, UI rendering, session management, and SDK. It can be independently compiled in, tested, and rolled back by flipping a single build flag.</p>
+<p><strong>Runtime flags</strong> add a second layer. On startup, Claude Code fetches flag values from <span class="kw-terra">GrowthBook</span> (<code>cdn.growthbook.io</code>), a remote feature-flag service. These flags enable gradual rollout (5% → 25% → 100%), per-organization targeting, and A/B testing — all without shipping a new binary. The flag API is accessed through a deliberately verbose function: <code>getFeatureValue_CACHED_MAY_BE_STALE()</code>, whose name warns callers that the value is cached locally and may be minutes behind the server. This trades strict consistency for low latency — the agent never blocks on a network call to check a flag.</p>
+<p>Runtime flags control agent behavior at a granular level: <code>tengu_ultrathink</code> enables extended reasoning, <code>tengu_tight_weave</code> changes subagent response format, and <code>tengu_disable_bypass_permissions_mode</code> can remotely disable unrestricted execution mode. Obscured codenames like <code>tengu_marble_anvil</code> and <code>tengu_cobalt_lantern</code> suggest active A/B experiments. In total, 757 distinct <code>tengu_*</code> event and flag names define the remote control surface.</p>
+<p>A feature can live behind <em>both</em> tiers simultaneously: the build-time flag ensures the code is present in the binary, while the runtime flag controls rollout among users who have it. This layered gating enables safe experimentation with major features (voice input, coordinator mode, background agents) without risking core product stability. See <a href="./09-auth-providers-flags.html">Part V.2</a> and <a href="./14-hidden-costs-context-manipulation.html">Part IX.1</a>.</p>
+<hr>
+</section>
+</section>
+<section id="series-roadmap" class="level2">
+<h2 class="anchored" data-anchor-id="series-roadmap">5. Series Roadmap</h2>
+<p><strong>Each subsequent part dives into a specific subsystem, connecting its design back to the foundations established here.</strong></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Section</th>
+<th>Part</th>
+<th>Title</th>
+<th>Core Insight</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>I. Overview</strong></td>
+<td><strong>I.1</strong></td>
+<td><strong>Bird’s Eye Architecture</strong> (this part)</td>
+<td>Shared engine, six layers, context engineering</td>
+</tr>
+<tr class="even">
+<td></td>
+<td>I.2</td>
+<td><a href="./01-end-to-end-workflow.html">End-to-End Workflow</a></td>
+<td>Tracing a prompt from keystroke to rendered response</td>
+</tr>
+<tr class="odd">
+<td><strong>II. Agent Harness</strong></td>
+<td>II.1</td>
+<td><a href="./02-agent-loop-query-engine.html">Agent Loop &amp; Query Engine</a></td>
+<td>The async generator is the key abstraction</td>
+</tr>
+<tr class="even">
+<td></td>
+<td>II.2</td>
+<td><a href="./15-agent-sdk-structured-io.html">Agent SDK &amp; Structured I/O</a></td>
+<td>Headless programmatic interface over the same engine</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td>II.3</td>
+<td><a href="./07-multi-agent-orchestration.html">Multi-Agent Orchestration</a></td>
+<td>fork() for AI agents</td>
+</tr>
+<tr class="even">
+<td><strong>III. Context</strong></td>
+<td>III.1</td>
+<td><a href="./03-prompt-assembly.html">Prompt Assembly</a></td>
+<td>Middleware pipeline assembles context before the model sees it</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td>III.2</td>
+<td><a href="./04-context-compaction.html">Context Compaction</a></td>
+<td>Cache eviction policies for conversation history</td>
+</tr>
+<tr class="even">
+<td></td>
+<td>III.3</td>
+<td><a href="./17-memory-hierarchy.html">Memory Hierarchy</a></td>
+<td>Five-tier memory that outlives sessions</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td>III.4</td>
+<td><a href="./11-hooks-lifecycle.html">Hooks &amp; Lifecycle</a></td>
+<td>Event-driven extension and system reminders</td>
+</tr>
+<tr class="even">
+<td><strong>IV. Tools</strong></td>
+<td>IV.1</td>
+<td><a href="./05-tool-system.html">Tool System &amp; Registry</a></td>
+<td>Uniform interface at scale — the agent’s “hands”</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td>IV.2</td>
+<td><a href="./06-safety-sandbox.html">Safety &amp; Sandbox</a></td>
+<td>Defense in depth for AI agents</td>
+</tr>
+<tr class="even">
+<td><strong>V. Invocation</strong></td>
+<td>V.1</td>
+<td><a href="./08-cli-commands-ui.html">CLI, Commands &amp; UI</a></td>
+<td>Desktop-class UI rendered to TTY</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td>V.2</td>
+<td><a href="./09-auth-providers-flags.html">Auth, Providers &amp; Flags</a></td>
+<td>OAuth for terminal apps and 88 build-time flags</td>
+</tr>
+<tr class="even">
+<td><strong>VI. Extensions</strong></td>
+<td>VI.1</td>
+<td><a href="./10-model-context-protocol.html">Model Context Protocol</a></td>
+<td>The LSP of AI agents — universal tool protocol</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td>VI.2</td>
+<td><a href="./12-skills-system.html">Skills System</a></td>
+<td>Expertise injection, not capability extension</td>
+</tr>
+<tr class="even">
+<td></td>
+<td>VI.3</td>
+<td><a href="./13-plugin-architecture.html">Plugin Architecture</a></td>
+<td>Extension points composed into a plugin platform</td>
+</tr>
+<tr class="odd">
+<td><strong>VII. Remote</strong></td>
+<td>VII.1</td>
+<td><a href="./16-remote-runtime-bridge.html">Remote Runtime &amp; Bridge</a></td>
+<td>IDE integration over WebSocket</td>
+</tr>
+<tr class="even">
+<td><strong>VIII. Native</strong></td>
+<td>VIII.1</td>
+<td><a href="./18-native-runtime-voice-portability.html">Native Runtime &amp; Vendor</a></td>
+<td>N-API modules, voice, cross-platform</td>
+</tr>
+<tr class="odd">
+<td><strong>IX. Transparency</strong></td>
+<td>IX.1</td>
+<td><a href="./14-hidden-costs-context-manipulation.html">Hidden Costs &amp; Telemetry</a></td>
+<td>What the agent reports back to Anthropic</td>
+</tr>
+</tbody>
+</table>
+<p><em>Next up: <a href="./01-end-to-end-workflow.html">Part I.2 — End-to-End Workflow</a>, tracing a single prompt from keystroke through the full pipeline to a rendered response.</em></p>
+<hr>
+<p><em>This analysis is based on the Claude Code v2.1.88 source map, extracted and studied for educational purposes. All code snippets are reconstructed from the source map and may differ from the actual implementation. Claude Code is a product of Anthropic, PBC.</em></p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./explorer-dist/index.html" class="pagination-link" aria-label="Code Explorer">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Code Explorer</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./01-end-to-end-workflow.html" class="pagination-link" aria-label="I.2 — End-to-End Workflow">
+        <span class="nav-page-text">I.2 — End-to-End Workflow</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.quarto-figure img[src$=".svg"]:not(.nozoom)').forEach(function(img) {
+    fetch(img.src).then(r => r.text()).then(function(svgText) {
+      var div = document.createElement('div');
+      div.innerHTML = svgText;
+      var svg = div.querySelector('svg');
+      if (svg) {
+        var vb = svg.getAttribute('viewBox');
+        if (vb) {
+          var parts = vb.split(/\s+/);
+          var w = parseFloat(parts[2]), h = parseFloat(parts[3]);
+          var ratio = h / w;
+          var containerH = Math.max(250, Math.min(700, 900 * ratio));
+          svg.style.width = '100%';
+          svg.style.height = containerH + 'px';
+        } else {
+          svg.style.width = '100%';
+          svg.style.height = '400px';
+        }
+        svg.style.border = '1px solid var(--bs-border-color, #dee2e6)';
+        svg.style.borderRadius = '6px';
+        svg.style.cursor = 'grab';
+        svg.style.background = 'var(--bs-body-bg, #fff)';
+        img.parentNode.replaceChild(svg, img);
+        svgPanZoom(svg, {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true, minZoom: 0.5, maxZoom: 10});
+      }
+    });
+  });
+  // Mermaid post-processing: apply Palatino font + pan-zoom
+  function initMermaid() {
+    document.querySelectorAll('.cell-output-display svg').forEach(function(svg) {
+      if (svg.dataset.mInit) return;
+      svg.dataset.mInit = '1';
+      // Step 1: Apply Palatino to all text AFTER Mermaid layout
+      svg.querySelectorAll('.nodeLabel, .edgeLabel, .cluster-label span, text').forEach(function(el) {
+        el.style.fontFamily = '"Palatino Linotype", Palatino, Georgia, serif';
+      });
+      // Step 2: Ensure foreignObjects don't clip
+      svg.querySelectorAll('foreignObject').forEach(function(fo) {
+        fo.style.overflow = 'visible';
+      });
+      // Step 3: Size the container
+      var vb = svg.getAttribute('viewBox');
+      if (vb) {
+        var parts = vb.split(/[\s,]+/);
+        var w = parseFloat(parts[2]), h = parseFloat(parts[3]);
+        var ratio = h / w;
+        var containerH = Math.max(350, Math.min(800, 900 * ratio));
+        svg.style.width = '100%';
+        svg.style.height = containerH + 'px';
+      } else {
+        svg.style.width = '100%';
+        svg.style.height = '500px';
+      }
+      svg.style.border = '1px solid var(--bs-border-color, #dee2e6)';
+      svg.style.borderRadius = '6px';
+      svg.style.cursor = 'grab';
+      svg.style.background = 'var(--bs-body-bg, #fff)';
+      // Step 4: Enable pan-zoom
+      try {
+        svgPanZoom(svg, {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true, minZoom: 0.5, maxZoom: 10});
+      } catch(e) {}
+    });
+  }
+  setTimeout(initMermaid, 800);
+  setTimeout(initMermaid, 2000);
+  setTimeout(initMermaid, 4000);
+});
+</script>
+
+
+
+
+</body></html>

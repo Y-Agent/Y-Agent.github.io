@@ -1,0 +1,2019 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Remote Runtime &amp; Bridge Layer – Inside Claude Code</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./18-native-runtime-voice-portability.html" rel="next">
+<link href="./13-plugin-architecture.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-f2aa3fcab4a3c0cbb1a885f128e95a4e.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-4486e80548b20dd029182ccec781b91c.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-f2aa3fcab4a3c0cbb1a885f128e95a4e.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-e429c51d478a3f7fe436edff7d8b5e18.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-89366f393ab88770656785fe4740de67.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-e429c51d478a3f7fe436edff7d8b5e18.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<meta name="mermaid-theme" content="neutral">
+<script src="site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Palatino+Linotype&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+
+
+<link rel="stylesheet" href="styles/custom.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Inside Claude Code</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="./index.html" aria-current="page"> 
+<span class="menu-text">Series Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./explorer-dist/index.html" target="_blank"> 
+<span class="menu-text">Code Explorer</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ZhuoranYang/claude_code_analysis"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./16-remote-runtime-bridge.html">VII. Remote Runtime</a></li><li class="breadcrumb-item"><a href="./16-remote-runtime-bridge.html">VII.1 — Remote Runtime &amp; Bridge</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Inside Claude Code</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./explorer-dist/index.html" class="sidebar-item-text sidebar-link" target="_blank">
+ <span class="menu-text">Code Explorer</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false">
+ <span class="menu-text">I. Overview</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./00-birds-eye-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">I.1 — Bird’s Eye Architecture</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-end-to-end-workflow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">I.2 — End-to-End Workflow</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false">
+ <span class="menu-text">II. Agent Harness</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-agent-loop-query-engine.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.1 — Agent Loop &amp; Query Engine</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./15-agent-sdk-structured-io.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.2 — Agent SDK &amp; Structured I/O</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-multi-agent-orchestration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.3 — Multi-Agent Orchestration</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./19-plan-mode.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.4 — Plan Mode</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false">
+ <span class="menu-text">III. Context Engineering</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-prompt-assembly.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.1 — Prompt Assembly</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-context-compaction.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.2 — Context Compaction</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./17-memory-hierarchy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.3 — Memory Hierarchy</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./11-hooks-lifecycle.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.4 — Hooks &amp; Lifecycle</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false">
+ <span class="menu-text">IV. Tools</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-tool-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IV.1 — Tool System &amp; Registry</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-safety-sandbox.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IV.2 — Safety &amp; Sandbox</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false">
+ <span class="menu-text">V. Invocation</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-cli-commands-ui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">V.1 — CLI, Commands &amp; UI</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-auth-providers-flags.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">V.2 — Auth, Providers &amp; Flags</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false">
+ <span class="menu-text">VI. Extensions</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./10-model-context-protocol.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.1 — Model Context Protocol</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./12-skills-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.2 — Skills System</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./13-plugin-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.3 — Plugin Architecture</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">VII. Remote Runtime</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./16-remote-runtime-bridge.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">VII.1 — Remote Runtime &amp; Bridge</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="false">
+ <span class="menu-text">VIII. Native Runtime</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./18-native-runtime-voice-portability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VIII.1 — Native Runtime, Voice &amp; Portability</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="false">
+ <span class="menu-text">IX. Transparency &amp; Trust</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./14-hidden-costs-context-manipulation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IX.1 — Transparency &amp; Trust</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction-the-locality-assumption-and-its-limits" id="toc-introduction-the-locality-assumption-and-its-limits" class="nav-link active" data-scroll-target="#introduction-the-locality-assumption-and-its-limits">Introduction: The Locality Assumption and Its Limits</a></li>
+  <li><a href="#the-bridge-subsystem-31-files-of-ide-integration" id="toc-the-bridge-subsystem-31-files-of-ide-integration" class="nav-link" data-scroll-target="#the-bridge-subsystem-31-files-of-ide-integration">The Bridge Subsystem: 31 Files of IDE Integration</a>
+  <ul class="collapse">
+  <li><a href="#bridge-configuration-and-authentication" id="toc-bridge-configuration-and-authentication" class="nav-link" data-scroll-target="#bridge-configuration-and-authentication">Bridge Configuration and Authentication</a></li>
+  <li><a href="#the-bridge-main-loop" id="toc-the-bridge-main-loop" class="nav-link" data-scroll-target="#the-bridge-main-loop">The Bridge Main Loop</a></li>
+  <li><a href="#bridge-messaging-the-protocol-core" id="toc-bridge-messaging-the-protocol-core" class="nav-link" data-scroll-target="#bridge-messaging-the-protocol-core">Bridge Messaging: The Protocol Core</a></li>
+  <li><a href="#message-eligibility-filtering" id="toc-message-eligibility-filtering" class="nav-link" data-scroll-target="#message-eligibility-filtering">Message Eligibility Filtering</a></li>
+  </ul></li>
+  <li><a href="#remote-sessions-dual-channel-communication" id="toc-remote-sessions-dual-channel-communication" class="nav-link" data-scroll-target="#remote-sessions-dual-channel-communication">Remote Sessions: Dual-Channel Communication</a>
+  <ul class="collapse">
+  <li><a href="#the-dual-channel-architecture" id="toc-the-dual-channel-architecture" class="nav-link" data-scroll-target="#the-dual-channel-architecture">The Dual-Channel Architecture</a></li>
+  <li><a href="#the-remotesessionmanager" id="toc-the-remotesessionmanager" class="nav-link" data-scroll-target="#the-remotesessionmanager">The RemoteSessionManager</a></li>
+  <li><a href="#websocket-resilience" id="toc-websocket-resilience" class="nav-link" data-scroll-target="#websocket-resilience">WebSocket Resilience</a></li>
+  </ul></li>
+  <li><a href="#transport-abstraction-one-interface-three-wire-protocols" id="toc-transport-abstraction-one-interface-three-wire-protocols" class="nav-link" data-scroll-target="#transport-abstraction-one-interface-three-wire-protocols">Transport Abstraction: One Interface, Three Wire Protocols</a>
+  <ul class="collapse">
+  <li><a href="#the-transport-interface" id="toc-the-transport-interface" class="nav-link" data-scroll-target="#the-transport-interface">The Transport Interface</a></li>
+  <li><a href="#the-hybridtransport-websocket-reads-http-writes" id="toc-the-hybridtransport-websocket-reads-http-writes" class="nav-link" data-scroll-target="#the-hybridtransport-websocket-reads-http-writes">The HybridTransport: WebSocket Reads, HTTP Writes</a></li>
+  <li><a href="#sse-transport-and-sequence-numbers" id="toc-sse-transport-and-sequence-numbers" class="nav-link" data-scroll-target="#sse-transport-and-sequence-numbers">SSE Transport and Sequence Numbers</a></li>
+  </ul></li>
+  <li><a href="#direct-connect-portable-sessions" id="toc-direct-connect-portable-sessions" class="nav-link" data-scroll-target="#direct-connect-portable-sessions">Direct Connect: Portable Sessions</a></li>
+  <li><a href="#upstream-proxy-session-token-bootstrap-for-remote-containers" id="toc-upstream-proxy-session-token-bootstrap-for-remote-containers" class="nav-link" data-scroll-target="#upstream-proxy-session-token-bootstrap-for-remote-containers">Upstream Proxy: Session-Token Bootstrap for Remote Containers</a></li>
+  <li><a href="#permission-flow-across-process-boundaries" id="toc-permission-flow-across-process-boundaries" class="nav-link" data-scroll-target="#permission-flow-across-process-boundaries">Permission Flow Across Process Boundaries</a>
+  <ul class="collapse">
+  <li><a href="#the-permission-callback-interface" id="toc-the-permission-callback-interface" class="nav-link" data-scroll-target="#the-permission-callback-interface">The Permission Callback Interface</a></li>
+  <li><a href="#env-less-bridge-the-v2-protocol-path" id="toc-env-less-bridge-the-v2-protocol-path" class="nav-link" data-scroll-target="#env-less-bridge-the-v2-protocol-path">Env-Less Bridge: The v2 Protocol Path</a></li>
+  </ul></li>
+  <li><a href="#spawn-modes-session-isolation-strategies" id="toc-spawn-modes-session-isolation-strategies" class="nav-link" data-scroll-target="#spawn-modes-session-isolation-strategies">Spawn Modes: Session Isolation Strategies</a></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">Summary</a></li>
+  <li><a href="#appendix-a-wire-protocol-message-types" id="toc-appendix-a-wire-protocol-message-types" class="nav-link" data-scroll-target="#appendix-a-wire-protocol-message-types">Appendix A: Wire Protocol Message Types</a></li>
+  <li><a href="#appendix-b-http-api-endpoints" id="toc-appendix-b-http-api-endpoints" class="nav-link" data-scroll-target="#appendix-b-http-api-endpoints">Appendix B: HTTP API Endpoints</a></li>
+  <li><a href="#appendix-c-websocket-close-codes" id="toc-appendix-c-websocket-close-codes" class="nav-link" data-scroll-target="#appendix-c-websocket-close-codes">Appendix C: WebSocket Close Codes</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content page-columns page-full" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./16-remote-runtime-bridge.html">VII. Remote Runtime</a></li><li class="breadcrumb-item"><a href="./16-remote-runtime-bridge.html">VII.1 — Remote Runtime &amp; Bridge</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Remote Runtime &amp; Bridge Layer</h1>
+<p class="subtitle lead">How Claude Code escapes the local terminal – IDE bridges, remote sessions, and transport abstractions</p>
+  <div class="quarto-categories">
+    <div class="quarto-category">bridge</div>
+    <div class="quarto-category">remote</div>
+    <div class="quarto-category">transport</div>
+    <div class="quarto-category">architecture</div>
+  </div>
+  </div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="introduction-the-locality-assumption-and-its-limits" class="level2">
+<h2 class="anchored" data-anchor-id="introduction-the-locality-assumption-and-its-limits">Introduction: The Locality Assumption and Its Limits</h2>
+<p>Most developer tools assume they run on the same machine where the code lives. The compiler, the editor, the debugger – they all access files through the local filesystem and interact with the user through a local terminal or UI. This assumption simplifies everything: no network latency, no authentication boundaries, no partial failures. But it also creates a ceiling. The moment you want to run an AI agent on a remote container while approving its actions from a browser, or embed it inside an IDE extension while the engine runs as a separate process, the locality assumption breaks.</p>
+<p>Claude Code’s architecture confronts this problem through three interlocking subsystems. The <span class="kw-slate">bridge layer</span> (<code>src/bridge/</code>, 31 files, ~12,600 LOC) handles the connection between the local agent engine and remote orchestrators like the claude.ai web interface. The <span class="kw-slate">remote session layer</span> (<code>src/remote/</code>, 4 files) manages the client-side view of a cloud-hosted session – subscribing to events via WebSocket and sending messages via HTTP. The <span class="kw-sage">transport abstraction</span> (<code>src/cli/transports/</code>) ensures that regardless of whether the underlying wire protocol is WebSocket, SSE, or stdio, the rest of the system sees a uniform interface.</p>
+<p>The deeper design challenge is not networking per se – it is preserving the <span class="kw-terra">permission model</span> across process boundaries. When Claude Code runs locally, a tool permission request is a function call within a single process. When the agent runs on a remote container and the user sits in a browser, that same permission request must traverse a WebSocket, be rendered in a completely different UI framework, and have its response routed back to the exact pending tool invocation. The system must handle this transparently: neither the agent loop nor the tool implementation should know or care whether permissions are being resolved locally or remotely.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-bridge-architecture" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-bridge-architecture-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-bridge-architecture">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart LR
+  subgraph Clients
+    web["claude.ai&lt;br&gt;Web UI"]
+    vscode["VS Code&lt;br&gt;Extension"]
+    jetbrains["JetBrains&lt;br&gt;Plugin"]
+    teleport["Direct&lt;br&gt;Connect"]
+  end
+
+  subgraph Bridge["Bridge Layer"]
+    bridgemain["&lt;b&gt;bridgeMain&lt;/b&gt;"]
+    transports["Transports&lt;br&gt;&lt;i&gt;WebSocket / SSE / stdio&lt;/i&gt;"]
+    messaging["&lt;b&gt;bridgeMessaging&lt;/b&gt;"]
+    perms["Permission&lt;br&gt;Callbacks"]
+    config["bridgeConfig&lt;br&gt;&lt;i&gt;OAuth / JWT&lt;/i&gt;"]
+    bridgemain --- transports
+    transports --- messaging
+    messaging --- perms
+    perms --- config
+  end
+
+  subgraph Engine["Agent Engine"]
+    repl["REPL Loop"]
+    tools["Tool&lt;br&gt;Execution"]
+    session["Session&lt;br&gt;Storage"]
+    safety["Safety&lt;br&gt;Policy"]
+  end
+
+  web &lt;--&gt; bridgemain
+  vscode --&gt; messaging
+  jetbrains --&gt; perms
+  teleport --&gt; config
+
+  bridgemain &lt;--&gt; repl
+  messaging --&gt; tools
+  perms --&gt; session
+  config --&gt; safety
+  style web fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style vscode fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style jetbrains fill:#C2856E,color:#fff,stroke:#A06A54
+  style teleport fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style bridgemain fill:#C4A882,color:#fff,stroke:#A08562
+  style transports fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style messaging fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style perms fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style config fill:#C2856E,color:#fff,stroke:#A06A54
+  style repl fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style tools fill:#C4A882,color:#fff,stroke:#A08562
+  style session fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style safety fill:#8B9DAF,color:#fff,stroke:#6E7F91
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-bridge-architecture-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Bridge architecture showing four client types (claude.ai web UI, VS Code extension, JetBrains plugin, and Direct Connect) communicating with the agent engine through the bridge layer. The bridge layer comprises five submodules: bridgeMain (server-facing orchestration loop), Transports (abstracting WebSocket, SSE, and stdio wire protocols), bridgeMessaging (the protocol core handling ingress routing and echo deduplication), Permission Callbacks (cross-process permission routing), and bridgeConfig (OAuth/JWT authentication). The agent engine on the right contains the REPL loop, tool execution, session storage, and safety policy.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Start on the left with the four client types (claude.ai, VS Code, JetBrains, Direct Connect) that connect into the central Bridge Layer. Within the bridge, five submodules are chained: bridgeMain handles orchestration, Transports abstracts the wire protocol, bridgeMessaging routes messages and deduplicates echoes, Permission Callbacks handles cross-process permission flow, and bridgeConfig manages authentication. On the right, the Agent Engine contains the REPL loop, tool execution, session storage, and safety policy. The arrows show that every client request must traverse the bridge’s five stages before reaching the engine.</p>
+<p><strong>Source files covered in this post:</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 28%">
+<col style="width: 42%">
+<col style="width: 28%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Purpose</th>
+<th>Size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>src/bridge/bridgeMain.ts</code></td>
+<td>Server-facing orchestration loop</td>
+<td>~700 LOC</td>
+</tr>
+<tr class="even">
+<td><code>src/bridge/bridgeMessaging.ts</code></td>
+<td>Protocol core (ingress routing, echo dedup, control requests)</td>
+<td>~400 LOC</td>
+</tr>
+<tr class="odd">
+<td><code>src/bridge/bridgeConfig.ts</code></td>
+<td>Auth and URL resolution (dev overrides + production OAuth)</td>
+<td>~200 LOC</td>
+</tr>
+<tr class="even">
+<td><code>src/bridge/bridgeEnabled.ts</code></td>
+<td>Bridge entitlement check (<code>isBridgeEnabled()</code>)</td>
+<td>~100 LOC</td>
+</tr>
+<tr class="odd">
+<td><code>src/bridge/remoteBridgeCore.ts</code></td>
+<td>Env-less bridge with three-step handshake</td>
+<td>~500 LOC</td>
+</tr>
+<tr class="even">
+<td><code>src/bridge/bridgePermissionCallbacks.ts</code></td>
+<td>Cross-process permission protocol</td>
+<td>~200 LOC</td>
+</tr>
+<tr class="odd">
+<td><code>src/bridge/types.ts</code></td>
+<td>WorkSecret and bridge type definitions</td>
+<td>~150 LOC</td>
+</tr>
+<tr class="even">
+<td><code>src/remote/RemoteSessionManager.ts</code></td>
+<td>Dual-channel session management</td>
+<td>~400 LOC</td>
+</tr>
+<tr class="odd">
+<td><code>src/remote/SessionsWebSocket.ts</code></td>
+<td>WebSocket connection lifecycle</td>
+<td>~300 LOC</td>
+</tr>
+<tr class="even">
+<td><code>src/remote/sdkMessageAdapter.ts</code></td>
+<td>SDK message adapter for remote consumption</td>
+<td>~302 LOC</td>
+</tr>
+<tr class="odd">
+<td><code>src/upstreamproxy/</code></td>
+<td>Upstream HTTPS proxy for CCR containers</td>
+<td>2 files</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="the-bridge-subsystem-31-files-of-ide-integration" class="level2">
+<h2 class="anchored" data-anchor-id="the-bridge-subsystem-31-files-of-ide-integration">The Bridge Subsystem: 31 Files of IDE Integration</h2>
+<p>The bridge subsystem is the largest single integration layer in Claude Code. Its 31 files implement everything needed to connect a running agent instance to an external orchestrator – whether that is the claude.ai web application, a VS Code extension, or a JetBrains plugin.</p>
+<section id="bridge-configuration-and-authentication" class="level3">
+<h3 class="anchored" data-anchor-id="bridge-configuration-and-authentication">Bridge Configuration and Authentication</h3>
+<p>The entry point for bridge authentication is <span class="kw-slate">bridgeConfig.ts</span>, which consolidates all auth and URL resolution into a single module. The design follows a two-layer pattern: an override layer for development (environment variables like <code>CLAUDE_BRIDGE_OAUTH_TOKEN</code>) and a production layer that reads from the OAuth keychain:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">// bridgeConfig.ts — two-layer auth resolution</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">export</span> <span class="kw">function</span> <span class="fu">getBridgeAccessToken</span>()<span class="op">:</span> <span class="dt">string</span> <span class="op">|</span> <span class="dt">undefined</span> {</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="fu">getBridgeTokenOverride</span>() <span class="op">??</span> <span class="fu">getClaudeAIOAuthTokens</span>()<span class="op">?.</span><span class="at">accessToken</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">export</span> <span class="kw">function</span> <span class="fu">getBridgeBaseUrl</span>()<span class="op">:</span> <span class="dt">string</span> {</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="fu">getBridgeBaseUrlOverride</span>() <span class="op">??</span> <span class="fu">getOauthConfig</span>()<span class="op">.</span><span class="at">BASE_API_URL</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This pattern appears throughout the codebase – <span class="kw-sage">dev overrides</span> take priority over production defaults, but only when an explicit <code>USER_TYPE=ant</code> flag is set. The guard prevents accidental use of override tokens in production.</p>
+<p>The bridge entitlement check in <span class="kw-slate">bridgeEnabled.ts</span> implements a multi-condition gate: the user must be a claude.ai subscriber (excluding Bedrock/Vertex/API-key users), must have a full-scope OAuth token (not a setup token), and must pass a <span class="kw-mauve">GrowthBook feature gate</span> (<code>tengu_ccr_bridge</code>). The blocking variant <code>isBridgeEnabledBlocking()</code> awaits the server-side feature flag if the disk cache misses, while the non-blocking <code>isBridgeEnabled()</code> uses the cached value – a subtle distinction that determines whether the user sees a false “not enabled” at cold start.</p>
+</section>
+<section id="the-bridge-main-loop" class="level3">
+<h3 class="anchored" data-anchor-id="the-bridge-main-loop">The Bridge Main Loop</h3>
+<p>The <span class="kw-slate">bridgeMain.ts</span> file (~700+ lines) implements the server-facing orchestration loop for multi-session bridge mode. When a user runs <code>claude remote-control</code>, this loop:</p>
+<ol type="1">
+<li>Registers with the Environments API as a worker</li>
+<li>Polls for incoming work items (new sessions from claude.ai)</li>
+<li>Spawns child CLI processes for each session, passing a <span class="kw-terra">work secret</span> containing the session ingress token, API base URL, and git source configuration</li>
+<li>Heartbeats active sessions and handles session lifecycle (completion, failure, timeout)</li>
+</ol>
+<p>The work secret deserves attention. Each session dispatched by the server arrives with a base64url-encoded JSON payload containing credentials and configuration:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">// types.ts — WorkSecret structure</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">export type</span> WorkSecret <span class="op">=</span> {</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  version<span class="op">:</span> <span class="dt">number</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  session_ingress_token<span class="op">:</span> <span class="dt">string</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  api_base_url<span class="op">:</span> <span class="dt">string</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  sources<span class="op">:</span> <span class="bu">Array</span><span class="op">&lt;</span>{</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    type<span class="op">:</span> <span class="dt">string</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    git_info<span class="op">?:</span> { type<span class="op">:</span> <span class="dt">string</span><span class="op">;</span> repo<span class="op">:</span> <span class="dt">string</span><span class="op">;</span> ref<span class="op">?:</span> <span class="dt">string</span><span class="op">;</span> token<span class="op">?:</span> <span class="dt">string</span> }</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  }<span class="op">&gt;</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  auth<span class="op">:</span> <span class="bu">Array</span><span class="op">&lt;</span>{ type<span class="op">:</span> <span class="dt">string</span><span class="op">;</span> token<span class="op">:</span> <span class="dt">string</span> }<span class="op">&gt;</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  claude_code_args<span class="op">?:</span> <span class="bu">Record</span><span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> <span class="dt">string</span><span class="op">&gt;</span> <span class="op">|</span> <span class="dt">null</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  mcp_config<span class="op">?:</span> <span class="dt">unknown</span> <span class="op">|</span> <span class="dt">null</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  environment_variables<span class="op">?:</span> <span class="bu">Record</span><span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> <span class="dt">string</span><span class="op">&gt;</span> <span class="op">|</span> <span class="dt">null</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  use_code_sessions<span class="op">?:</span> <span class="dt">boolean</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <code>sources</code> field enables <span class="kw-sage">git-context injection</span>: when a session is created from a GitHub repository link in claude.ai, the bridge receives the repo URL and ref so the child process can clone and checkout the correct code. The <code>use_code_sessions</code> flag selects between the v1 (Environments API) and v2 (Code Sessions API) transport protocols.</p>
+</section>
+<section id="bridge-messaging-the-protocol-core" class="level3">
+<h3 class="anchored" data-anchor-id="bridge-messaging-the-protocol-core">Bridge Messaging: The Protocol Core</h3>
+<p><span class="kw-slate">bridgeMessaging.ts</span> is the protocol heart of the bridge. It defines how messages flow between the agent and the remote client, handling three critical concerns: <span class="kw-sage">ingress routing</span>, <span class="kw-mauve">echo deduplication</span>, and <span class="kw-terra">control request handling</span>.</p>
+<p>The ingress routing function <code>handleIngressMessage()</code> parses each WebSocket frame and dispatches it based on type. The type discrimination is precise – control responses, control requests, and SDK messages each take different code paths:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">export</span> <span class="kw">function</span> <span class="fu">handleIngressMessage</span>(</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  data<span class="op">:</span> <span class="dt">string</span><span class="op">,</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  recentPostedUUIDs<span class="op">:</span> BoundedUUIDSet<span class="op">,</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  recentInboundUUIDs<span class="op">:</span> BoundedUUIDSet<span class="op">,</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  onInboundMessage<span class="op">,</span> onPermissionResponse<span class="op">,</span> onControlRequest<span class="op">,</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>)<span class="op">:</span> <span class="dt">void</span> {</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> parsed <span class="op">=</span> <span class="fu">normalizeControlMessageKeys</span>(<span class="fu">jsonParse</span>(data))</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">isSDKControlResponse</span>(parsed)) { onPermissionResponse<span class="op">?.</span>(parsed)<span class="op">;</span> <span class="cf">return</span> }</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">isSDKControlRequest</span>(parsed))  { onControlRequest<span class="op">?.</span>(parsed)<span class="op">;</span>     <span class="cf">return</span> }</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="op">!</span><span class="fu">isSDKMessage</span>(parsed)) <span class="cf">return</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  <span class="co">// UUID-based echo dedup</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> uuid <span class="op">=</span> <span class="st">'uuid'</span> <span class="kw">in</span> parsed <span class="op">?</span> parsed<span class="op">.</span><span class="at">uuid</span> <span class="op">:</span> <span class="kw">undefined</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (uuid <span class="op">&amp;&amp;</span> recentPostedUUIDs<span class="op">.</span><span class="fu">has</span>(uuid)) <span class="cf">return</span>  <span class="co">// our own echo</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (uuid <span class="op">&amp;&amp;</span> recentInboundUUIDs<span class="op">.</span><span class="fu">has</span>(uuid)) <span class="cf">return</span>  <span class="co">// re-delivery</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>  <span class="co">// ...forward to handler</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The echo deduplication uses a <span class="kw-slate">BoundedUUIDSet</span> – a FIFO ring buffer backed by both an array (for eviction ordering) and a Set (for O(1) lookup). When the transport sends a message, its UUID is recorded. When the same message comes back as a server echo, the UUID match suppresses it. This is necessary because the bridge often receives its own messages reflected back by the session ingress layer. ### Control Request Handling</p>
+<p>When the server sends a control request (e.g., <code>initialize</code>, <code>set_model</code>, <code>interrupt</code>, <code>set_permission_mode</code>), the bridge must respond promptly – the server kills the WebSocket connection after approximately 10-14 seconds of silence. The <code>handleServerControlRequest()</code> function dispatches on the request subtype:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="cf">switch</span> (request<span class="op">.</span><span class="at">request</span><span class="op">.</span><span class="at">subtype</span>) {</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> <span class="st">'initialize'</span><span class="op">:</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Respond with minimal capabilities</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    response <span class="op">=</span> { type<span class="op">:</span> <span class="st">'control_response'</span><span class="op">,</span> response<span class="op">:</span> {</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>      subtype<span class="op">:</span> <span class="st">'success'</span><span class="op">,</span> request_id<span class="op">:</span> request<span class="op">.</span><span class="at">request_id</span><span class="op">,</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>      response<span class="op">:</span> { commands<span class="op">:</span> []<span class="op">,</span> output_style<span class="op">:</span> <span class="st">'normal'</span><span class="op">,</span> models<span class="op">:</span> []<span class="op">,</span> account<span class="op">:</span> {}<span class="op">,</span> pid<span class="op">:</span> <span class="bu">process</span><span class="op">.</span><span class="at">pid</span> }</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    }}</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">break</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> <span class="st">'set_model'</span><span class="op">:</span>      onSetModel<span class="op">?.</span>(request<span class="op">.</span><span class="at">request</span><span class="op">.</span><span class="at">model</span>)<span class="op">;</span>       <span class="cf">break</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> <span class="st">'interrupt'</span><span class="op">:</span>       onInterrupt<span class="op">?.</span>()<span class="op">;</span>                            <span class="cf">break</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> <span class="st">'set_permission_mode'</span><span class="op">:</span> <span class="co">/* policy verdict logic */</span>              <span class="cf">break</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <span class="kw-mauve">outbound-only mode</span> is particularly interesting. When a bridge session is configured as outbound-only (for mirror mode or SDK <code>/bridge</code> subpath), all mutable control requests return an error response instead of false-success. The <code>initialize</code> request still succeeds – the server kills the connection otherwise – but <code>interrupt</code>, <code>set_model</code>, and <code>set_permission_mode</code> reply with an explicit error message:</p>
+<blockquote class="blockquote">
+<p><em>“This session is outbound-only. Enable Remote Control locally to allow inbound control.”</em></p>
+</blockquote>
+</section>
+<section id="message-eligibility-filtering" class="level3">
+<h3 class="anchored" data-anchor-id="message-eligibility-filtering">Message Eligibility Filtering</h3>
+<p>Not all internal agent messages should cross the bridge boundary. The <code>isEligibleBridgeMessage()</code> function acts as a <span class="kw-sage">gateway filter</span>: only <code>user</code> and <code>assistant</code> messages (plus slash-command system events) are forwarded. Virtual messages (inner REPL calls during tool execution) are suppressed – the bridge consumer sees only the high-level <code>tool_use</code>/<code>tool_result</code> summary, not the internal subqueries. This filtering is essential for keeping the remote UI coherent; without it, tool execution internals would leak into the conversation view.</p>
+<hr>
+</section>
+</section>
+<section id="remote-sessions-dual-channel-communication" class="level2">
+<h2 class="anchored" data-anchor-id="remote-sessions-dual-channel-communication">Remote Sessions: Dual-Channel Communication</h2>
+<p>The remote session layer (<code>src/remote/</code>) implements the client-side protocol for connecting to a cloud-hosted Claude Code session. This is the inverse of the bridge: while the bridge runs alongside the agent and pushes events outward, the remote session manager runs alongside the UI (terminal or web) and pulls events inward.</p>
+<section id="the-dual-channel-architecture" class="level3">
+<h3 class="anchored" data-anchor-id="the-dual-channel-architecture">The Dual-Channel Architecture</h3>
+<p>Remote sessions use a <span class="kw-terra">split-channel design</span>: a WebSocket for server-push events (assistant messages, permission requests, status updates) and HTTP POST for client-initiated actions (sending user messages). This split is not arbitrary – it reflects a fundamental asymmetry in the communication pattern.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-remote-session-channels" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-remote-session-channels-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-remote-session-channels">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart TD
+  CLIENT["&lt;b&gt;Local Client&lt;/b&gt;&lt;br&gt;&lt;i&gt;Terminal / Web&lt;/i&gt;"]
+  SERVER["&lt;b&gt;CCR Container&lt;/b&gt;&lt;br&gt;&lt;i&gt;Agent Engine&lt;/i&gt;"]
+
+  subgraph WS["WebSocket Push Channel (Server to Client)"]
+    direction LR
+    AM["assistant msgs"]
+    CR["control request"]
+    SE["stream event"]
+  end
+
+  subgraph HTTP["HTTP POST Channel (Client to Server)"]
+    direction LR
+    UM["user messages"]
+    AT["attachments"]
+  end
+
+  SERVER -- "push" --&gt; WS -- "deliver" --&gt; CLIENT
+  CLIENT -- "send" --&gt; HTTP -- "deliver" --&gt; SERVER
+  CLIENT &lt;-. "control response&lt;br&gt;&lt;i&gt;permission allow/deny within WS&lt;/i&gt;" .-&gt; SERVER
+  style CLIENT fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style SERVER fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style AM fill:#C2856E,color:#fff,stroke:#A06A54
+  style CR fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style SE fill:#C4A882,color:#fff,stroke:#A08562
+  style UM fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style AT fill:#8B9DAF,color:#fff,stroke:#6E7F91
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-remote-session-channels-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: Remote session dual-channel architecture. The WebSocket push channel carries assistant messages, control requests, and stream events from server to client. The HTTP POST channel carries user messages and attachments from client to server. A bidirectional control subprotocol within the WebSocket handles permission allow/deny flow.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> The Local Client (top) and CCR Container (bottom) communicate through two asymmetric channels. The solid downward arrows show the WebSocket push channel carrying assistant messages, control requests, and stream events from server to client. The solid upward arrows show the HTTP POST channel carrying user messages and attachments from client to server. The dashed bidirectional arrow represents the control subprotocol (permission allow/deny) that runs within the WebSocket. The key insight is that reads and writes use different transports optimized for their distinct reliability and latency requirements.</p>
+<p>The <strong>push channel</strong> is a WebSocket subscription at <code>/v1/sessions/ws/{sessionId}/subscribe</code>. Authentication happens via HTTP headers on the upgrade request (not a post-connect auth message, unlike some older protocols). The client receives a stream of typed messages: <code>SDKMessage</code> for conversation content, <code>control_request</code> for permission prompts, and <code>control_cancel_request</code> for server-side cancellations of pending prompts.</p>
+<p>The <strong>request channel</strong> uses <code>sendEventToRemoteSession()</code> – an HTTP POST to a teleport API endpoint. This asymmetry (WebSocket for push, HTTP for requests) exists because user messages are infrequent but must be reliably delivered, while server events are high-volume and benefit from the persistent connection’s lower latency.</p>
+</section>
+<section id="the-remotesessionmanager" class="level3">
+<h3 class="anchored" data-anchor-id="the-remotesessionmanager">The RemoteSessionManager</h3>
+<p>The <span class="kw-slate">RemoteSessionManager</span> class coordinates the two channels and manages the permission lifecycle:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">export</span> <span class="kw">class</span> RemoteSessionManager {</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">private</span> websocket<span class="op">:</span> SessionsWebSocket <span class="op">|</span> <span class="dt">null</span> <span class="op">=</span> <span class="kw">null</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">private</span> pendingPermissionRequests<span class="op">:</span> <span class="bu">Map</span><span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> SDKControlPermissionRequest<span class="op">&gt;</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">connect</span>()<span class="op">:</span> <span class="dt">void</span> {</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="at">websocket</span> <span class="op">=</span> <span class="kw">new</span> <span class="fu">SessionsWebSocket</span>(</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>      <span class="kw">this</span><span class="op">.</span><span class="at">config</span><span class="op">.</span><span class="at">sessionId</span><span class="op">,</span> <span class="kw">this</span><span class="op">.</span><span class="at">config</span><span class="op">.</span><span class="at">orgUuid</span><span class="op">,</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>      <span class="kw">this</span><span class="op">.</span><span class="at">config</span><span class="op">.</span><span class="at">getAccessToken</span><span class="op">,</span> wsCallbacks<span class="op">,</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">void</span> <span class="kw">this</span><span class="op">.</span><span class="at">websocket</span><span class="op">.</span><span class="fu">connect</span>()</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">async</span> <span class="fu">sendMessage</span>(content<span class="op">,</span> opts<span class="op">?</span>)<span class="op">:</span> <span class="bu">Promise</span><span class="op">&lt;</span><span class="dt">boolean</span><span class="op">&gt;</span> {</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="cf">await</span> <span class="fu">sendEventToRemoteSession</span>(<span class="kw">this</span><span class="op">.</span><span class="at">config</span><span class="op">.</span><span class="at">sessionId</span><span class="op">,</span> content<span class="op">,</span> opts)</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">respondToPermissionRequest</span>(requestId<span class="op">,</span> result)<span class="op">:</span> <span class="dt">void</span> {</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="at">pendingPermissionRequests</span><span class="op">.</span><span class="fu">delete</span>(requestId)</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="at">websocket</span><span class="op">?.</span><span class="fu">sendControlResponse</span>(<span class="co">/* ... */</span>)</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The permission flow is the most architecturally significant aspect. When the remote agent needs tool permission, the server sends a <code>control_request</code> with subtype <code>can_use_tool</code>. The manager stores it in <code>pendingPermissionRequests</code>, invokes the <code>onPermissionRequest</code> callback (which renders the prompt in the local UI), and waits. When the user responds, <code>respondToPermissionRequest()</code> serializes the verdict as a <code>control_response</code> and sends it back through the WebSocket. The entire flow is <span class="kw-mauve">asynchronous and cancellable</span> – the server can send a <code>control_cancel_request</code> at any time to dismiss a stale prompt.</p>
+</section>
+<section id="websocket-resilience" class="level3">
+<h3 class="anchored" data-anchor-id="websocket-resilience">WebSocket Resilience</h3>
+<p>The <span class="kw-slate">SessionsWebSocket</span> class implements a connection lifecycle with three resilience mechanisms:</p>
+<ol type="1">
+<li><p><strong>Reconnection with backoff</strong>: On transient close, the client schedules a reconnect after 2 seconds, up to 5 attempts. A separate counter handles the <code>4001</code> (session not found) code, which can be transient during server-side compaction – up to 3 retries with linearly increasing delay.</p></li>
+<li><p><strong>Permanent close detection</strong>: Close codes <code>4003</code> (unauthorized) halt reconnection immediately. The client distinguishes between “server rejected permanently” and “connection dropped transiently.”</p></li>
+<li><p><strong>Keep-alive pinging</strong>: A 30-second ping interval maintains the connection through proxies and load balancers. Without this, intermediate infrastructure (Cloudflare, GKE ingress) would close idle connections.</p></li>
+</ol>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> PERMANENT_CLOSE_CODES <span class="op">=</span> <span class="kw">new</span> <span class="bu">Set</span>([<span class="dv">4003</span>])  <span class="co">// unauthorized</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> MAX_SESSION_NOT_FOUND_RETRIES <span class="op">=</span> <span class="dv">3</span>          <span class="co">// 4001 during compaction</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="kw">private</span> <span class="fu">handleClose</span>(closeCode<span class="op">:</span> <span class="dt">number</span>)<span class="op">:</span> <span class="dt">void</span> {</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (PERMANENT_CLOSE_CODES<span class="op">.</span><span class="fu">has</span>(closeCode)) {</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="at">callbacks</span><span class="op">.</span><span class="at">onClose</span><span class="op">?.</span>()  <span class="co">// permanent — stop</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (closeCode <span class="op">===</span> <span class="dv">4001</span>) {</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="at">sessionNotFoundRetries</span><span class="op">++</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="kw">this</span><span class="op">.</span><span class="at">sessionNotFoundRetries</span> <span class="op">&gt;</span> MAX_SESSION_NOT_FOUND_RETRIES) {</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>      <span class="kw">this</span><span class="op">.</span><span class="at">callbacks</span><span class="op">.</span><span class="at">onClose</span><span class="op">?.</span>()</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>      <span class="cf">return</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="fu">scheduleReconnect</span>(RECONNECT_DELAY_MS <span class="op">*</span> <span class="kw">this</span><span class="op">.</span><span class="at">sessionNotFoundRetries</span><span class="op">,</span> <span class="op">...</span>)</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Transient — attempt reconnect</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="kw">this</span><span class="op">.</span><span class="at">reconnectAttempts</span> <span class="op">&lt;</span> MAX_RECONNECT_ATTEMPTS) {</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="at">reconnectAttempts</span><span class="op">++</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="fu">scheduleReconnect</span>(RECONNECT_DELAY_MS<span class="op">,</span> <span class="op">...</span>)</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <code>viewerOnly</code> configuration mode suppresses interrupt signals and disables the 60-second reconnect timeout. This is used by <code>claude assistant</code>, which observes a session without controlling it – a read-only mirror that should never accidentally kill a running agent.</p>
+<hr>
+</section>
+</section>
+<section id="transport-abstraction-one-interface-three-wire-protocols" class="level2">
+<h2 class="anchored" data-anchor-id="transport-abstraction-one-interface-three-wire-protocols">Transport Abstraction: One Interface, Three Wire Protocols</h2>
+<p>The <code>src/cli/transports/</code> directory implements a transport abstraction that makes the rest of the system wire-protocol-agnostic. Whether bytes flow over WebSocket, Server-Sent Events, or standard I/O, the consumer sees the same <code>ReplBridgeTransport</code> interface.</p>
+<section id="the-transport-interface" class="level3">
+<h3 class="anchored" data-anchor-id="the-transport-interface">The Transport Interface</h3>
+<p>The <span class="kw-slate">ReplBridgeTransport</span> type captures the full surface area that the bridge needs from any transport:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">export type</span> ReplBridgeTransport <span class="op">=</span> {</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write</span>(message<span class="op">:</span> StdoutMessage)<span class="op">:</span> <span class="bu">Promise</span><span class="op">&lt;</span><span class="dt">void</span><span class="op">&gt;</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">writeBatch</span>(messages<span class="op">:</span> StdoutMessage[])<span class="op">:</span> <span class="bu">Promise</span><span class="op">&lt;</span><span class="dt">void</span><span class="op">&gt;</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">close</span>()<span class="op">:</span> <span class="dt">void</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">isConnectedStatus</span>()<span class="op">:</span> <span class="dt">boolean</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">getLastSequenceNum</span>()<span class="op">:</span> <span class="dt">number</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">reportState</span>(state<span class="op">:</span> SessionState)<span class="op">:</span> <span class="dt">void</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">reportDelivery</span>(eventId<span class="op">:</span> <span class="dt">string</span><span class="op">,</span> status<span class="op">:</span> <span class="st">'processing'</span> <span class="op">|</span> <span class="st">'processed'</span>)<span class="op">:</span> <span class="dt">void</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">flush</span>()<span class="op">:</span> <span class="bu">Promise</span><span class="op">&lt;</span><span class="dt">void</span><span class="op">&gt;</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="co">// ...callbacks for onData, onClose, onConnect</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Two implementations exist, corresponding to the <span class="kw-sage">v1 and v2 transport protocols</span>:</p>
+<ul>
+<li><p><strong>v1 (<code>createV1ReplTransport</code>)</strong>: wraps <code>HybridTransport</code>, which uses a WebSocket for reads and HTTP POST for writes. The POST path goes through <code>SerialBatchEventUploader</code> with exponential backoff, jitter, and a configurable failure cap.</p></li>
+<li><p><strong>v2 (<code>createV2ReplTransport</code>)</strong>: wraps <code>SSETransport</code> for reads and <code>CCRClient</code> for writes. This is the newer Code Sessions API path, where each session has a dedicated worker endpoint. The v2 path additionally supports epoch-based worker registration, delivery acknowledgments (<code>received</code>/<code>processed</code>), and state reporting (<code>requires_action</code> for permission prompts).</p></li>
+</ul>
+</section>
+<section id="the-hybridtransport-websocket-reads-http-writes" class="level3">
+<h3 class="anchored" data-anchor-id="the-hybridtransport-websocket-reads-http-writes">The HybridTransport: WebSocket Reads, HTTP Writes</h3>
+<p>The <span class="kw-slate">HybridTransport</span> extends <code>WebSocketTransport</code> and overrides the write path. Instead of writing to the WebSocket (which would require the server to accept bidirectional traffic), it accumulates events and POSTs them to a converted HTTP endpoint:</p>
+<pre><code>WS URL:   wss://api.example.com/v2/session_ingress/ws/&lt;session_id&gt;
+POST URL: https://api.example.com/v2/session_ingress/session/&lt;session_id&gt;/events</code></pre>
+<p>Stream events (high-volume content deltas) are buffered for 100ms before enqueueing, reducing the POST count during rapid streaming. Non-stream writes flush any buffered stream events first to preserve ordering. This micro-batching is a <span class="kw-sage">classic throughput-vs-latency tradeoff</span>: 100ms of added latency on stream events buys significantly fewer HTTP requests.</p>
+<p>The write pipeline delegates to <code>SerialBatchEventUploader</code>, which ensures at most one POST is in-flight at any time. This serialization is critical: bridge mode fires writes via <code>void transport.write()</code> (fire-and-forget), and without serialization, concurrent POSTs to the same Firestore document would cause write collisions, retry storms, and pager alerts.</p>
+</section>
+<section id="sse-transport-and-sequence-numbers" class="level3">
+<h3 class="anchored" data-anchor-id="sse-transport-and-sequence-numbers">SSE Transport and Sequence Numbers</h3>
+<p>The <span class="kw-slate">SSETransport</span> implements the read side for v2 sessions. The key innovation is <span class="kw-mauve">sequence number tracking</span>: each SSE frame carries an <code>id</code> field (the event sequence number), and when the transport reconnects, it sends <code>Last-Event-ID</code> / <code>from_sequence_num</code> so the server resumes from where the previous stream left off instead of replaying the entire session history.</p>
+<p>This is critical for transport swaps – when a JWT refresh forces a new transport, the bridge reads <code>getLastSequenceNum()</code> from the old transport, passes it to the new one’s constructor, and the server skips already-delivered events. Without this, every token refresh would replay the full session, generating phantom “user sent a new message” system reminders.</p>
+<hr>
+</section>
+</section>
+<section id="direct-connect-portable-sessions" class="level2">
+<h2 class="anchored" data-anchor-id="direct-connect-portable-sessions">Direct Connect: Portable Sessions</h2>
+<p>The direct-connect subsystem (<code>src/server/</code>) enables a different deployment model: instead of connecting through the cloud infrastructure, a client connects directly to a Claude Code instance running as a local server. This is the <span class="kw-mauve">teleport</span> mechanism – a session that can be attached from different clients without cloud intermediation.</p>
+<p>The <code>createDirectConnectSession()</code> function POSTs to a local server’s <code>/sessions</code> endpoint, passing the working directory and permission configuration. The server responds with a session ID and a WebSocket URL:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">export</span> <span class="kw">async</span> <span class="kw">function</span> <span class="fu">createDirectConnectSession</span>({</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  serverUrl<span class="op">,</span> authToken<span class="op">,</span> cwd<span class="op">,</span> dangerouslySkipPermissions<span class="op">,</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>})<span class="op">:</span> <span class="bu">Promise</span><span class="op">&lt;</span>{ config<span class="op">:</span> DirectConnectConfig<span class="op">;</span> workDir<span class="op">?:</span> <span class="dt">string</span> }<span class="op">&gt;</span> {</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> resp <span class="op">=</span> <span class="cf">await</span> <span class="fu">fetch</span>(<span class="vs">`</span><span class="sc">${</span>serverUrl<span class="sc">}</span><span class="vs">/sessions`</span><span class="op">,</span> {</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    method<span class="op">:</span> <span class="st">'POST'</span><span class="op">,</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    headers<span class="op">,</span> body<span class="op">:</span> <span class="fu">jsonStringify</span>({ cwd<span class="op">,</span> <span class="op">...</span>permissionOpts })<span class="op">,</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> data <span class="op">=</span> <span class="fu">connectResponseSchema</span>()<span class="op">.</span><span class="fu">safeParse</span>(<span class="cf">await</span> resp<span class="op">.</span><span class="fu">json</span>())</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> {</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    config<span class="op">:</span> { serverUrl<span class="op">,</span> sessionId<span class="op">:</span> data<span class="op">.</span><span class="at">session_id</span><span class="op">,</span> wsUrl<span class="op">:</span> data<span class="op">.</span><span class="at">ws_url</span><span class="op">,</span> authToken }<span class="op">,</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    workDir<span class="op">:</span> data<span class="op">.</span><span class="at">work_dir</span><span class="op">,</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <span class="kw-slate">DirectConnectSessionManager</span> mirrors the <code>RemoteSessionManager</code> API but communicates entirely over a single WebSocket. Messages arrive as newline-delimited JSON (the <code>--input-format stream-json</code> protocol), and the manager filters out internal types (<code>keep_alive</code>, <code>streamlined_text</code>, <code>post_turn_summary</code>) that are irrelevant to the external consumer.</p>
+<p>The permission flow is identical in structure to the remote case – <code>control_request</code> with <code>can_use_tool</code> triggers the callback, and the response is serialized as <code>control_response</code> – but the latency profile is fundamentally different. Direct-connect permission requests travel over localhost (sub-millisecond) rather than through cloud infrastructure (50-200ms), making the interactive experience noticeably snappier.</p>
+<hr>
+</section>
+<section id="upstream-proxy-session-token-bootstrap-for-remote-containers" class="level2">
+<h2 class="anchored" data-anchor-id="upstream-proxy-session-token-bootstrap-for-remote-containers">Upstream Proxy: Session-Token Bootstrap for Remote Containers</h2>
+<p>When Claude Code runs inside a <span class="kw-slate">CCR (Cloud Code Runtime)</span> container, it faces a networking challenge: the container needs to make authenticated HTTPS requests to external services (Datadog, GitHub API) but sits behind a controlled egress gateway. The upstream proxy subsystem (<code>src/upstreamproxy/</code>, 2 files) solves this through a four-stage bootstrap:</p>
+<ol type="1">
+<li><p><strong>Token acquisition</strong>: Read the one-time session token from <code>/run/ccr/session_token</code>. This file is injected by the container orchestrator and contains a scoped credential.</p></li>
+<li><p><strong>Process hardening</strong>: Call <code>prctl(PR_SET_DUMPABLE, 0)</code> via Bun FFI to block same-UID <code>ptrace</code> of the process heap. This prevents a prompt-injected <code>gdb -p $PPID</code> from scraping the token from memory – a <span class="kw-terra">defense-in-depth</span> measure against agent-mediated attacks.</p></li>
+<li><p><strong>CA bundle construction</strong>: Download the proxy’s CA certificate from the CCR API and concatenate it with the system CA bundle. This allows <code>curl</code>, <code>gh</code>, Python <code>httpx</code>, and other tools to trust the MITM proxy’s TLS interception.</p></li>
+<li><p><strong>Relay startup</strong>: Launch a local TCP server that accepts HTTP CONNECT requests and tunnels bytes over WebSocket to the CCR upstream proxy endpoint. The relay uses protobuf framing (<code>UpstreamProxyChunk</code>) for compatibility with the gateway’s WebSocket stream adapter.</p></li>
+</ol>
+<p>After the relay is running, the token file is unlinked – the token remains only in heap memory, and the file is gone before the agent loop can access it. If any step fails, the proxy is disabled and the session proceeds without it. This <span class="kw-sage">fail-open design</span> ensures a broken proxy setup never breaks an otherwise-working session.</p>
+<p>The relay exports environment variables that all child processes inherit:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">export</span> <span class="kw">function</span> <span class="fu">getUpstreamProxyEnv</span>()<span class="op">:</span> <span class="bu">Record</span><span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> <span class="dt">string</span><span class="op">&gt;</span> {</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="op">!</span>state<span class="op">.</span><span class="at">enabled</span>) <span class="cf">return</span> {}</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> proxyUrl <span class="op">=</span> <span class="vs">`http://127.0.0.1:</span><span class="sc">${</span>state<span class="op">.</span><span class="at">port</span><span class="sc">}</span><span class="vs">`</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> {</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    HTTPS_PROXY<span class="op">:</span> proxyUrl<span class="op">,</span>    https_proxy<span class="op">:</span> proxyUrl<span class="op">,</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    NO_PROXY<span class="op">:</span> NO_PROXY_LIST<span class="op">,</span>  no_proxy<span class="op">:</span> NO_PROXY_LIST<span class="op">,</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    SSL_CERT_FILE<span class="op">:</span> state<span class="op">.</span><span class="at">caBundlePath</span><span class="op">,</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    NODE_EXTRA_CA_CERTS<span class="op">:</span> state<span class="op">.</span><span class="at">caBundlePath</span><span class="op">,</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    REQUESTS_CA_BUNDLE<span class="op">:</span> state<span class="op">.</span><span class="at">caBundlePath</span><span class="op">,</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    CURL_CA_BUNDLE<span class="op">:</span> state<span class="op">.</span><span class="at">caBundlePath</span><span class="op">,</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <code>NO_PROXY</code> list is carefully curated: localhost, RFC 1918 ranges, the IMDS range, Anthropic’s own API (which must not be intercepted), and major package registries. Three forms of <code>anthropic.com</code> (<code>*.anthropic.com</code>, <code>.anthropic.com</code>, <code>anthropic.com</code>) are listed because different HTTP clients parse <code>NO_PROXY</code> differently – Bun uses glob matching, Python’s <code>urllib</code> uses suffix matching, and some clients match only the apex domain.</p>
+<hr>
+</section>
+<section id="permission-flow-across-process-boundaries" class="level2">
+<h2 class="anchored" data-anchor-id="permission-flow-across-process-boundaries">Permission Flow Across Process Boundaries</h2>
+<p>The most architecturally demanding aspect of the remote runtime is preserving the <span class="kw-terra">permission model</span> when the agent and the user interface live in different processes – potentially on different machines.</p>
+<section id="the-permission-callback-interface" class="level3">
+<h3 class="anchored" data-anchor-id="the-permission-callback-interface">The Permission Callback Interface</h3>
+<p><span class="kw-slate">bridgePermissionCallbacks.ts</span> defines the protocol for permission requests that cross process boundaries:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> BridgePermissionCallbacks <span class="op">=</span> {</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sendRequest</span>(requestId<span class="op">,</span> toolName<span class="op">,</span> input<span class="op">,</span> toolUseId<span class="op">,</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>              description<span class="op">,</span> permissionSuggestions<span class="op">?,</span> blockedPath<span class="op">?</span>)<span class="op">:</span> <span class="dt">void</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sendResponse</span>(requestId<span class="op">,</span> response<span class="op">:</span> BridgePermissionResponse)<span class="op">:</span> <span class="dt">void</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cancelRequest</span>(requestId)<span class="op">:</span> <span class="dt">void</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">onResponse</span>(requestId<span class="op">,</span> handler)<span class="op">:</span> () <span class="kw">=&gt;</span> <span class="dt">void</span>  <span class="co">// returns unsubscribe</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The flow operates as follows:</p>
+<ol type="1">
+<li>The agent’s tool execution hits a permission check</li>
+<li>The local permission system sees that bridge mode is active and invokes <code>sendRequest()</code> instead of rendering a local prompt</li>
+<li>The bridge serializes the request as a <code>control_request</code> with subtype <code>can_use_tool</code> and writes it to the transport</li>
+<li>The remote client (claude.ai, VS Code, etc.) receives the request and renders a permission prompt in its own UI</li>
+<li>The user approves or denies</li>
+<li>The response travels back as a <code>control_response</code></li>
+<li><code>onResponse()</code> resolves the pending promise, and tool execution continues</li>
+</ol>
+<p>The <code>cancelRequest()</code> method handles the case where the agent moves on before the user responds – for example, if the user interrupts the session while a permission prompt is pending. Without cancellation, the remote UI would show a stale prompt for a tool that will never execute.</p>
+</section>
+<section id="env-less-bridge-the-v2-protocol-path" class="level3">
+<h3 class="anchored" data-anchor-id="env-less-bridge-the-v2-protocol-path">Env-Less Bridge: The v2 Protocol Path</h3>
+<p>The <span class="kw-slate">remoteBridgeCore.ts</span> file implements the “env-less” bridge – a newer protocol path that eliminates the Environments API layer entirely. Instead of the multi-step register/poll/dispatch lifecycle, it uses a direct three-step handshake:</p>
+<ol type="1">
+<li><code>POST /v1/code/sessions</code> (OAuth) – creates the session</li>
+<li><code>POST /v1/code/sessions/{id}/bridge</code> (OAuth) – returns a worker JWT and epoch number. Each <code>/bridge</code> call bumps the epoch – it IS the worker registration</li>
+<li><code>createV2ReplTransport(worker_jwt, epoch)</code> – opens SSE + CCRClient</li>
+</ol>
+<p>This eliminates heartbeating, deregistration, and the environment lifecycle entirely. Token refresh is proactive: a <code>createTokenRefreshScheduler</code> calls <code>/bridge</code> again before the JWT expires, receiving a fresh token and new epoch. If the SSE stream gets a 401, the transport rebuilds with fresh credentials while preserving the sequence number cursor – no event replay, no session interruption.</p>
+<hr>
+</section>
+</section>
+<section id="spawn-modes-session-isolation-strategies" class="level2">
+<h2 class="anchored" data-anchor-id="spawn-modes-session-isolation-strategies">Spawn Modes: Session Isolation Strategies</h2>
+<p>The bridge supports three <span class="kw-sage">spawn modes</span> that determine how sessions are isolated on the host machine:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 13%">
+<col style="width: 40%">
+<col style="width: 24%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Mode</th>
+<th>Working Directory</th>
+<th>Lifecycle</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>single-session</code></td>
+<td>Current directory</td>
+<td>Bridge tears down when session ends</td>
+<td>Default for <code>claude remote-control</code></td>
+</tr>
+<tr class="even">
+<td><code>worktree</code></td>
+<td>Isolated git worktree per session</td>
+<td>Persistent server, worktrees cleaned up</td>
+<td>Multi-session on a git repo</td>
+</tr>
+<tr class="odd">
+<td><code>same-dir</code></td>
+<td>Shared current directory</td>
+<td>Persistent server</td>
+<td>Simple multi-session (can stomp)</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>worktree</code> mode is the most sophisticated: for each incoming session, the bridge calls <code>createAgentWorktree()</code> to create a new git worktree, spawns the child CLI process in that worktree, and calls <code>removeAgentWorktree()</code> on session completion. This gives each concurrent session its own branch and working tree, preventing file-level conflicts between parallel agents working on the same repository.</p>
+<hr>
+</section>
+<section id="summary" class="level2">
+<h2 class="anchored" data-anchor-id="summary">Summary</h2>
+<p>The remote runtime layer reveals a recurring pattern in systems design: the cost of distribution is not networking – it is <span class="kw-sage">preserving invariants across process boundaries</span>. The bridge, remote session, and transport layers together are <span class="kw-slate">~14,800 lines of code</span>. Of those, perhaps <span class="kw-slate">2,000 handle actual network I/O</span>. The rest handle authentication, echo deduplication, sequence number tracking, permission routing, session lifecycle, reconnection, and failure recovery.</p>
+<p>The split between push (WebSocket/SSE) and pull (HTTP POST) channels is a design decision that recurs in many distributed systems. Slack’s real-time messaging API, Firebase’s Firestore listeners, and GraphQL subscriptions all separate the subscription channel from the mutation channel. The reason is always the same: reads and writes have different reliability requirements, different scaling characteristics, and different failure modes. A dropped subscription can be recovered by replaying from a cursor. A dropped write must be retried or the user must be notified. Mixing them on the same channel conflates these distinct concerns.</p>
+<p>The upstream proxy’s defense-in-depth approach – <code>prctl</code> hardening, immediate token file deletion, fail-open on any error – reflects a mature security posture. The system assumes that the agent is a threat vector (it executes arbitrary code suggested by an LLM) and designs accordingly. The token never exists in a file and in memory simultaneously once bootstrap completes. The process cannot be ptraced even by same-user processes. And if any of this fails, the session continues without the proxy rather than crashing – because a session without external API access is still useful, while a crashed session is not.</p>
+<hr>
+</section>
+<section id="appendix-a-wire-protocol-message-types" class="level2 column-page">
+<h2 class="anchored" data-anchor-id="appendix-a-wire-protocol-message-types">Appendix A: Wire Protocol Message Types</h2>
+<p>Every message that crosses the bridge boundary is either a <strong>StdoutMessage</strong> (server → client) or a <strong>StdinMessage</strong> (client → server). These are the two union types defined in <code>controlSchemas.ts</code> that constitute the complete wire protocol. For the detailed schema of each individual SDK message type and control request subtype, see <a href="./15-agent-sdk-structured-io.html">Post 15 Appendices</a>.</p>
+<p><strong>StdoutMessage (Server → Client) — 8 variants</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 43%">
+<col style="width: 26%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Variant</th>
+<th>Description</th>
+<th>Volume</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>SDKMessage</code></td>
+<td>Full conversation messages (<code>user</code>, <code>assistant</code>, <code>system</code>, <code>result</code>, <code>tool_progress</code>, etc.)</td>
+<td>High — bulk of traffic</td>
+</tr>
+<tr class="even">
+<td><code>SDKStreamlinedTextMessage</code></td>
+<td>Optimized text-only format (brief mode)</td>
+<td>Medium</td>
+</tr>
+<tr class="odd">
+<td><code>SDKStreamlinedToolUseSummaryMessage</code></td>
+<td>Optimized tool summary format (brief mode)</td>
+<td>Medium</td>
+</tr>
+<tr class="even">
+<td><code>SDKPostTurnSummaryMessage</code></td>
+<td>Summary emitted after each assistant turn</td>
+<td>Low — once per turn</td>
+</tr>
+<tr class="odd">
+<td><code>SDKControlResponse</code></td>
+<td>Response to a client-initiated control request</td>
+<td>Low</td>
+</tr>
+<tr class="even">
+<td><code>SDKControlRequest</code></td>
+<td>Server-initiated commands (<code>initialize</code>, <code>can_use_tool</code>, <code>interrupt</code>, etc.)</td>
+<td>Low — permission prompts, lifecycle</td>
+</tr>
+<tr class="odd">
+<td><code>SDKControlCancelRequest</code></td>
+<td>Cancels a pending control request (e.g., stale permission prompt)</td>
+<td>Rare</td>
+</tr>
+<tr class="even">
+<td><code>SDKKeepAliveMessage</code></td>
+<td>Connection liveness signal</td>
+<td>Periodic — every 30s</td>
+</tr>
+</tbody>
+</table>
+<p><strong>StdinMessage (Client → Server) — 5 variants</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 43%">
+<col style="width: 26%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Variant</th>
+<th>Description</th>
+<th>Volume</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>SDKUserMessage</code></td>
+<td>User-typed messages and attachments</td>
+<td>Low — user-paced</td>
+</tr>
+<tr class="even">
+<td><code>SDKControlRequest</code></td>
+<td>Client-initiated commands (<code>interrupt</code>, <code>set_model</code>, <code>set_permission_mode</code>)</td>
+<td>Low</td>
+</tr>
+<tr class="odd">
+<td><code>SDKControlResponse</code></td>
+<td>Response to a server-initiated request (permission allow/deny)</td>
+<td>Low — one per prompt</td>
+</tr>
+<tr class="even">
+<td><code>SDKKeepAliveMessage</code></td>
+<td>Connection liveness signal</td>
+<td>Periodic</td>
+</tr>
+<tr class="odd">
+<td><code>SDKUpdateEnvironmentVariablesMessage</code></td>
+<td>Runtime environment variable injection</td>
+<td>Rare</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Implementation:</strong> <code>src/entrypoints/sdk/controlSchemas.ts</code> (lines 642–663)</p>
+<hr>
+</section>
+<section id="appendix-b-http-api-endpoints" class="level2 column-page">
+<h2 class="anchored" data-anchor-id="appendix-b-http-api-endpoints">Appendix B: HTTP API Endpoints</h2>
+<p>The bridge communicates with Anthropic’s backend through REST endpoints in addition to the WebSocket/SSE channels. All endpoints use OAuth bearer tokens for authentication.</p>
+<p><strong>Bridge Environment Management</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 18%">
+<col style="width: 23%">
+<col style="width: 20%">
+<col style="width: 37%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Method</th>
+<th>Endpoint</th>
+<th>Purpose</th>
+<th>Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>POST</code></td>
+<td><code>/v1/environments/bridge</code></td>
+<td>Register bridge as a worker (returns <code>environment_id</code>)</td>
+<td><code>src/bridge/bridgeApi.ts</code></td>
+</tr>
+<tr class="even">
+<td><code>DELETE</code></td>
+<td><code>/v1/environments/bridge/{environmentId}</code></td>
+<td>Deregister bridge (graceful shutdown)</td>
+<td><code>src/bridge/bridgeApi.ts</code></td>
+</tr>
+<tr class="odd">
+<td><code>POST</code></td>
+<td><code>/v1/environments/{environmentId}/bridge/reconnect</code></td>
+<td>Reconnect session after bridge failure</td>
+<td><code>src/bridge/bridgeApi.ts</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Work Dispatch (v1 protocol)</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 18%">
+<col style="width: 23%">
+<col style="width: 20%">
+<col style="width: 37%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Method</th>
+<th>Endpoint</th>
+<th>Purpose</th>
+<th>Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>GET</code></td>
+<td><code>/v1/environments/{environmentId}/work/poll</code></td>
+<td>Long-poll for new work items (sessions)</td>
+<td><code>src/bridge/bridgeApi.ts</code></td>
+</tr>
+<tr class="even">
+<td><code>POST</code></td>
+<td><code>/v1/environments/{environmentId}/work/{workId}/ack</code></td>
+<td>Acknowledge work receipt</td>
+<td><code>src/bridge/bridgeApi.ts</code></td>
+</tr>
+<tr class="odd">
+<td><code>POST</code></td>
+<td><code>/v1/environments/{environmentId}/work/{workId}/stop</code></td>
+<td>Signal work completion or failure</td>
+<td><code>src/bridge/bridgeApi.ts</code></td>
+</tr>
+<tr class="even">
+<td><code>POST</code></td>
+<td><code>/v1/environments/{environmentId}/work/{workId}/heartbeat</code></td>
+<td>Extend work lease (prevents timeout)</td>
+<td><code>src/bridge/bridgeApi.ts</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Session Management</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 18%">
+<col style="width: 23%">
+<col style="width: 20%">
+<col style="width: 37%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Method</th>
+<th>Endpoint</th>
+<th>Purpose</th>
+<th>Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>POST</code></td>
+<td><code>/v1/sessions/{sessionId}/events</code></td>
+<td>Send events to session (permission responses)</td>
+<td><code>src/bridge/bridgeApi.ts</code></td>
+</tr>
+<tr class="even">
+<td><code>POST</code></td>
+<td><code>/v1/sessions/{sessionId}/archive</code></td>
+<td>Archive completed session (409 if already archived)</td>
+<td><code>src/bridge/bridgeApi.ts</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>v2 Code Sessions API</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 18%">
+<col style="width: 23%">
+<col style="width: 20%">
+<col style="width: 37%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Method</th>
+<th>Endpoint</th>
+<th>Purpose</th>
+<th>Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>POST</code></td>
+<td><code>/v1/code/sessions</code></td>
+<td>Create a new code session (OAuth)</td>
+<td><code>src/bridge/remoteBridgeCore.ts</code></td>
+</tr>
+<tr class="even">
+<td><code>POST</code></td>
+<td><code>/v1/code/sessions/{id}/bridge</code></td>
+<td>Register as worker; returns worker JWT + epoch</td>
+<td><code>src/bridge/remoteBridgeCore.ts</code></td>
+</tr>
+<tr class="odd">
+<td><code>GET</code></td>
+<td><code>/v1/code/sessions/{id}/events</code></td>
+<td>SSE event stream (worker JWT, <code>from_sequence_num</code>)</td>
+<td><code>src/cli/transports/SSETransport.ts</code></td>
+</tr>
+<tr class="even">
+<td><code>POST</code></td>
+<td><code>/v1/code/sessions/{id}/events</code></td>
+<td>Post events to session (worker JWT)</td>
+<td><code>src/cli/transports/CCRClient.ts</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Direct Connect (local server)</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 18%">
+<col style="width: 23%">
+<col style="width: 20%">
+<col style="width: 37%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Method</th>
+<th>Endpoint</th>
+<th>Purpose</th>
+<th>Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>POST</code></td>
+<td><code>/sessions</code></td>
+<td>Create session on local server</td>
+<td><code>src/remote/directConnect.ts</code></td>
+</tr>
+<tr class="even">
+<td><code>WS</code></td>
+<td><code>/sessions/ws/{sessionId}</code></td>
+<td>WebSocket connection for direct-connect</td>
+<td><code>src/remote/directConnect.ts</code></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="appendix-c-websocket-close-codes" class="level2 column-page">
+<h2 class="anchored" data-anchor-id="appendix-c-websocket-close-codes">Appendix C: WebSocket Close Codes</h2>
+<p>The <code>SessionsWebSocket</code> handles close codes with differentiated retry behavior.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 22%">
+<col style="width: 16%">
+<col style="width: 30%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Close Code</th>
+<th>Meaning</th>
+<th>Retry Behavior</th>
+<th>Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>4003</code></td>
+<td>Unauthorized (permanent rejection)</td>
+<td>No retry — connection terminated immediately</td>
+<td><code>src/remote/SessionsWebSocket.ts</code></td>
+</tr>
+<tr class="even">
+<td><code>4001</code></td>
+<td>Session not found</td>
+<td>Up to 3 retries with linear backoff (transient during compaction)</td>
+<td><code>src/remote/SessionsWebSocket.ts</code></td>
+</tr>
+<tr class="odd">
+<td>Other codes</td>
+<td>Transient failure</td>
+<td>Up to 5 retries with 2s delay</td>
+<td><code>src/remote/SessionsWebSocket.ts</code></td>
+</tr>
+<tr class="even">
+<td>Normal close</td>
+<td>Clean shutdown</td>
+<td>No retry</td>
+<td><code>src/remote/SessionsWebSocket.ts</code></td>
+</tr>
+</tbody>
+</table>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./13-plugin-architecture.html" class="pagination-link" aria-label="VI.3 — Plugin Architecture">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">VI.3 — Plugin Architecture</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./18-native-runtime-voice-portability.html" class="pagination-link" aria-label="VIII.1 — Native Runtime, Voice &amp; Portability">
+        <span class="nav-page-text">VIII.1 — Native Runtime, Voice &amp; Portability</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.quarto-figure img[src$=".svg"]:not(.nozoom)').forEach(function(img) {
+    fetch(img.src).then(r => r.text()).then(function(svgText) {
+      var div = document.createElement('div');
+      div.innerHTML = svgText;
+      var svg = div.querySelector('svg');
+      if (svg) {
+        var vb = svg.getAttribute('viewBox');
+        if (vb) {
+          var parts = vb.split(/\s+/);
+          var w = parseFloat(parts[2]), h = parseFloat(parts[3]);
+          var ratio = h / w;
+          var containerH = Math.max(250, Math.min(700, 900 * ratio));
+          svg.style.width = '100%';
+          svg.style.height = containerH + 'px';
+        } else {
+          svg.style.width = '100%';
+          svg.style.height = '400px';
+        }
+        svg.style.border = '1px solid var(--bs-border-color, #dee2e6)';
+        svg.style.borderRadius = '6px';
+        svg.style.cursor = 'grab';
+        svg.style.background = 'var(--bs-body-bg, #fff)';
+        img.parentNode.replaceChild(svg, img);
+        svgPanZoom(svg, {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true, minZoom: 0.5, maxZoom: 10});
+      }
+    });
+  });
+  // Mermaid post-processing: apply Palatino font + pan-zoom
+  function initMermaid() {
+    document.querySelectorAll('.cell-output-display svg').forEach(function(svg) {
+      if (svg.dataset.mInit) return;
+      svg.dataset.mInit = '1';
+      // Step 1: Apply Palatino to all text AFTER Mermaid layout
+      svg.querySelectorAll('.nodeLabel, .edgeLabel, .cluster-label span, text').forEach(function(el) {
+        el.style.fontFamily = '"Palatino Linotype", Palatino, Georgia, serif';
+      });
+      // Step 2: Ensure foreignObjects don't clip
+      svg.querySelectorAll('foreignObject').forEach(function(fo) {
+        fo.style.overflow = 'visible';
+      });
+      // Step 3: Size the container
+      var vb = svg.getAttribute('viewBox');
+      if (vb) {
+        var parts = vb.split(/[\s,]+/);
+        var w = parseFloat(parts[2]), h = parseFloat(parts[3]);
+        var ratio = h / w;
+        var containerH = Math.max(350, Math.min(800, 900 * ratio));
+        svg.style.width = '100%';
+        svg.style.height = containerH + 'px';
+      } else {
+        svg.style.width = '100%';
+        svg.style.height = '500px';
+      }
+      svg.style.border = '1px solid var(--bs-border-color, #dee2e6)';
+      svg.style.borderRadius = '6px';
+      svg.style.cursor = 'grab';
+      svg.style.background = 'var(--bs-body-bg, #fff)';
+      // Step 4: Enable pan-zoom
+      try {
+        svgPanZoom(svg, {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true, minZoom: 0.5, maxZoom: 10});
+      } catch(e) {}
+    });
+  }
+  setTimeout(initMermaid, 800);
+  setTimeout(initMermaid, 2000);
+  setTimeout(initMermaid, 4000);
+});
+</script>
+
+
+
+
+</body></html>

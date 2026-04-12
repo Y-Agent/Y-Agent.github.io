@@ -1,0 +1,534 @@
+{
+  "modules": [
+    {
+      "id": "main-entry",
+      "path": "main.tsx",
+      "name": "App Entry Point",
+      "layer": "Entry Points",
+      "purpose": "CLI parsing via Commander.js with 40+ flags and entrypoint routing to init, print, or REPL modes",
+      "keyFunctions": ["main()", "parseArgs()", "setupCommander()"],
+      "patterns": ["Commander.js CLI Parsing", "Flag-Driven Routing"],
+      "usedInWorkflows": ["launching-claude", "headless-mode", "resuming-session"]
+    },
+    {
+      "id": "entrypoint-init",
+      "path": "entrypoints/init.ts",
+      "name": "Bootstrap Sequence",
+      "layer": "Entry Points",
+      "purpose": "Runs the startup sequence: auth check, trust dialog, config load, telemetry init, and signal handler registration",
+      "keyFunctions": ["init()", "checkAuth()", "loadConfig()"],
+      "patterns": ["Eager Initialization", "Signal Handler Registration"],
+      "usedInWorkflows": ["launching-claude", "authentication"]
+    },
+    {
+      "id": "entrypoint-print",
+      "path": "entrypoints/print.ts",
+      "name": "Headless Print Mode",
+      "layer": "Entry Points",
+      "purpose": "Non-interactive mode that sends a single prompt, streams the response to stdout, and exits with a status code",
+      "keyFunctions": ["printMode()", "streamToStdout()"],
+      "patterns": ["Headless Execution", "Pipe-Friendly Output"],
+      "usedInWorkflows": ["headless-mode"]
+    },
+    {
+      "id": "entrypoint-repl",
+      "path": "entrypoints/repl.tsx",
+      "name": "REPL Launcher",
+      "layer": "Entry Points",
+      "purpose": "Mounts the Ink React app, initializes the REPL lifecycle, and hands control to the interactive UI",
+      "keyFunctions": ["startRepl()", "mountInkApp()", "initSession()"],
+      "patterns": ["Ink App Mounting", "React Lifecycle"],
+      "usedInWorkflows": ["launching-claude", "resuming-session"]
+    },
+    {
+      "id": "query-engine",
+      "path": "services/query/QueryEngine.ts",
+      "name": "Query Engine",
+      "layer": "Agent Core",
+      "purpose": "Manages conversation lifetime, message history, and serves as the entry point to the agent loop via an AsyncGenerator coroutine",
+      "keyFunctions": ["QueryEngine.run()", "QueryEngine.cancel()", "addMessage()"],
+      "patterns": ["AsyncGenerator Coroutine", "Conversation State Machine"],
+      "usedInWorkflows": ["sending-message", "watching-tool-run", "context-compaction", "context-token-consumption"]
+    },
+    {
+      "id": "query-loop",
+      "path": "services/query/queryLoop.ts",
+      "name": "Agent Loop (ReAct)",
+      "layer": "Agent Core",
+      "purpose": "The core ReAct loop that iterates reason-act-observe cycles until the model produces a final text response with no tool calls",
+      "keyFunctions": ["queryLoop()", "processToolResults()", "shouldContinue()"],
+      "patterns": ["ReAct Loop", "Tool-Use Continuation", "Stop Condition Detection"],
+      "usedInWorkflows": ["sending-message", "watching-tool-run", "tool-selection", "interrupting"]
+    },
+    {
+      "id": "query-streaming",
+      "path": "services/query/queryModelWithStreaming.ts",
+      "name": "Streaming API Caller",
+      "layer": "Agent Core",
+      "purpose": "Makes the API call with SSE streaming, handles token counting, cache breakpoints, and yields partial deltas to the UI",
+      "keyFunctions": ["queryModelWithStreaming()", "handleStreamEvent()", "countTokens()"],
+      "patterns": ["Server-Sent Events", "Streaming Partial Deltas", "Cache Breakpoint Injection"],
+      "usedInWorkflows": ["sending-message", "context-token-consumption", "switching-models"]
+    },
+    {
+      "id": "process-user-input",
+      "path": "services/query/processUserInput.ts",
+      "name": "Input Preprocessor",
+      "layer": "Agent Core",
+      "purpose": "Pre-submission processing that resolves @mentions to file contents, prepares image attachments, and normalizes input",
+      "keyFunctions": ["processUserInput()", "resolveAtMentions()", "prepareAttachments()"],
+      "patterns": ["@Mention Resolution", "Attachment Pipeline"],
+      "usedInWorkflows": ["sending-message", "prompt-assembly"]
+    },
+    {
+      "id": "query-top",
+      "path": "query.ts",
+      "name": "Query Orchestrator",
+      "layer": "Agent Core",
+      "purpose": "Top-level orchestration that wires the query engine, tool executor, and permission manager into a single conversation turn",
+      "keyFunctions": ["query()", "orchestrate()"],
+      "patterns": ["Facade Pattern", "Dependency Wiring"],
+      "usedInWorkflows": ["sending-message", "watching-tool-run"]
+    },
+    {
+      "id": "tool-registry",
+      "path": "services/tools/toolRegistry.ts",
+      "name": "Tool Registry",
+      "layer": "Tools",
+      "purpose": "Central registry that holds all tool definitions, builds JSON schemas for the API, and resolves tool names to handlers",
+      "keyFunctions": ["ToolRegistry.register()", "ToolRegistry.getSchema()", "ToolRegistry.resolve()"],
+      "patterns": ["Registry Pattern", "JSON Schema Generation", "Lazy Tool Resolution"],
+      "usedInWorkflows": ["tool-selection", "watching-tool-run", "setting-up-mcp"]
+    },
+    {
+      "id": "streaming-tool-executor",
+      "path": "services/tools/StreamingToolExecutor.ts",
+      "name": "Streaming Tool Executor",
+      "layer": "Tools",
+      "purpose": "Executes tool calls concurrently with a readers-writers lock, streaming partial output while preventing conflicting file edits",
+      "keyFunctions": ["StreamingToolExecutor.execute()", "acquireLock()", "streamOutput()"],
+      "patterns": ["Readers-Writers Lock", "Concurrent Execution", "Streaming Partial Results"],
+      "usedInWorkflows": ["watching-tool-run", "tool-selection"]
+    },
+    {
+      "id": "tool-execution",
+      "path": "services/tools/toolExecution.ts",
+      "name": "Tool Execution Pipeline",
+      "layer": "Tools",
+      "purpose": "Single tool execution pipeline: validates input, checks permissions, runs the handler, and formats the observation",
+      "keyFunctions": ["executeTool()", "validateInput()", "formatObservation()"],
+      "patterns": ["Pipeline Pattern", "Input Validation", "Observation Formatting"],
+      "usedInWorkflows": ["watching-tool-run", "permission-decision"]
+    },
+    {
+      "id": "agent-tool",
+      "path": "tools/AgentTool.ts",
+      "name": "Agent Tool (Sub-Agent)",
+      "layer": "Tools",
+      "purpose": "Spawns sub-agents for complex tasks, deciding between fork (same process) and spawn (child process) based on isolation needs",
+      "keyFunctions": ["AgentTool.execute()", "forkAgent()", "spawnAgent()"],
+      "patterns": ["Fork/Spawn Decision", "Sub-Agent Isolation", "Inbox Messaging"],
+      "usedInWorkflows": ["sub-agent-spawning", "subagent-monitoring"]
+    },
+    {
+      "id": "bash-tool",
+      "path": "tools/BashTool.ts",
+      "name": "Bash Tool",
+      "layer": "Tools",
+      "purpose": "Executes shell commands in a sandboxed environment with timeout enforcement, output truncation, and background process support",
+      "keyFunctions": ["BashTool.execute()", "runCommand()", "enforceTimeout()"],
+      "patterns": ["Sandboxed Execution", "Output Truncation", "Background Process Management"],
+      "usedInWorkflows": ["watching-tool-run", "permission-decision"]
+    },
+    {
+      "id": "file-read-tool",
+      "path": "tools/FileReadTool.ts",
+      "name": "File Read Tool",
+      "layer": "Tools",
+      "purpose": "Reads files with optional line offset and limit, supporting text, images, PDFs, and Jupyter notebooks",
+      "keyFunctions": ["FileReadTool.execute()", "readFile()", "detectFileType()"],
+      "patterns": ["Multi-Format Detection", "Pagination"],
+      "usedInWorkflows": ["watching-tool-run"]
+    },
+    {
+      "id": "file-write-tool",
+      "path": "tools/FileWriteTool.ts",
+      "name": "File Write Tool",
+      "layer": "Tools",
+      "purpose": "Writes or overwrites files, requiring a prior read for existing files to prevent accidental data loss",
+      "keyFunctions": ["FileWriteTool.execute()", "writeFile()", "checkPriorRead()"],
+      "patterns": ["Read-Before-Write Guard", "Atomic Write"],
+      "usedInWorkflows": ["watching-tool-run", "permission-decision"]
+    },
+    {
+      "id": "enter-plan-mode-tool",
+      "path": "tools/EnterPlanModeTool.ts",
+      "name": "Plan Mode Entry Tool",
+      "layer": "Tools",
+      "purpose": "Transitions the agent into plan mode where it can only reason and propose actions without executing tools",
+      "keyFunctions": ["EnterPlanModeTool.execute()", "transitionState()"],
+      "patterns": ["State Machine Transition", "Mode Guard"],
+      "usedInWorkflows": ["plan-mode"]
+    },
+    {
+      "id": "commands-registry",
+      "path": "services/commands/commands.ts",
+      "name": "Slash Command Registry",
+      "layer": "Services",
+      "purpose": "Registers 101 slash commands with lazy loading, providing name-to-handler resolution and typeahead metadata",
+      "keyFunctions": ["registerCommand()", "resolveCommand()", "getCompletions()"],
+      "patterns": ["Lazy Loading", "Registry Pattern", "Typeahead Metadata"],
+      "usedInWorkflows": ["slash-commands"]
+    },
+    {
+      "id": "compact-service",
+      "path": "services/compact/compact.ts",
+      "name": "Context Compaction",
+      "layer": "Services",
+      "purpose": "Summarizes conversation history via a dedicated summary agent, replacing old messages with a condensed representation",
+      "keyFunctions": ["compact()", "summarize()", "replaceHistory()"],
+      "patterns": ["Summary Agent", "History Replacement", "Token Budget Enforcement"],
+      "usedInWorkflows": ["context-compaction", "context-token-consumption"]
+    },
+    {
+      "id": "auto-compact",
+      "path": "services/compact/autoCompact.ts",
+      "name": "Auto-Compaction Trigger",
+      "layer": "Services",
+      "purpose": "Monitors token usage and automatically triggers compaction when the context window reaches 80% capacity",
+      "keyFunctions": ["autoCompact()", "checkThreshold()", "triggerCompaction()"],
+      "patterns": ["Threshold-Based Trigger", "Proactive Resource Management"],
+      "usedInWorkflows": ["context-compaction", "context-token-consumption"]
+    },
+    {
+      "id": "claudemd-service",
+      "path": "services/claudemd/claudemd.ts",
+      "name": "CLAUDE.md Loader",
+      "layer": "Services",
+      "purpose": "Discovers and injects CLAUDE.md instruction files into the system prompt, merging global, user, project, and local scopes",
+      "keyFunctions": ["loadClaudeMd()", "mergeScopes()", "injectInstructions()"],
+      "patterns": ["Hierarchical Override", "Instruction Injection"],
+      "usedInWorkflows": ["writing-claude-md", "prompt-assembly", "launching-claude"]
+    },
+    {
+      "id": "claudemd-discovery",
+      "path": "services/claudemd/discovery.ts",
+      "name": "CLAUDE.md Discovery",
+      "layer": "Services",
+      "purpose": "Hierarchical discovery of CLAUDE.md files from four scopes: ~/.claude/CLAUDE.md, user home, project root, and local .claude/",
+      "keyFunctions": ["discoverClaudeMd()", "walkScopes()", "resolveConflicts()"],
+      "patterns": ["Four-Scope Hierarchy", "Path Walk"],
+      "usedInWorkflows": ["writing-claude-md", "prompt-assembly"]
+    },
+    {
+      "id": "mcp-client",
+      "path": "services/mcp/client.ts",
+      "name": "MCP Client",
+      "layer": "Services",
+      "purpose": "Connects to MCP servers via stdio or SSE transport, discovers remote tools, and registers them in the tool registry",
+      "keyFunctions": ["MCPClient.connect()", "discoverTools()", "registerRemoteTools()"],
+      "patterns": ["Transport Abstraction", "Dynamic Tool Registration"],
+      "usedInWorkflows": ["setting-up-mcp", "tool-selection"]
+    },
+    {
+      "id": "mcp-config",
+      "path": "services/mcp/config.ts",
+      "name": "MCP Configuration",
+      "layer": "Services",
+      "purpose": "Manages MCP server configuration from .claude.json and project settings, including server URLs and authentication",
+      "keyFunctions": ["loadMCPConfig()", "resolveServerConfig()", "validateConfig()"],
+      "patterns": ["Config Merge", "Schema Validation"],
+      "usedInWorkflows": ["setting-up-mcp"]
+    },
+    {
+      "id": "settings-service",
+      "path": "services/settings/settings.ts",
+      "name": "Settings Manager",
+      "layer": "Services",
+      "purpose": "Multi-source settings with priority merge across CLI flags, environment variables, project config, and user defaults",
+      "keyFunctions": ["getSettings()", "mergeSources()", "watchForChanges()"],
+      "patterns": ["Priority Merge", "Multi-Source Configuration"],
+      "usedInWorkflows": ["changing-settings", "launching-claude"]
+    },
+    {
+      "id": "session-storage",
+      "path": "services/session/sessionStorage.ts",
+      "name": "Session Storage",
+      "layer": "Services",
+      "purpose": "Persists conversation sessions to JSONL files, enabling resume and session listing across CLI restarts",
+      "keyFunctions": ["saveSession()", "loadSession()", "listSessions()"],
+      "patterns": ["JSONL Append-Only Log", "Session Resume"],
+      "usedInWorkflows": ["resuming-session", "exiting-cleanup"]
+    },
+    {
+      "id": "plugin-manager",
+      "path": "services/plugins/pluginManager.ts",
+      "name": "Plugin Manager",
+      "layer": "Services",
+      "purpose": "Manages plugin lifecycle: discovery, validation, loading, and teardown of third-party extensions",
+      "keyFunctions": ["PluginManager.load()", "PluginManager.unload()", "validatePlugin()"],
+      "patterns": ["Lifecycle Management", "Plugin Isolation"],
+      "usedInWorkflows": ["setting-up-mcp"]
+    },
+    {
+      "id": "skills-loader",
+      "path": "services/skills/loadSkillsDir.ts",
+      "name": "Skills Loader",
+      "layer": "Services",
+      "purpose": "Discovers and loads SKILL.md files from the skills directory, registering them as invocable capabilities",
+      "keyFunctions": ["loadSkillsDir()", "parseSkillMd()", "registerSkill()"],
+      "patterns": ["Directory Scan", "Markdown Parsing", "Skill Registration"],
+      "usedInWorkflows": ["installing-skills", "slash-commands"]
+    },
+    {
+      "id": "analytics-service",
+      "path": "services/analytics/analytics.ts",
+      "name": "Telemetry Dispatcher",
+      "layer": "Services",
+      "purpose": "Dual-backend telemetry dispatcher that fans out events to both Datadog and first-party logging sinks",
+      "keyFunctions": ["trackEvent()", "dispatch()", "flushAll()"],
+      "patterns": ["Fan-Out Dispatch", "Dual Backend", "Batched Flush"],
+      "usedInWorkflows": ["telemetry-data-collection"]
+    },
+    {
+      "id": "analytics-datadog",
+      "path": "services/analytics/datadog.ts",
+      "name": "Datadog Event Sink",
+      "layer": "Services",
+      "purpose": "Sends whitelisted events (64 event types) to Datadog for product analytics with batching and retry logic",
+      "keyFunctions": ["DatadogSink.send()", "isWhitelisted()", "batchFlush()"],
+      "patterns": ["Event Whitelist", "Batch Upload", "Retry with Backoff"],
+      "usedInWorkflows": ["telemetry-data-collection"]
+    },
+    {
+      "id": "analytics-first-party",
+      "path": "services/analytics/firstPartyEventLogger.ts",
+      "name": "First-Party Event Logger",
+      "layer": "Services",
+      "purpose": "Logs all events (not just whitelisted) to Anthropic's first-party endpoint for comprehensive telemetry",
+      "keyFunctions": ["FirstPartyLogger.log()", "formatEvent()", "send()"],
+      "patterns": ["Comprehensive Logging", "Structured Events"],
+      "usedInWorkflows": ["telemetry-data-collection"]
+    },
+    {
+      "id": "analytics-growthbook",
+      "path": "services/analytics/growthbook.ts",
+      "name": "Feature Flag Client",
+      "layer": "Services",
+      "purpose": "GrowthBook client for feature flags and A/B experiments, enabling server-controlled feature rollout",
+      "keyFunctions": ["getFeatureFlag()", "initGrowthBook()", "evaluateExperiment()"],
+      "patterns": ["Feature Flags", "A/B Testing", "Server-Controlled Rollout"],
+      "usedInWorkflows": ["remote-control", "telemetry-data-collection"]
+    },
+    {
+      "id": "remote-managed-settings",
+      "path": "services/remoteManagedSettings/index.ts",
+      "name": "Remote Config Polling",
+      "layer": "Services",
+      "purpose": "Polls for remote configuration updates with SHA256 verification to detect tampering, enabling server-side control",
+      "keyFunctions": ["pollRemoteConfig()", "verifySHA256()", "applyConfig()"],
+      "patterns": ["Polling with Integrity Check", "SHA256 Verification", "Remote Override"],
+      "usedInWorkflows": ["remote-control"]
+    },
+    {
+      "id": "permission-manager",
+      "path": "services/tools/permissions/permissionManager.ts",
+      "name": "Permission Decision Engine",
+      "layer": "Permissions",
+      "purpose": "Central permission decision engine that evaluates tool calls against the current mode, allowlists, and session grants",
+      "keyFunctions": ["PermissionManager.check()", "evaluatePolicy()", "grantSession()"],
+      "patterns": ["Policy Evaluation", "Session Grant Cache", "Allowlist Matching"],
+      "usedInWorkflows": ["permission-decision", "watching-tool-run", "auto-permission-classifier"]
+    },
+    {
+      "id": "permission-mode",
+      "path": "services/tools/permissions/permissionMode.ts",
+      "name": "Permission Mode State",
+      "layer": "Permissions",
+      "purpose": "Manages the current permission mode (ask, auto-accept, deny) and handles mode transitions via keyboard shortcuts",
+      "keyFunctions": ["getMode()", "setMode()", "cycleMode()"],
+      "patterns": ["State Machine", "Mode Cycling"],
+      "usedInWorkflows": ["permission-mode-cycling", "permission-decision"]
+    },
+    {
+      "id": "transcript-classifier",
+      "path": "services/tools/permissions/transcriptClassifier.ts",
+      "name": "Transcript Classifier",
+      "layer": "Permissions",
+      "purpose": "ML-based classifier that analyzes conversation context to auto-approve safe tool calls without user interaction",
+      "keyFunctions": ["classifyTranscript()", "shouldAutoApprove()", "buildFeatures()"],
+      "patterns": ["ML Classification", "Context-Aware Auto-Approval"],
+      "usedInWorkflows": ["auto-permission-classifier", "permission-decision"]
+    },
+    {
+      "id": "yolo-classifier",
+      "path": "utils/permissions/yoloClassifier.ts",
+      "name": "YOLO Classifier",
+      "layer": "Permissions",
+      "purpose": "The actual classifier implementation that determines whether a tool invocation is safe to auto-approve in permissive mode",
+      "keyFunctions": ["yoloClassify()", "isSafeCommand()", "matchesPattern()"],
+      "patterns": ["Pattern Matching", "Risk Scoring", "Allowlist/Denylist"],
+      "usedInWorkflows": ["auto-permission-classifier", "permission-decision"]
+    },
+    {
+      "id": "prompt-input",
+      "path": "components/PromptInput.tsx",
+      "name": "Prompt Input",
+      "layer": "UI Components",
+      "purpose": "Main input component with vim mode, typeahead autocomplete, @mention support, and multi-line editing",
+      "keyFunctions": ["PromptInput()", "handleKeyPress()", "renderTypeahead()"],
+      "patterns": ["Vim Mode", "Typeahead Autocomplete", "@Mention Tokenization"],
+      "usedInWorkflows": ["sending-message", "slash-commands", "keyboard-shortcuts"]
+    },
+    {
+      "id": "permission-request",
+      "path": "components/PermissionRequest.tsx",
+      "name": "Permission Request Dialog",
+      "layer": "UI Components",
+      "purpose": "Displays tool approval dialogs with allow/deny/always-allow options and rich tool call previews",
+      "keyFunctions": ["PermissionRequest()", "renderToolPreview()", "handleDecision()"],
+      "patterns": ["Modal Dialog", "Decision Capture"],
+      "usedInWorkflows": ["permission-decision", "watching-tool-run"]
+    },
+    {
+      "id": "messages-component",
+      "path": "components/Messages.tsx",
+      "name": "Message List",
+      "layer": "UI Components",
+      "purpose": "Renders the conversation message list with streaming text, tool results, and markdown formatting",
+      "keyFunctions": ["Messages()", "renderMessage()", "renderToolResult()"],
+      "patterns": ["Streaming Render", "Markdown Formatting"],
+      "usedInWorkflows": ["sending-message", "watching-tool-run"]
+    },
+    {
+      "id": "virtual-message-list",
+      "path": "components/VirtualMessageList.tsx",
+      "name": "Virtual Scrolling List",
+      "layer": "UI Components",
+      "purpose": "Virtual scrolling implementation for large conversation histories, rendering only visible messages for performance",
+      "keyFunctions": ["VirtualMessageList()", "calculateVisibleRange()", "scrollTo()"],
+      "patterns": ["Virtual Scrolling", "Viewport Culling"],
+      "usedInWorkflows": ["sending-message"]
+    },
+    {
+      "id": "status-line",
+      "path": "components/StatusLine.tsx",
+      "name": "Status Bar",
+      "layer": "UI Components",
+      "purpose": "Bottom status bar displaying token count, estimated cost, active model, and permission mode indicator",
+      "keyFunctions": ["StatusLine()", "formatTokenCount()", "formatCost()"],
+      "patterns": ["Live Status Display", "Token/Cost Formatting"],
+      "usedInWorkflows": ["context-token-consumption", "switching-models", "permission-mode-cycling"]
+    },
+    {
+      "id": "repl-component",
+      "path": "components/REPL.tsx",
+      "name": "REPL Component",
+      "layer": "UI Components",
+      "purpose": "Top-level REPL component that composes the message list, input, status bar, and permission dialogs into the full UI",
+      "keyFunctions": ["REPL()", "handleSubmit()", "handleInterrupt()"],
+      "patterns": ["Component Composition", "Event Delegation"],
+      "usedInWorkflows": ["launching-claude", "sending-message", "interrupting"]
+    },
+    {
+      "id": "trust-dialog",
+      "path": "components/TrustDialog.tsx",
+      "name": "Trust Dialog",
+      "layer": "UI Components",
+      "purpose": "First-run trust prompt that asks the user to acknowledge project directory access before proceeding",
+      "keyFunctions": ["TrustDialog()", "handleAccept()", "handleDeny()"],
+      "patterns": ["First-Run Gate", "Trust Prompt"],
+      "usedInWorkflows": ["launching-claude", "authentication"]
+    },
+    {
+      "id": "use-text-input",
+      "path": "hooks/useTextInput.ts",
+      "name": "Text Input Hook",
+      "layer": "Hooks",
+      "purpose": "Handles keyboard input with vim mode support, permission mode cycling via Shift+Tab, and input buffering",
+      "keyFunctions": ["useTextInput()", "handleVimMode()", "cyclePermissionMode()"],
+      "patterns": ["Vim Mode State Machine", "Key Buffering", "Mode Cycling"],
+      "usedInWorkflows": ["keyboard-shortcuts", "permission-mode-cycling", "sending-message"]
+    },
+    {
+      "id": "use-exit-ctrl-cd",
+      "path": "hooks/useExitOnCtrlCD.ts",
+      "name": "Exit Handler Hook",
+      "layer": "Hooks",
+      "purpose": "Handles Ctrl+C (interrupt) and Ctrl+D (exit) with double-tap detection: first tap cancels, second tap exits",
+      "keyFunctions": ["useExitOnCtrlCD()", "handleCtrlC()", "handleCtrlD()"],
+      "patterns": ["Double-Tap Detection", "Graceful Interrupt"],
+      "usedInWorkflows": ["interrupting", "exiting-cleanup", "keyboard-shortcuts"]
+    },
+    {
+      "id": "use-direct-connect",
+      "path": "hooks/useDirectConnect.ts",
+      "name": "IDE Bridge Hook",
+      "layer": "Hooks",
+      "purpose": "Establishes a WebSocket bridge connection to VS Code or JetBrains IDE extensions for integrated editing",
+      "keyFunctions": ["useDirectConnect()", "connectToIDE()", "handleIDEMessage()"],
+      "patterns": ["WebSocket Bridge", "IDE Integration"],
+      "usedInWorkflows": ["ide-integration"]
+    },
+    {
+      "id": "use-inbox-poller",
+      "path": "hooks/useInboxPoller.ts",
+      "name": "Inbox Poller Hook",
+      "layer": "Hooks",
+      "purpose": "Polls sub-agent inboxes at 1-second intervals, surfacing completed sub-agent results and notifications",
+      "keyFunctions": ["useInboxPoller()", "pollInbox()", "handleNotification()"],
+      "patterns": ["Polling Loop", "Inbox Pattern"],
+      "usedInWorkflows": ["subagent-monitoring", "notification-system", "sub-agent-spawning"]
+    },
+    {
+      "id": "system-prompt-builder",
+      "path": "context/systemPrompt.ts",
+      "name": "System Prompt Builder",
+      "layer": "Context Assembly",
+      "purpose": "Assembles the system prompt from 15+ ordered sections with cache-control breakpoints for optimal token reuse",
+      "keyFunctions": ["buildSystemPrompt()", "assembleSections()", "insertCacheBreakpoints()"],
+      "patterns": ["Ordered Section Assembly", "Cache Breakpoint Strategy", "Token Budget Allocation"],
+      "usedInWorkflows": ["prompt-assembly", "sending-message", "context-token-consumption"]
+    },
+    {
+      "id": "context-budget",
+      "path": "context.ts",
+      "name": "Context Budget Manager",
+      "layer": "Context Assembly",
+      "purpose": "Manages the total context token budget, deciding what to include and what to trim to stay within model limits",
+      "keyFunctions": ["calculateBudget()", "trimToFit()", "prioritizeContent()"],
+      "patterns": ["Token Budget Enforcement", "Priority-Based Trimming"],
+      "usedInWorkflows": ["context-token-consumption", "prompt-assembly", "context-compaction"]
+    },
+    {
+      "id": "graceful-shutdown",
+      "path": "utils/gracefulShutdown.ts",
+      "name": "Graceful Shutdown",
+      "layer": "Utils",
+      "purpose": "Orchestrates clean exit by flushing analytics, saving session state, restoring terminal settings, and killing child processes",
+      "keyFunctions": ["gracefulShutdown()", "flushAnalytics()", "restoreTerminal()"],
+      "patterns": ["Signal Handler Chain", "Ordered Teardown"],
+      "usedInWorkflows": ["exiting-cleanup", "launching-claude"]
+    },
+    {
+      "id": "plan-mode-v2",
+      "path": "utils/planModeV2.ts",
+      "name": "Plan Mode State Machine",
+      "layer": "Utils",
+      "purpose": "Manages plan mode v2 state transitions: plan-only, plan-and-execute, and free-form modes with tool filtering",
+      "keyFunctions": ["PlanModeV2.transition()", "filterTools()", "getState()"],
+      "patterns": ["State Machine", "Tool Filtering", "Mode Transitions"],
+      "usedInWorkflows": ["plan-mode"]
+    },
+    {
+      "id": "mdm-service",
+      "path": "services/mdm.ts",
+      "name": "MDM Policy Enforcement",
+      "layer": "Services",
+      "purpose": "Enforces enterprise MDM (Mobile Device Management) policies, restricting features and tools based on organizational rules",
+      "keyFunctions": ["enforceMDMPolicy()", "loadPolicyProfile()", "isFeatureAllowed()"],
+      "patterns": ["Policy Enforcement", "Enterprise Restriction"],
+      "usedInWorkflows": ["remote-control", "permission-decision"]
+    }
+  ]
+}

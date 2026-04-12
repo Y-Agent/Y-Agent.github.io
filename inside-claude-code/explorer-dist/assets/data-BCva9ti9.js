@@ -1,0 +1,1 @@
+const o={};async function s(t){if(o[t])return o[t];const a=await fetch(`./data/${t}`);if(!a.ok)throw new Error(`Failed to load data/${t}: ${a.status} ${a.statusText}`);const r=await a.json();return o[t]=r,r}export{s as loadData};

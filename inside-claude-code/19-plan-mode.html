@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Plan Mode – Inside Claude Code</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./03-prompt-assembly.html" rel="next">
+<link href="./07-multi-agent-orchestration.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-f2aa3fcab4a3c0cbb1a885f128e95a4e.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-4486e80548b20dd029182ccec781b91c.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-f2aa3fcab4a3c0cbb1a885f128e95a4e.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-e429c51d478a3f7fe436edff7d8b5e18.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-89366f393ab88770656785fe4740de67.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-e429c51d478a3f7fe436edff7d8b5e18.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<meta name="mermaid-theme" content="neutral">
+<script src="site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Palatino+Linotype&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+
+
+<link rel="stylesheet" href="styles/custom.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Inside Claude Code</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="./index.html" aria-current="page"> 
+<span class="menu-text">Series Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./explorer-dist/index.html" target="_blank"> 
+<span class="menu-text">Code Explorer</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ZhuoranYang/claude_code_analysis"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./02-agent-loop-query-engine.html">II. Agent Harness</a></li><li class="breadcrumb-item"><a href="./19-plan-mode.html">II.4 — Plan Mode</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Inside Claude Code</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./explorer-dist/index.html" class="sidebar-item-text sidebar-link" target="_blank">
+ <span class="menu-text">Code Explorer</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false">
+ <span class="menu-text">I. Overview</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./00-birds-eye-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">I.1 — Bird’s Eye Architecture</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-end-to-end-workflow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">I.2 — End-to-End Workflow</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">II. Agent Harness</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-agent-loop-query-engine.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.1 — Agent Loop &amp; Query Engine</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./15-agent-sdk-structured-io.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.2 — Agent SDK &amp; Structured I/O</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-multi-agent-orchestration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.3 — Multi-Agent Orchestration</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./19-plan-mode.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">II.4 — Plan Mode</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false">
+ <span class="menu-text">III. Context Engineering</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-prompt-assembly.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.1 — Prompt Assembly</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-context-compaction.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.2 — Context Compaction</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./17-memory-hierarchy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.3 — Memory Hierarchy</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./11-hooks-lifecycle.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.4 — Hooks &amp; Lifecycle</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false">
+ <span class="menu-text">IV. Tools</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-tool-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IV.1 — Tool System &amp; Registry</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-safety-sandbox.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IV.2 — Safety &amp; Sandbox</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false">
+ <span class="menu-text">V. Invocation</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-cli-commands-ui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">V.1 — CLI, Commands &amp; UI</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-auth-providers-flags.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">V.2 — Auth, Providers &amp; Flags</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false">
+ <span class="menu-text">VI. Extensions</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./10-model-context-protocol.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.1 — Model Context Protocol</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./12-skills-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.2 — Skills System</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./13-plugin-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.3 — Plugin Architecture</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="false">
+ <span class="menu-text">VII. Remote Runtime</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./16-remote-runtime-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VII.1 — Remote Runtime &amp; Bridge</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="false">
+ <span class="menu-text">VIII. Native Runtime</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./18-native-runtime-voice-portability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VIII.1 — Native Runtime, Voice &amp; Portability</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="false">
+ <span class="menu-text">IX. Transparency &amp; Trust</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./14-hidden-costs-context-manipulation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IX.1 — Transparency &amp; Trust</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#why-separate-planning-from-execution" id="toc-why-separate-planning-from-execution" class="nav-link active" data-scroll-target="#why-separate-planning-from-execution">Why Separate Planning from Execution?</a></li>
+  <li><a href="#the-5-phase-planning-workflow" id="toc-the-5-phase-planning-workflow" class="nav-link" data-scroll-target="#the-5-phase-planning-workflow">The 5-Phase Planning Workflow</a></li>
+  <li><a href="#read-only-enforcement" id="toc-read-only-enforcement" class="nav-link" data-scroll-target="#read-only-enforcement">Read-Only Enforcement</a></li>
+  <li><a href="#the-plan-agent" id="toc-the-plan-agent" class="nav-link" data-scroll-target="#the-plan-agent">The Plan Agent</a></li>
+  <li><a href="#plan-file-persistence" id="toc-plan-file-persistence" class="nav-link" data-scroll-target="#plan-file-persistence">Plan File Persistence</a></li>
+  <li><a href="#the-approval-gate-exiting-plan-mode" id="toc-the-approval-gate-exiting-plan-mode" class="nav-link" data-scroll-target="#the-approval-gate-exiting-plan-mode">The Approval Gate: Exiting Plan Mode</a></li>
+  <li><a href="#integration-with-mode-cycling-and-system-reminders" id="toc-integration-with-mode-cycling-and-system-reminders" class="nav-link" data-scroll-target="#integration-with-mode-cycling-and-system-reminders">Integration with Mode Cycling and System Reminders</a></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">Summary</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./02-agent-loop-query-engine.html">II. Agent Harness</a></li><li class="breadcrumb-item"><a href="./19-plan-mode.html">II.4 — Plan Mode</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Plan Mode</h1>
+<p class="subtitle lead">Read-only planning with explicit approval gates</p>
+  <div class="quarto-categories">
+    <div class="quarto-category">plan-mode</div>
+    <div class="quarto-category">agent-harness</div>
+    <div class="quarto-category">workflow</div>
+  </div>
+  </div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="why-separate-planning-from-execution" class="level2">
+<h2 class="anchored" data-anchor-id="why-separate-planning-from-execution">Why Separate Planning from Execution?</h2>
+<p>An AI agent that can read, write, and execute shell commands is powerful but dangerous. A user asking “refactor the auth module” does not necessarily want the agent to immediately start editing files. They might want to see the plan first: which files will change, in what order, with what dependencies. <strong>Plan mode enforces this separation — the agent can explore and reason but cannot modify anything until the user explicitly approves.</strong></p>
+<p>This is the same principle as <code>git diff --staged</code> before <code>git commit</code>, or a database migration’s <code>--dry-run</code> flag. The cost of planning is low (a few read-only API calls). The cost of a bad execution is high (corrupted files, broken builds, wasted tokens on wrong approaches). Plan mode makes the asymmetry explicit.</p>
+<blockquote class="blockquote">
+<p><strong>This post covers:</strong></p>
+<ol type="1">
+<li>The 5-phase planning workflow and its variants</li>
+<li>Read-only enforcement via permission lockdown</li>
+<li>The plan agent — a specialized read-only sub-agent</li>
+<li>Plan file persistence and user review</li>
+<li>The approval gate and transition to execution</li>
+<li>Integration with the agent loop, mode cycling, and system reminders</li>
+</ol>
+</blockquote>
+<p><strong>Source files covered in this post:</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 28%">
+<col style="width: 42%">
+<col style="width: 28%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Purpose</th>
+<th>Size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>src/commands/plan/plan.tsx</code></td>
+<td><code>/plan</code> command handler</td>
+<td>~200 LOC</td>
+</tr>
+<tr class="even">
+<td><code>src/utils/planModeV2.ts</code></td>
+<td>Plan mode V2 agent configuration</td>
+<td>~150 LOC</td>
+</tr>
+<tr class="odd">
+<td><code>src/tools/AgentTool/built-in/planAgent.ts</code></td>
+<td>Plan agent definition (read-only constraints)</td>
+<td>~100 LOC</td>
+</tr>
+<tr class="even">
+<td><code>src/utils/plans.ts</code></td>
+<td>Plan file utilities (read/write <code>.claude/plan.md</code>)</td>
+<td>~80 LOC</td>
+</tr>
+<tr class="odd">
+<td><code>src/tools/EnterPlanModeTool.ts</code></td>
+<td>Tool to enter plan mode</td>
+<td>~50 LOC</td>
+</tr>
+<tr class="even">
+<td><code>src/tools/ExitPlanModeTool.ts</code></td>
+<td>Tool to exit plan mode with pre-approved permissions</td>
+<td>~80 LOC</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="the-5-phase-planning-workflow" class="level2">
+<h2 class="anchored" data-anchor-id="the-5-phase-planning-workflow">The 5-Phase Planning Workflow</h2>
+<p><strong>Plan mode follows a structured 5-phase workflow that guides the agent from codebase exploration to a reviewable plan document.</strong> Each phase has a clear objective and a defined transition condition.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-plan-phases" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-plan-phases-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-plan-phases">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart TD
+  P1["Phase 1: Explore&lt;br&gt;&lt;i&gt;Read codebase, understand patterns&lt;/i&gt;"]
+  P2["Phase 2: Write Plan&lt;br&gt;&lt;i&gt;Create .claude/plan.md&lt;/i&gt;"]
+  P3["Phase 3: Verify&lt;br&gt;&lt;i&gt;Self-check completeness&lt;/i&gt;"]
+  P4["Phase 4: Present&lt;br&gt;&lt;i&gt;Show plan to user&lt;/i&gt;"]
+  GATE{"User decision"}
+  EXEC["Exit to execution&lt;br&gt;&lt;i&gt;ExitPlanMode tool&lt;/i&gt;"]
+  CANCEL["Cancel"]
+
+  P1 --&gt; P2 --&gt; P3 --&gt; P4 --&gt; GATE
+  GATE -- "approve" --&gt; EXEC
+  GATE -- "modify" --&gt; P2
+  GATE -- "reject" --&gt; CANCEL
+
+  style P1 fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style P2 fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style P3 fill:#C2856E,color:#fff,stroke:#A06A54
+  style P4 fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style GATE fill:#C4A882,color:#fff,stroke:#A08562
+  style EXEC fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style CANCEL fill:#C2856E,color:#fff,stroke:#A06A54
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-plan-phases-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: The 5-phase plan mode workflow. Phase 1 explores the codebase (read-only). Phase 2 writes a structured plan to .claude/plan.md. Phase 3 self-verifies the plan for completeness. Phase 4 presents the plan to the user. The user then decides: approve (exit to execution), modify (re-enter Phase 2), or reject (cancel). Three variants exist — 5-phase (default, 99% of traffic), iterative (lighter, for small tasks), and subagent (for sub-agents operating in plan mode).
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Follow the phases top to bottom: the agent explores (Phase 1), writes a plan (Phase 2), verifies it (Phase 3), and presents it (Phase 4). The diamond is the user’s decision gate — approve exits to execution, modify loops back to Phase 2 for revision, and reject cancels entirely. The key insight is that the loop-back from “modify” to Phase 2 means the user can iterate on the plan without ever leaving read-only mode.</p>
+<p><strong>Phase 1: Explore.</strong> The agent reads the codebase to understand existing patterns, dependencies, and constraints. It uses only read-only tools: Read, Glob, Grep, and read-only Bash commands (<code>ls</code>, <code>git status</code>, <code>git log</code>, <code>git diff</code>, <code>find</code>, <code>cat</code>). This phase builds the agent’s mental model before it commits to any strategy.</p>
+<p><strong>Phase 2: Write Plan.</strong> The agent writes a structured implementation plan to <code>.claude/plan.md</code> in the project directory. The plan includes: which files to modify, in what order, with what changes, and what dependencies exist between steps. This is the only “write” operation in plan mode — and it writes to a plan file, not to source code.</p>
+<p><strong>Phase 3: Verify.</strong> The agent self-checks the plan for completeness. Does it cover all files mentioned in the user’s request? Are there circular dependencies between steps? Is the ordering feasible? This phase catches planning errors before the user sees the plan.</p>
+<p><strong>Phase 4: Present.</strong> The agent presents the plan to the user for review. The user can approve, modify, or reject.</p>
+<p>Three <span class="kw-sage">plan mode variants</span> exist, selected by the system based on context:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 25%">
+<col style="width: 18%">
+<col style="width: 34%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Variant</th>
+<th>When used</th>
+<th>Phases</th>
+<th>Traffic share</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>5-phase</strong></td>
+<td>Default for interactive sessions</td>
+<td>All 5 phases</td>
+<td>~99%</td>
+</tr>
+<tr class="even">
+<td><strong>Iterative</strong></td>
+<td>Smaller tasks, simpler plans</td>
+<td>Lighter 3-phase</td>
+<td>~1%</td>
+</tr>
+<tr class="odd">
+<td><strong>Subagent</strong></td>
+<td>Sub-agents spawned in plan mode</td>
+<td>Adapted for non-interactive</td>
+<td>Rare</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="read-only-enforcement" class="level2">
+<h2 class="anchored" data-anchor-id="read-only-enforcement">Read-Only Enforcement</h2>
+<p><strong>Plan mode is not advisory — it is enforced at the permission layer.</strong> When plan mode is active, the permission system blocks all non-read-only tools. The agent physically cannot write files, run destructive commands, or spawn sub-agents that can write.</p>
+<p>The enforcement works through the same <code>canUseTool()</code> injection mechanism described in <a href="./02-agent-loop-query-engine.html">Part II.1: Agent Loop</a>. Plan mode injects a policy function that checks each tool’s <code>isReadOnly</code> flag:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Plan mode permission policy (simplified)</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>canUseTool<span class="op">:</span> (tool) <span class="kw">=&gt;</span> {</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (tool<span class="op">.</span><span class="at">isReadOnly</span>) <span class="cf">return</span> <span class="st">'allowed'</span><span class="op">;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="st">'denied: plan mode is read-only'</span><span class="op">;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>In addition to the permission function, a system reminder is injected into every API call while plan mode is active:</p>
+<pre><code>Plan mode is active. The user indicated that they do not want you
+to execute yet -- you MUST NOT make any edits... or otherwise make
+any changes to the system.</code></pre>
+<p>This dual enforcement — policy function <em>and</em> system reminder — provides defense in depth. The policy function is the hard gate (the model cannot bypass it). The system reminder is the soft guide (it shapes the model’s reasoning to avoid even <em>attempting</em> blocked actions, saving wasted tool calls).</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-plan-enforcement" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-plan-enforcement-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-plan-enforcement">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart TD
+  MODEL["Model generates&lt;br&gt;tool call"]
+  L1{"Layer 1:&lt;br&gt;System reminder&lt;br&gt;&lt;i&gt;soft guide&lt;/i&gt;"}
+  L2{"Layer 2:&lt;br&gt;canUseTool()&lt;br&gt;&lt;i&gt;hard gate&lt;/i&gt;"}
+  READ["Execute&lt;br&gt;&lt;i&gt;read-only tool&lt;/i&gt;"]
+  BLOCK["Blocked&lt;br&gt;&lt;i&gt;denied: read-only mode&lt;/i&gt;"]
+  SKIP["Model avoids&lt;br&gt;write attempt"]
+
+  MODEL --&gt; L1
+  L1 -- "model self-corrects" --&gt; SKIP
+  L1 -- "model still tries" --&gt; L2
+  L2 -- "isReadOnly: true" --&gt; READ
+  L2 -- "isReadOnly: false" --&gt; BLOCK
+
+  style MODEL fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style L1 fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style L2 fill:#C2856E,color:#fff,stroke:#A06A54
+  style READ fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style BLOCK fill:#C4A882,color:#fff,stroke:#A08562
+  style SKIP fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-plan-enforcement-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: Dual enforcement of plan mode’s read-only constraint. Layer 1 (system reminder) shapes the model’s reasoning to avoid attempting writes. Layer 2 (canUseTool policy) blocks any write tool that slips through. Both layers must be present: the reminder reduces wasted tool calls, the policy prevents actual damage. This is defense in depth — the same principle as combining a firewall with application-level authorization.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Start at the top where the model generates a tool call. Layer 1 (system reminder) is a soft filter — if the model has internalized the read-only constraint, it self-corrects and never attempts the write (left branch). If the model still attempts a write, Layer 2 (canUseTool policy) is the hard gate — it checks the <code>isReadOnly</code> flag and either allows execution (read-only tool) or blocks with an error (write tool). The dual-layer design means that even if the model ignores the reminder, the policy catches it.</p>
+<hr>
+</section>
+<section id="the-plan-agent" class="level2">
+<h2 class="anchored" data-anchor-id="the-plan-agent">The Plan Agent</h2>
+<p><strong>The plan agent is a specialized sub-agent type with a restricted tool set and an explicit read-only system prompt.</strong> It is defined in <code>src/tools/AgentTool/built-in/planAgent.ts</code> and can be spawned via <code>subagent_type: "Plan"</code>.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 27%">
+<col style="width: 30%">
+<col style="width: 41%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Property</th>
+<th>Plan Agent</th>
+<th>Default Agent</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Tools</strong></td>
+<td>Read, Glob, Grep, Bash (read-only), WebFetch</td>
+<td>All ~40 tools</td>
+</tr>
+<tr class="even">
+<td><strong>Blocked tools</strong></td>
+<td>Agent, Edit, Write, NotebookEdit, ExitPlanMode</td>
+<td>None by default</td>
+</tr>
+<tr class="odd">
+<td><strong>Permission mode</strong></td>
+<td><code>plan</code> (read-only enforced)</td>
+<td><code>default</code> or inherited</td>
+</tr>
+<tr class="even">
+<td><strong>System prompt</strong></td>
+<td>Includes <code>CRITICAL: READ-ONLY MODE</code> header</td>
+<td>Standard agent prompt</td>
+</tr>
+<tr class="odd">
+<td><strong>Bash restrictions</strong></td>
+<td>Only: <code>ls</code>, <code>git status/log/diff</code>, <code>find</code>, <code>grep</code>, <code>cat</code>, <code>head</code>, <code>tail</code></td>
+<td>Full shell access</td>
+</tr>
+<tr class="even">
+<td><strong>Output format</strong></td>
+<td>Ends with “Critical Files for Implementation” section</td>
+<td>Free-form</td>
+</tr>
+</tbody>
+</table>
+<p>The plan agent’s Bash restrictions deserve attention. Even though Bash is available, only a curated set of read-only commands is permitted. Commands like <code>rm</code>, <code>mv</code>, <code>cp</code>, <code>mkdir</code>, <code>git add</code>, <code>git commit</code>, <code>npm install</code>, and <code>pip install</code> are explicitly blocked in the system prompt. This is a <span class="kw-sage">belt-and-suspenders</span> approach: the <code>canUseTool</code> policy blocks non-read-only tools, the Bash-specific restrictions block destructive commands <em>within</em> the one tool that has inherent write capability.</p>
+<p>The plan agent’s system prompt opens with an unmistakable header:</p>
+<blockquote class="blockquote">
+<p><em>“=== CRITICAL: READ-ONLY MODE — NO FILE MODIFICATIONS ===<em> </em>This is a READ-ONLY planning task. You are STRICTLY PROHIBITED from: Creating new files (no Write, touch, or file creation of any kind). Modifying existing files (no Edit operations). Deleting files (no rm or deletion). Moving or copying files (no mv or cp). Creating temporary files anywhere, including /tmp. Using redirect operators (&gt;, &gt;&gt;, |) or heredocs to write to files. Running ANY commands that change system state.”</em></p>
+</blockquote>
+<p>The prompt then prescribes a four-step process: (1) Understand Requirements, (2) Explore Codebase, (3) Design Approach, (4) Detail Plan. The required output format ends with a “Critical Files for Implementation” section listing 3-5 files — this structured output makes the plan directly actionable when the user exits plan mode.</p>
+<hr>
+</section>
+<section id="plan-file-persistence" class="level2">
+<h2 class="anchored" data-anchor-id="plan-file-persistence">Plan File Persistence</h2>
+<p><strong>The plan is persisted as <code>.claude/plan.md</code> in the project directory</strong>, managed by utilities in <code>src/utils/plans.ts</code>. This file is:</p>
+<ul>
+<li><strong>Human-readable</strong> — Markdown format, viewable in any editor</li>
+<li><strong>Editable</strong> — The user can modify the plan via <code>/plan open</code>, which opens it in their configured editor (VS Code, Vim, etc.)</li>
+<li><strong>Persistent across sessions</strong> — The plan survives session restarts, enabling multi-session planning</li>
+<li><strong>Referenced in system reminders</strong> — The <code>plan-file-reference</code> system reminder tells the agent where to find the current plan</li>
+</ul>
+<p>The <code>/plan</code> slash command (implemented in <code>src/commands/plan/plan.tsx</code>) serves three roles depending on arguments:</p>
+<pre><code>/plan              → Toggle plan mode on/off; show current plan if active
+/plan open         → Open .claude/plan.md in external editor
+/plan &lt;description&gt; → Enable plan mode and start agent with the given task</code></pre>
+<hr>
+</section>
+<section id="the-approval-gate-exiting-plan-mode" class="level2">
+<h2 class="anchored" data-anchor-id="the-approval-gate-exiting-plan-mode">The Approval Gate: Exiting Plan Mode</h2>
+<p><strong>The transition from planning to execution is mediated by the <code>ExitPlanMode</code> tool</strong>, a deferred tool (loaded on demand via ToolSearch) defined in <code>src/tools/ExitPlanModeTool.ts</code>.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-plan-exit" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-plan-exit-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-plan-exit">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart TD
+  PLAN["Plan mode active&lt;br&gt;&lt;i&gt;permissionMode: plan&lt;/i&gt;"]
+  USER["User approves plan"]
+  EXIT["ExitPlanMode tool"]
+  PRE["Pre-approved prompts&lt;br&gt;&lt;i&gt;allowedPrompts[]&lt;/i&gt;"]
+  EDITED["planWasEdited flag"]
+  MODE["Permission mode →&lt;br&gt;&lt;i&gt;default&lt;/i&gt;"]
+  EXEC["Agent executes plan&lt;br&gt;&lt;i&gt;full tool access&lt;/i&gt;"]
+
+  PLAN --&gt; USER --&gt; EXIT
+  EXIT --&gt; PRE
+  EXIT --&gt; EDITED
+  PRE --&gt; MODE
+  EDITED --&gt; MODE
+  MODE --&gt; EXEC
+
+  style PLAN fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style USER fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style EXIT fill:#C2856E,color:#fff,stroke:#A06A54
+  style PRE fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style EDITED fill:#C4A882,color:#fff,stroke:#A08562
+  style MODE fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style EXEC fill:#8B9DAF,color:#fff,stroke:#6E7F91
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-plan-exit-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: The plan mode exit flow. ExitPlanMode carries two fields: allowedPrompts (pre-approved Bash commands from the plan) and planWasEdited (whether the user modified the plan). Pre-approved prompts bypass the normal permission gate during execution, reducing friction for commands the plan already specified. The permission mode transitions from ‘plan’ (read-only) to ‘default’ (standard permissions), and the agent begins executing the approved plan.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Start at the top in plan mode (read-only). When the user approves, the ExitPlanMode tool fires and carries two pieces of data: a list of pre-approved Bash prompts (commands the plan already specified, like “run tests”) and a flag indicating whether the user edited the plan. Both feed into the permission mode transition from <code>plan</code> to <code>default</code>, and the agent begins execution with full tool access. The pre-approved prompts bypass the normal permission gate, reducing friction for predictable commands.</p>
+<p>The <code>ExitPlanMode</code> tool’s input schema has two notable fields:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> ExitPlanModeInput {</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  allowedPrompts<span class="op">?:</span> { tool<span class="op">:</span> <span class="st">"Bash"</span><span class="op">;</span> prompt<span class="op">:</span> <span class="dt">string</span> }[]<span class="op">;</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  planWasEdited<span class="op">?:</span> <span class="dt">boolean</span><span class="op">;</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong><code>allowedPrompts</code></strong> is the bridge between planning and execution. During planning, the agent identifies which commands will be needed (e.g., <code>npm test</code>, <code>npm run build</code>). These are passed to <code>ExitPlanMode</code> as pre-approved prompts. During execution, these specific commands bypass the normal permission gate — the user already approved them as part of the plan. This reduces the friction of repeated permission prompts for predictable commands.</p>
+<p><strong><code>planWasEdited</code></strong> tracks whether the user modified the plan file. If the user edited <code>.claude/plan.md</code> directly, the agent knows to re-read it before executing, rather than relying on its cached understanding of the plan.</p>
+<p>The ExitPlanMode tool description carries two notable directives:</p>
+<blockquote class="blockquote">
+<p><em>“IMPORTANT: Only use for implementation planning, not research tasks.”</em></p>
+</blockquote>
+<blockquote class="blockquote">
+<p><em>“CRITICAL: Do NOT use <code>AskUserQuestion</code> to ask ‘Is this plan okay?’ — that is what this tool inherently does.”</em></p>
+</blockquote>
+<p>These directives prevent the model from misusing the approval gate: using it for research (which doesn’t need a plan file) or redundantly asking for permission before invoking the permission tool itself.</p>
+<hr>
+</section>
+<section id="integration-with-mode-cycling-and-system-reminders" class="level2">
+<h2 class="anchored" data-anchor-id="integration-with-mode-cycling-and-system-reminders">Integration with Mode Cycling and System Reminders</h2>
+<p>Plan mode integrates with the broader mode cycling system described in <a href="./08-cli-commands-ui.html">Part V.1: CLI, Commands &amp; UI</a>. The UI reflects plan mode with a <span class="kw-slate">cyan/teal color theme</span> (vs.&nbsp;blue for standard mode, magenta for auto mode). Switching modes is an atomic operation that reconfigures three things simultaneously: the available tool set, the system prompt fragments, and the permission level.</p>
+<p><strong>Plan mode system reminders</strong> are among the most token-heavy reminders in the system (see <a href="./03-prompt-assembly.html">Part III.1: Prompt Assembly</a>). The <span class="kw-slate">11 plan mode prompt fragments</span> total approximately <span class="kw-slate">13 KB</span> and cover:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 35%">
+<col style="width: 32%">
+<col style="width: 32%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Fragment</th>
+<th>Purpose</th>
+<th>Variant</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>plan-mode-is-active-5-phase</code></td>
+<td>Full 5-phase planning instructions</td>
+<td>Default</td>
+</tr>
+<tr class="even">
+<td><code>plan-mode-is-active-iterative</code></td>
+<td>Lighter iterative planning</td>
+<td>Small tasks</td>
+</tr>
+<tr class="odd">
+<td><code>plan-mode-is-active-subagent</code></td>
+<td>Subagent planning instructions</td>
+<td>Sub-agents</td>
+</tr>
+<tr class="even">
+<td><code>plan-mode-re-entry</code></td>
+<td>Instructions when re-entering after modification</td>
+<td>Loop-back</td>
+</tr>
+<tr class="odd">
+<td><code>exited-plan-mode</code></td>
+<td>Transition reminder after exit</td>
+<td>Exit</td>
+</tr>
+<tr class="even">
+<td><code>verify-plan-reminder</code></td>
+<td>Prompt to self-check plan completeness</td>
+<td>Phase 3</td>
+</tr>
+<tr class="odd">
+<td><code>plan-file-reference</code></td>
+<td>Path to <code>.claude/plan.md</code></td>
+<td>All phases</td>
+</tr>
+<tr class="even">
+<td><code>phase-four-of-plan-mode</code></td>
+<td>Phase 4 presentation instructions</td>
+<td>Phase 4</td>
+</tr>
+<tr class="odd">
+<td><code>plan-mode-enhanced</code></td>
+<td>Enhanced plan agent role definition</td>
+<td>Agent</td>
+</tr>
+</tbody>
+</table>
+<p>In full mode, the plan mode reminder consumes approximately <span class="kw-slate">500 tokens</span>. After compaction, it collapses to approximately <span class="kw-slate">20 tokens</span> (“Plan mode active. Continue current phase.”) — a <span class="kw-slate">96% reduction</span>. This is the same sparse/full pattern used by other system reminders (see <a href="./04-context-compaction.html">Part III.2: Context Compaction</a>).</p>
+<p><strong>Model selection optimization.</strong> When plan mode is active and the context exceeds <span class="kw-slate">200K tokens</span>, the system auto-demotes from Opus to Sonnet. Planning is primarily reading and reasoning — tasks where the smaller model performs nearly as well — so the cost saving is significant without meaningful quality loss.</p>
+<hr>
+</section>
+<section id="summary" class="level2">
+<h2 class="anchored" data-anchor-id="summary">Summary</h2>
+<p><strong>Plan mode separates design from execution</strong> through a 5-phase workflow with an explicit user approval gate. Key mechanisms:</p>
+<ul>
+<li><strong>Read-only enforcement</strong> via dual layers: system reminder (soft guide) + <code>canUseTool()</code> policy (hard gate), implemented in the same permission injection system as other modes</li>
+<li><strong>Plan agent</strong> (<code>planAgent.ts</code>) — a specialized sub-agent restricted to read-only tools with explicit Bash command whitelisting</li>
+<li><strong>Plan persistence</strong> — <code>.claude/plan.md</code> is human-readable, editable via <code>/plan open</code>, and survives session restarts</li>
+<li><strong>Approval gate</strong> — <code>ExitPlanMode</code> tool transitions permission mode from <code>plan</code> to <code>default</code>, carrying pre-approved commands that bypass the permission gate during execution</li>
+<li><strong>Three variants</strong> — 5-phase (default), iterative (light), subagent (non-interactive) — selected automatically based on context</li>
+<li><strong>11 prompt fragments</strong> (~13 KB) manage the agent’s behavior across phases, with sparse/full variants for token efficiency after compaction</li>
+</ul>
+<p><em>Next: <a href="./03-prompt-assembly.html">Part III.1 — Prompt Assembly</a> examines how the system prompt is constructed from 250+ fragments — including the plan mode fragments described here.</em></p>
+<hr>
+<p><em>Series: Inside Claude Code | Part II.4</em></p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./07-multi-agent-orchestration.html" class="pagination-link" aria-label="II.3 — Multi-Agent Orchestration">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">II.3 — Multi-Agent Orchestration</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./03-prompt-assembly.html" class="pagination-link" aria-label="III.1 — Prompt Assembly">
+        <span class="nav-page-text">III.1 — Prompt Assembly</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.quarto-figure img[src$=".svg"]:not(.nozoom)').forEach(function(img) {
+    fetch(img.src).then(r => r.text()).then(function(svgText) {
+      var div = document.createElement('div');
+      div.innerHTML = svgText;
+      var svg = div.querySelector('svg');
+      if (svg) {
+        var vb = svg.getAttribute('viewBox');
+        if (vb) {
+          var parts = vb.split(/\s+/);
+          var w = parseFloat(parts[2]), h = parseFloat(parts[3]);
+          var ratio = h / w;
+          var containerH = Math.max(250, Math.min(700, 900 * ratio));
+          svg.style.width = '100%';
+          svg.style.height = containerH + 'px';
+        } else {
+          svg.style.width = '100%';
+          svg.style.height = '400px';
+        }
+        svg.style.border = '1px solid var(--bs-border-color, #dee2e6)';
+        svg.style.borderRadius = '6px';
+        svg.style.cursor = 'grab';
+        svg.style.background = 'var(--bs-body-bg, #fff)';
+        img.parentNode.replaceChild(svg, img);
+        svgPanZoom(svg, {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true, minZoom: 0.5, maxZoom: 10});
+      }
+    });
+  });
+  // Mermaid post-processing: apply Palatino font + pan-zoom
+  function initMermaid() {
+    document.querySelectorAll('.cell-output-display svg').forEach(function(svg) {
+      if (svg.dataset.mInit) return;
+      svg.dataset.mInit = '1';
+      // Step 1: Apply Palatino to all text AFTER Mermaid layout
+      svg.querySelectorAll('.nodeLabel, .edgeLabel, .cluster-label span, text').forEach(function(el) {
+        el.style.fontFamily = '"Palatino Linotype", Palatino, Georgia, serif';
+      });
+      // Step 2: Ensure foreignObjects don't clip
+      svg.querySelectorAll('foreignObject').forEach(function(fo) {
+        fo.style.overflow = 'visible';
+      });
+      // Step 3: Size the container
+      var vb = svg.getAttribute('viewBox');
+      if (vb) {
+        var parts = vb.split(/[\s,]+/);
+        var w = parseFloat(parts[2]), h = parseFloat(parts[3]);
+        var ratio = h / w;
+        var containerH = Math.max(350, Math.min(800, 900 * ratio));
+        svg.style.width = '100%';
+        svg.style.height = containerH + 'px';
+      } else {
+        svg.style.width = '100%';
+        svg.style.height = '500px';
+      }
+      svg.style.border = '1px solid var(--bs-border-color, #dee2e6)';
+      svg.style.borderRadius = '6px';
+      svg.style.cursor = 'grab';
+      svg.style.background = 'var(--bs-body-bg, #fff)';
+      // Step 4: Enable pan-zoom
+      try {
+        svgPanZoom(svg, {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true, minZoom: 0.5, maxZoom: 10});
+      } catch(e) {}
+    });
+  }
+  setTimeout(initMermaid, 800);
+  setTimeout(initMermaid, 2000);
+  setTimeout(initMermaid, 4000);
+});
+</script>
+
+
+
+
+</body></html>
