@@ -1,0 +1,270 @@
+{
+  "nodes": [
+    {
+      "id": "entrypoints",
+      "label": "Entrypoints",
+      "layer": 1,
+      "fileCount": 8,
+      "description": "CLI and desktop app entry points"
+    },
+    {
+      "id": "cli",
+      "label": "CLI Parser",
+      "layer": 1,
+      "fileCount": 19,
+      "description": "Command-line argument parsing and routing"
+    },
+    {
+      "id": "commands",
+      "label": "Commands",
+      "layer": 2,
+      "fileCount": 189,
+      "description": "101 slash commands implementing user actions"
+    },
+    {
+      "id": "components",
+      "label": "UI Components",
+      "layer": 2,
+      "fileCount": 389,
+      "description": "React/Ink terminal UI components"
+    },
+    {
+      "id": "hooks",
+      "label": "React Hooks",
+      "layer": 2,
+      "fileCount": 87,
+      "description": "State management and side-effect hooks"
+    },
+    {
+      "id": "bridge",
+      "label": "Bridge",
+      "layer": 3,
+      "fileCount": 33,
+      "description": "Message passing between CLI frontend and agent backend"
+    },
+    {
+      "id": "query",
+      "label": "Query Engine",
+      "layer": 3,
+      "fileCount": 10,
+      "description": "AsyncGenerator coroutine driving the agent loop"
+    },
+    {
+      "id": "tools",
+      "label": "Tools",
+      "layer": 3,
+      "fileCount": 184,
+      "description": "40+ tool implementations behind Strategy pattern"
+    },
+    {
+      "id": "services",
+      "label": "Services",
+      "layer": 4,
+      "fileCount": 54,
+      "description": "Business logic: compaction, MCP, OAuth, analytics"
+    },
+    {
+      "id": "state",
+      "label": "State",
+      "layer": 4,
+      "fileCount": 8,
+      "description": "Global application state management"
+    },
+    {
+      "id": "context",
+      "label": "Context",
+      "layer": 4,
+      "fileCount": 11,
+      "description": "React context providers for dependency injection"
+    },
+    {
+      "id": "skills",
+      "label": "Skills",
+      "layer": 4,
+      "fileCount": 6,
+      "description": "SKILL.md loading and expertise injection"
+    },
+    {
+      "id": "utils",
+      "label": "Utilities",
+      "layer": 5,
+      "fileCount": 564,
+      "description": "Shared utilities: git, permissions, sandbox, auth, shell"
+    },
+    {
+      "id": "constants",
+      "label": "Constants",
+      "layer": 5,
+      "fileCount": 23,
+      "description": "Configuration constants and type definitions"
+    },
+    {
+      "id": "types",
+      "label": "Types",
+      "layer": 5,
+      "fileCount": 10,
+      "description": "Shared TypeScript type definitions"
+    }
+  ],
+  "edges": [
+    {
+      "source": "entrypoints",
+      "target": "cli",
+      "label": "launches"
+    },
+    {
+      "source": "cli",
+      "target": "commands",
+      "label": "registers"
+    },
+    {
+      "source": "cli",
+      "target": "components",
+      "label": "renders"
+    },
+    {
+      "source": "components",
+      "target": "hooks",
+      "label": "uses"
+    },
+    {
+      "source": "commands",
+      "target": "bridge",
+      "label": "invokes"
+    },
+    {
+      "source": "bridge",
+      "target": "query",
+      "label": "drives"
+    },
+    {
+      "source": "query",
+      "target": "tools",
+      "label": "dispatches"
+    },
+    {
+      "source": "query",
+      "target": "services",
+      "label": "calls"
+    },
+    {
+      "source": "tools",
+      "target": "utils",
+      "label": "uses"
+    },
+    {
+      "source": "tools",
+      "target": "services",
+      "label": "uses"
+    },
+    {
+      "source": "services",
+      "target": "utils",
+      "label": "uses"
+    },
+    {
+      "source": "hooks",
+      "target": "state",
+      "label": "reads/writes"
+    },
+    {
+      "source": "hooks",
+      "target": "context",
+      "label": "consumes"
+    },
+    {
+      "source": "hooks",
+      "target": "services",
+      "label": "calls"
+    },
+    {
+      "source": "components",
+      "target": "context",
+      "label": "consumes"
+    },
+    {
+      "source": "services",
+      "target": "skills",
+      "label": "loads"
+    },
+    {
+      "source": "utils",
+      "target": "constants",
+      "label": "references"
+    },
+    {
+      "source": "utils",
+      "target": "types",
+      "label": "imports"
+    }
+  ],
+  "layers": [
+    {
+      "id": 1,
+      "label": "Entry Layer",
+      "color": "sage"
+    },
+    {
+      "id": 2,
+      "label": "Interface Layer",
+      "color": "slate"
+    },
+    {
+      "id": 3,
+      "label": "Agent Core",
+      "color": "terracotta"
+    },
+    {
+      "id": 4,
+      "label": "Service Layer",
+      "color": "dustyRose"
+    },
+    {
+      "id": 5,
+      "label": "Foundation",
+      "color": "stone"
+    }
+  ],
+  "journeySteps": [
+    {
+      "node": "entrypoints",
+      "title": "1. User launches Claude Code",
+      "description": "The CLI entry point parses arguments and initializes the React/Ink terminal application."
+    },
+    {
+      "node": "cli",
+      "title": "2. CLI routes the command",
+      "description": "The command parser matches the user's input to one of 101 registered slash commands, or falls to the default prompt mode."
+    },
+    {
+      "node": "components",
+      "title": "3. UI renders the prompt",
+      "description": "React/Ink components render the terminal interface: input box, message history, status line, and tool output."
+    },
+    {
+      "node": "bridge",
+      "title": "4. Bridge carries the message",
+      "description": "The bridge layer passes the user's prompt from the CLI frontend to the agent backend, managing session state and message format."
+    },
+    {
+      "node": "query",
+      "title": "5. Query Engine runs the loop",
+      "description": "The AsyncGenerator coroutine sends the conversation to the API, receives streaming responses, and dispatches tool calls in a ReAct loop."
+    },
+    {
+      "node": "tools",
+      "title": "6. Tools execute actions",
+      "description": "Each tool_use block is dispatched to the matching tool implementation. Read-only tools run concurrently; write tools run exclusively."
+    },
+    {
+      "node": "services",
+      "title": "7. Services provide capabilities",
+      "description": "Tools and the query engine call into services for compaction, MCP communication, OAuth, analytics, and other business logic."
+    },
+    {
+      "node": "utils",
+      "title": "8. Utilities underpin everything",
+      "description": "Shared code for git operations, file permissions, sandbox enforcement, shell execution, and authentication flows."
+    }
+  ]
+}

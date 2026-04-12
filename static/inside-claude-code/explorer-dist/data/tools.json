@@ -1,0 +1,576 @@
+[
+  {
+    "name": "AgentTool",
+    "category": "agent",
+    "risk": "medium",
+    "fileCount": 20,
+    "files": [
+      "AgentTool.tsx",
+      "UI.tsx",
+      "agentColorManager.ts",
+      "agentDisplay.ts",
+      "agentMemory.ts",
+      "agentMemorySnapshot.ts",
+      "agentToolUtils.ts",
+      "builtInAgents.ts",
+      "constants.ts",
+      "forkSubagent.ts",
+      "loadAgentsDir.ts",
+      "prompt.ts",
+      "resumeAgent.ts",
+      "runAgent.ts"
+    ],
+    "description": "Spawns autonomous sub-agents that run in isolated conversation contexts with their own system prompts and tool permissions, enabling parallel task decomposition and specialized agent types (coder, reviewer, planner).",
+    "blogRef": "10-multi-agent-coordination"
+  },
+  {
+    "name": "AskUserQuestionTool",
+    "category": "meta",
+    "risk": "low",
+    "fileCount": 2,
+    "files": [
+      "AskUserQuestionTool.tsx",
+      "prompt.ts"
+    ],
+    "description": "Allows the model to explicitly pause and ask the user a question when it needs clarification, surfacing a structured prompt in the terminal rather than guessing.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "BashTool",
+    "category": "execution",
+    "risk": "high",
+    "fileCount": 18,
+    "files": [
+      "BashTool.tsx",
+      "BashToolResultMessage.tsx",
+      "UI.tsx",
+      "bashCommandHelpers.ts",
+      "bashPermissions.ts",
+      "bashSecurity.ts",
+      "commandSemantics.ts",
+      "commentLabel.ts",
+      "destructiveCommandWarning.ts",
+      "modeValidation.ts",
+      "pathValidation.ts",
+      "prompt.ts",
+      "readOnlyValidation.ts",
+      "sedEditParser.ts",
+      "sedValidation.ts",
+      "shouldUseSandbox.ts",
+      "toolName.ts",
+      "utils.ts"
+    ],
+    "description": "Executes shell commands in a managed subprocess with timeout enforcement, sandboxing integration, output truncation, and streaming progress updates back to the conversation.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "BriefTool",
+    "category": "meta",
+    "risk": "low",
+    "fileCount": 5,
+    "files": [
+      "BriefTool.ts",
+      "UI.tsx",
+      "attachments.ts",
+      "prompt.ts",
+      "upload.ts"
+    ],
+    "description": "A synthetic tool that switches the model into a concise response mode, reducing verbosity for the remainder of the conversation when the user prefers terse output.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "ConfigTool",
+    "category": "meta",
+    "risk": "low",
+    "fileCount": 5,
+    "files": [
+      "ConfigTool.ts",
+      "UI.tsx",
+      "constants.ts",
+      "prompt.ts",
+      "supportedSettings.ts"
+    ],
+    "description": "Reads and writes Claude Code configuration values programmatically, giving the model the ability to adjust settings (like output style or model) during a session.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "EnterPlanModeTool",
+    "category": "workflow",
+    "risk": "low",
+    "fileCount": 4,
+    "files": [
+      "EnterPlanModeTool.ts",
+      "UI.tsx",
+      "constants.ts",
+      "prompt.ts"
+    ],
+    "description": "Transitions the session into plan mode where the model outlines steps before executing, restricting the available tool set to read-only operations until the user approves the plan.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "EnterWorktreeTool",
+    "category": "workflow",
+    "risk": "low",
+    "fileCount": 4,
+    "files": [
+      "EnterWorktreeTool.ts",
+      "UI.tsx",
+      "constants.ts",
+      "prompt.ts"
+    ],
+    "description": "Creates or switches to a git worktree for isolated experimentation, letting the model make changes on a separate branch without affecting the user's working directory.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "ExitPlanModeTool",
+    "category": "workflow",
+    "risk": "low",
+    "fileCount": 4,
+    "files": [
+      "ExitPlanModeV2Tool.ts",
+      "UI.tsx",
+      "constants.ts",
+      "prompt.ts"
+    ],
+    "description": "Transitions the session out of plan mode back to normal execution mode, re-enabling the full tool set after the planning phase is complete.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "ExitWorktreeTool",
+    "category": "workflow",
+    "risk": "low",
+    "fileCount": 4,
+    "files": [
+      "ExitWorktreeTool.ts",
+      "UI.tsx",
+      "constants.ts",
+      "prompt.ts"
+    ],
+    "description": "Leaves the current git worktree and returns to the original working directory, optionally merging or discarding the worktree's changes.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "FileEditTool",
+    "category": "file-io",
+    "risk": "low",
+    "fileCount": 6,
+    "files": [
+      "FileEditTool.ts",
+      "UI.tsx",
+      "constants.ts",
+      "prompt.ts",
+      "types.ts",
+      "utils.ts"
+    ],
+    "description": "Performs surgical string-replacement edits on files using an old_string/new_string pattern, with uniqueness validation and optional replace-all semantics for safe, reviewable modifications.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "FileReadTool",
+    "category": "file-io",
+    "risk": "low",
+    "fileCount": 5,
+    "files": [
+      "FileReadTool.ts",
+      "UI.tsx",
+      "imageProcessor.ts",
+      "limits.ts",
+      "prompt.ts"
+    ],
+    "description": "Reads file contents with optional line-range selection, supporting text files, images (returned as base64), PDFs (page-range extraction), and Jupyter notebooks.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "FileWriteTool",
+    "category": "file-io",
+    "risk": "low",
+    "fileCount": 3,
+    "files": [
+      "FileWriteTool.ts",
+      "UI.tsx",
+      "prompt.ts"
+    ],
+    "description": "Writes complete file contents to disk, creating parent directories as needed, with guards against overwriting files that haven't been read first.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "GlobTool",
+    "category": "file-io",
+    "risk": "low",
+    "fileCount": 3,
+    "files": [
+      "GlobTool.ts",
+      "UI.tsx",
+      "prompt.ts"
+    ],
+    "description": "Performs fast file pattern matching across the project using glob syntax, returning sorted results for file discovery without reading file contents.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "GrepTool",
+    "category": "file-io",
+    "risk": "low",
+    "fileCount": 3,
+    "files": [
+      "GrepTool.ts",
+      "UI.tsx",
+      "prompt.ts"
+    ],
+    "description": "Searches file contents using ripgrep-powered regex with support for context lines, file type filtering, glob-based path filtering, and multiple output modes.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "LSPTool",
+    "category": "integration",
+    "risk": "medium",
+    "fileCount": 6,
+    "files": [
+      "LSPTool.ts",
+      "UI.tsx",
+      "formatters.ts",
+      "prompt.ts",
+      "schemas.ts",
+      "symbolContext.ts"
+    ],
+    "description": "Queries connected Language Server Protocol servers for type definitions, references, diagnostics, and symbol information, giving the model IDE-level code intelligence.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "ListMcpResourcesTool",
+    "category": "integration",
+    "risk": "medium",
+    "fileCount": 3,
+    "files": [
+      "ListMcpResourcesTool.ts",
+      "UI.tsx",
+      "prompt.ts"
+    ],
+    "description": "Lists available resources from connected MCP servers, enabling the model to discover what data sources (files, databases, APIs) are accessible through the MCP protocol.",
+    "blogRef": "12-model-context-protocol"
+  },
+  {
+    "name": "MCPTool",
+    "category": "integration",
+    "risk": "medium",
+    "fileCount": 4,
+    "files": [
+      "MCPTool.ts",
+      "UI.tsx",
+      "classifyForCollapse.ts",
+      "prompt.ts"
+    ],
+    "description": "A dynamic tool wrapper that forwards invocations to tools provided by connected MCP servers, bridging external tool ecosystems into Claude's native tool interface.",
+    "blogRef": "12-model-context-protocol"
+  },
+  {
+    "name": "McpAuthTool",
+    "category": "integration",
+    "risk": "medium",
+    "fileCount": 1,
+    "files": [
+      "McpAuthTool.ts"
+    ],
+    "description": "Handles OAuth authentication flows for MCP servers that require credentials, managing token acquisition and storage for authenticated MCP connections.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "NotebookEditTool",
+    "category": "file-io",
+    "risk": "low",
+    "fileCount": 4,
+    "files": [
+      "NotebookEditTool.ts",
+      "UI.tsx",
+      "constants.ts",
+      "prompt.ts"
+    ],
+    "description": "Edits Jupyter notebook cells by index, supporting cell content replacement, insertion, and deletion while preserving notebook metadata and structure.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "PowerShellTool",
+    "category": "execution",
+    "risk": "high",
+    "fileCount": 14,
+    "files": [
+      "PowerShellTool.tsx",
+      "UI.tsx",
+      "clmTypes.ts",
+      "commandSemantics.ts",
+      "commonParameters.ts",
+      "destructiveCommandWarning.ts",
+      "gitSafety.ts",
+      "modeValidation.ts",
+      "pathValidation.ts",
+      "powershellPermissions.ts",
+      "powershellSecurity.ts",
+      "prompt.ts",
+      "readOnlyValidation.ts",
+      "toolName.ts"
+    ],
+    "description": "Executes PowerShell commands on Windows systems, providing the Windows-native shell equivalent of BashTool with appropriate encoding and execution policy handling.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "REPLTool",
+    "category": "execution",
+    "risk": "high",
+    "fileCount": 2,
+    "files": [
+      "constants.ts",
+      "primitiveTools.ts"
+    ],
+    "description": "An internal-only tool that executes code in a persistent REPL session (Python, Node, etc.), maintaining state across invocations for iterative development and data exploration.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "ReadMcpResourceTool",
+    "category": "integration",
+    "risk": "medium",
+    "fileCount": 3,
+    "files": [
+      "ReadMcpResourceTool.ts",
+      "UI.tsx",
+      "prompt.ts"
+    ],
+    "description": "Reads the contents of a specific MCP resource by URI, returning the data for the model to process -- the read counterpart to ListMcpResourcesTool.",
+    "blogRef": "12-model-context-protocol"
+  },
+  {
+    "name": "RemoteTriggerTool",
+    "category": "integration",
+    "risk": "medium",
+    "fileCount": 3,
+    "files": [
+      "RemoteTriggerTool.ts",
+      "UI.tsx",
+      "prompt.ts"
+    ],
+    "description": "Creates remote webhook triggers that can start new agent sessions when external events occur, enabling event-driven automation workflows.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "ScheduleCronTool",
+    "category": "workflow",
+    "risk": "low",
+    "fileCount": 5,
+    "files": [
+      "CronCreateTool.ts",
+      "CronDeleteTool.ts",
+      "CronListTool.ts",
+      "UI.tsx",
+      "prompt.ts"
+    ],
+    "description": "Manages cron-style scheduled tasks that run agent sessions on a recurring schedule, with sub-tools for creating, listing, and deleting cron entries.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "SendMessageTool",
+    "category": "agent",
+    "risk": "medium",
+    "fileCount": 4,
+    "files": [
+      "SendMessageTool.ts",
+      "UI.tsx",
+      "constants.ts",
+      "prompt.ts"
+    ],
+    "description": "Sends messages to other agents in a multi-agent swarm, enabling inter-agent communication and coordination during parallel task execution.",
+    "blogRef": "15-subagents-orchestration"
+  },
+  {
+    "name": "SkillTool",
+    "category": "meta",
+    "risk": "low",
+    "fileCount": 4,
+    "files": [
+      "SkillTool.ts",
+      "UI.tsx",
+      "constants.ts",
+      "prompt.ts"
+    ],
+    "description": "Invokes named skills (loaded from SKILL.md files) that inject specialized prompts, tool restrictions, and behavioral instructions into a sub-agent context.",
+    "blogRef": "13-skills-system"
+  },
+  {
+    "name": "SleepTool",
+    "category": "workflow",
+    "risk": "low",
+    "fileCount": 1,
+    "files": [
+      "prompt.ts"
+    ],
+    "description": "Pauses the agent for a specified duration, used in proactive/autonomous agent modes where the agent needs to wait for external events or schedule future work.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "SyntheticOutputTool",
+    "category": "workflow",
+    "risk": "low",
+    "fileCount": 1,
+    "files": [
+      "SyntheticOutputTool.ts"
+    ],
+    "description": "An invisible tool that forces the model to produce structured output in a specific format, used internally to extract structured data from model responses without user-visible tool calls.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "TaskCreateTool",
+    "category": "agent",
+    "risk": "medium",
+    "fileCount": 3,
+    "files": [
+      "TaskCreateTool.ts",
+      "constants.ts",
+      "prompt.ts"
+    ],
+    "description": "Creates background tasks (shell commands or agent sessions) that run concurrently with the main conversation, returning a task ID for later status checking.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "TaskGetTool",
+    "category": "agent",
+    "risk": "medium",
+    "fileCount": 3,
+    "files": [
+      "TaskGetTool.ts",
+      "constants.ts",
+      "prompt.ts"
+    ],
+    "description": "Retrieves the current status and recent output of a background task by its ID, letting the model check on long-running operations.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "TaskListTool",
+    "category": "agent",
+    "risk": "medium",
+    "fileCount": 3,
+    "files": [
+      "TaskListTool.ts",
+      "constants.ts",
+      "prompt.ts"
+    ],
+    "description": "Lists all active and recently completed background tasks with their statuses, providing an overview of concurrent work.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "TaskOutputTool",
+    "category": "agent",
+    "risk": "medium",
+    "fileCount": 2,
+    "files": [
+      "TaskOutputTool.tsx",
+      "constants.ts"
+    ],
+    "description": "Fetches the full accumulated output of a background task, useful for reading complete results after a task finishes.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "TaskStopTool",
+    "category": "agent",
+    "risk": "medium",
+    "fileCount": 3,
+    "files": [
+      "TaskStopTool.ts",
+      "UI.tsx",
+      "prompt.ts"
+    ],
+    "description": "Terminates a running background task by sending it an abort signal, cleaning up resources and marking the task as killed.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "TaskUpdateTool",
+    "category": "agent",
+    "risk": "medium",
+    "fileCount": 3,
+    "files": [
+      "TaskUpdateTool.ts",
+      "constants.ts",
+      "prompt.ts"
+    ],
+    "description": "Sends a message or instruction to a running background agent task, enabling mid-flight guidance and course correction of autonomous sub-tasks.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "TeamCreateTool",
+    "category": "agent",
+    "risk": "medium",
+    "fileCount": 4,
+    "files": [
+      "TeamCreateTool.ts",
+      "UI.tsx",
+      "constants.ts",
+      "prompt.ts"
+    ],
+    "description": "Spawns a persistent teammate agent that runs as an in-process concurrent session, participating in the multi-agent swarm with its own conversation context.",
+    "blogRef": "15-subagents-orchestration"
+  },
+  {
+    "name": "TeamDeleteTool",
+    "category": "agent",
+    "risk": "medium",
+    "fileCount": 4,
+    "files": [
+      "TeamDeleteTool.ts",
+      "UI.tsx",
+      "constants.ts",
+      "prompt.ts"
+    ],
+    "description": "Removes a teammate agent from the active swarm, terminating its session and cleaning up its resources.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "TodoWriteTool",
+    "category": "agent",
+    "risk": "medium",
+    "fileCount": 3,
+    "files": [
+      "TodoWriteTool.ts",
+      "constants.ts",
+      "prompt.ts"
+    ],
+    "description": "Writes and manages a structured TODO list that persists across turns, giving the model a scratchpad for tracking multi-step task progress.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "ToolSearchTool",
+    "category": "meta",
+    "risk": "low",
+    "fileCount": 3,
+    "files": [
+      "ToolSearchTool.ts",
+      "constants.ts",
+      "prompt.ts"
+    ],
+    "description": "Searches the deferred tool registry by keyword or name to discover available tools that aren't loaded by default, enabling on-demand tool activation.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "WebFetchTool",
+    "category": "web",
+    "risk": "medium",
+    "fileCount": 5,
+    "files": [
+      "UI.tsx",
+      "WebFetchTool.ts",
+      "preapproved.ts",
+      "prompt.ts",
+      "utils.ts"
+    ],
+    "description": "Fetches web page content by URL, converting HTML to readable text with optional JavaScript rendering, giving the model access to documentation and web resources.",
+    "blogRef": "04-the-tool-system"
+  },
+  {
+    "name": "WebSearchTool",
+    "category": "web",
+    "risk": "medium",
+    "fileCount": 3,
+    "files": [
+      "UI.tsx",
+      "WebSearchTool.ts",
+      "prompt.ts"
+    ],
+    "description": "Performs web searches and returns summarized results, enabling the model to find current information beyond its training data.",
+    "blogRef": "04-the-tool-system"
+  }
+]

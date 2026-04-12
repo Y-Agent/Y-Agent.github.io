@@ -1,0 +1,2156 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Agent SDK &amp; Structured I/O – Inside Claude Code</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./07-multi-agent-orchestration.html" rel="next">
+<link href="./02-agent-loop-query-engine.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-f2aa3fcab4a3c0cbb1a885f128e95a4e.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-4486e80548b20dd029182ccec781b91c.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-f2aa3fcab4a3c0cbb1a885f128e95a4e.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-e429c51d478a3f7fe436edff7d8b5e18.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-89366f393ab88770656785fe4740de67.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-e429c51d478a3f7fe436edff7d8b5e18.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<meta name="mermaid-theme" content="neutral">
+<script src="site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Palatino+Linotype&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+
+
+<link rel="stylesheet" href="styles/custom.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Inside Claude Code</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="./index.html" aria-current="page"> 
+<span class="menu-text">Series Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./explorer-dist/index.html" target="_blank"> 
+<span class="menu-text">Code Explorer</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ZhuoranYang/claude_code_analysis"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./02-agent-loop-query-engine.html">II. Agent Harness</a></li><li class="breadcrumb-item"><a href="./15-agent-sdk-structured-io.html">II.2 — Agent SDK &amp; Structured I/O</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Inside Claude Code</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./explorer-dist/index.html" class="sidebar-item-text sidebar-link" target="_blank">
+ <span class="menu-text">Code Explorer</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false">
+ <span class="menu-text">I. Overview</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./00-birds-eye-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">I.1 — Bird’s Eye Architecture</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-end-to-end-workflow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">I.2 — End-to-End Workflow</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">II. Agent Harness</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-agent-loop-query-engine.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.1 — Agent Loop &amp; Query Engine</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./15-agent-sdk-structured-io.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">II.2 — Agent SDK &amp; Structured I/O</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-multi-agent-orchestration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.3 — Multi-Agent Orchestration</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./19-plan-mode.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.4 — Plan Mode</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false">
+ <span class="menu-text">III. Context Engineering</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-prompt-assembly.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.1 — Prompt Assembly</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-context-compaction.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.2 — Context Compaction</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./17-memory-hierarchy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.3 — Memory Hierarchy</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./11-hooks-lifecycle.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.4 — Hooks &amp; Lifecycle</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false">
+ <span class="menu-text">IV. Tools</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-tool-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IV.1 — Tool System &amp; Registry</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-safety-sandbox.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IV.2 — Safety &amp; Sandbox</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false">
+ <span class="menu-text">V. Invocation</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-cli-commands-ui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">V.1 — CLI, Commands &amp; UI</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-auth-providers-flags.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">V.2 — Auth, Providers &amp; Flags</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false">
+ <span class="menu-text">VI. Extensions</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./10-model-context-protocol.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.1 — Model Context Protocol</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./12-skills-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.2 — Skills System</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./13-plugin-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.3 — Plugin Architecture</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="false">
+ <span class="menu-text">VII. Remote Runtime</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./16-remote-runtime-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VII.1 — Remote Runtime &amp; Bridge</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="false">
+ <span class="menu-text">VIII. Native Runtime</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./18-native-runtime-voice-portability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VIII.1 — Native Runtime, Voice &amp; Portability</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="false">
+ <span class="menu-text">IX. Transparency &amp; Trust</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./14-hidden-costs-context-manipulation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IX.1 — Transparency &amp; Trust</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction-one-engine-three-doors" id="toc-introduction-one-engine-three-doors" class="nav-link active" data-scroll-target="#introduction-one-engine-three-doors">1. Introduction: One Engine, Three Doors</a></li>
+  <li><a href="#three-entry-modes-cli-sdk-mcp" id="toc-three-entry-modes-cli-sdk-mcp" class="nav-link" data-scroll-target="#three-entry-modes-cli-sdk-mcp">2. Three Entry Modes: CLI, SDK, MCP</a>
+  <ul class="collapse">
+  <li><a href="#cli-entry-reactink-repl" id="toc-cli-entry-reactink-repl" class="nav-link" data-scroll-target="#cli-entry-reactink-repl">2.1 CLI Entry: React/Ink REPL</a></li>
+  <li><a href="#sdk-entry-headless-structured-io" id="toc-sdk-entry-headless-structured-io" class="nav-link" data-scroll-target="#sdk-entry-headless-structured-io">2.2 SDK Entry: Headless Structured I/O</a></li>
+  <li><a href="#mcp-server-entry-tool-exposure" id="toc-mcp-server-entry-tool-exposure" class="nav-link" data-scroll-target="#mcp-server-entry-tool-exposure">2.3 MCP Server Entry: Tool Exposure</a></li>
+  </ul></li>
+  <li><a href="#sdk-core-schemas-the-message-protocol" id="toc-sdk-core-schemas-the-message-protocol" class="nav-link" data-scroll-target="#sdk-core-schemas-the-message-protocol">3. SDK Core Schemas: The Message Protocol</a>
+  <ul class="collapse">
+  <li><a href="#message-type-taxonomy" id="toc-message-type-taxonomy" class="nav-link" data-scroll-target="#message-type-taxonomy">3.1 Message Type Taxonomy</a></li>
+  <li><a href="#the-sdksystemmessage-session-initialization" id="toc-the-sdksystemmessage-session-initialization" class="nav-link" data-scroll-target="#the-sdksystemmessage-session-initialization">3.2 The SDKSystemMessage: Session Initialization</a></li>
+  <li><a href="#the-result-schema-structured-turn-summaries" id="toc-the-result-schema-structured-turn-summaries" class="nav-link" data-scroll-target="#the-result-schema-structured-turn-summaries">3.3 The Result Schema: Structured Turn Summaries</a></li>
+  <li><a href="#schema-driven-design" id="toc-schema-driven-design" class="nav-link" data-scroll-target="#schema-driven-design">3.4 Schema-Driven Design</a></li>
+  </ul></li>
+  <li><a href="#control-protocol-out-of-band-governance" id="toc-control-protocol-out-of-band-governance" class="nav-link" data-scroll-target="#control-protocol-out-of-band-governance">4. Control Protocol: Out-of-Band Governance</a>
+  <ul class="collapse">
+  <li><a href="#the-request-response-pattern" id="toc-the-request-response-pattern" class="nav-link" data-scroll-target="#the-request-response-pattern">4.1 The Request-Response Pattern</a></li>
+  <li><a href="#control-request-taxonomy" id="toc-control-request-taxonomy" class="nav-link" data-scroll-target="#control-request-taxonomy">4.2 Control Request Taxonomy</a></li>
+  <li><a href="#the-permission-request-flow" id="toc-the-permission-request-flow" class="nav-link" data-scroll-target="#the-permission-request-flow">4.3 The Permission Request Flow</a></li>
+  <li><a href="#stdin-and-stdout-aggregates" id="toc-stdin-and-stdout-aggregates" class="nav-link" data-scroll-target="#stdin-and-stdout-aggregates">4.4 Stdin and Stdout Aggregates</a></li>
+  </ul></li>
+  <li><a href="#structuredio-the-protocol-adapter" id="toc-structuredio-the-protocol-adapter" class="nav-link" data-scroll-target="#structuredio-the-protocol-adapter">5. StructuredIO: The Protocol Adapter</a>
+  <ul class="collapse">
+  <li><a href="#architecture" id="toc-architecture" class="nav-link" data-scroll-target="#architecture">5.1 Architecture</a></li>
+  <li><a href="#the-read-loop-line-oriented-ndjson-parsing" id="toc-the-read-loop-line-oriented-ndjson-parsing" class="nav-link" data-scroll-target="#the-read-loop-line-oriented-ndjson-parsing">5.2 The Read Loop: Line-Oriented NDJSON Parsing</a></li>
+  <li><a href="#control-request-resolution" id="toc-control-request-resolution" class="nav-link" data-scroll-target="#control-request-resolution">5.3 Control Request Resolution</a></li>
+  <li><a href="#duplicate-prevention" id="toc-duplicate-prevention" class="nav-link" data-scroll-target="#duplicate-prevention">5.4 Duplicate Prevention</a></li>
+  <li><a href="#permission-racing-hooks-vs.-sdk-host" id="toc-permission-racing-hooks-vs.-sdk-host" class="nav-link" data-scroll-target="#permission-racing-hooks-vs.-sdk-host">5.5 Permission Racing: Hooks vs.&nbsp;SDK Host</a></li>
+  </ul></li>
+  <li><a href="#data-plane-vs.-control-plane" id="toc-data-plane-vs.-control-plane" class="nav-link" data-scroll-target="#data-plane-vs.-control-plane">6. Data Plane vs.&nbsp;Control Plane</a>
+  <ul class="collapse">
+  <li><a href="#data-plane-characteristics" id="toc-data-plane-characteristics" class="nav-link" data-scroll-target="#data-plane-characteristics">6.1 Data Plane Characteristics</a></li>
+  <li><a href="#control-plane-characteristics" id="toc-control-plane-characteristics" class="nav-link" data-scroll-target="#control-plane-characteristics">6.2 Control Plane Characteristics</a></li>
+  <li><a href="#why-one-stream" id="toc-why-one-stream" class="nav-link" data-scroll-target="#why-one-stream">6.3 Why One Stream?</a></li>
+  </ul></li>
+  <li><a href="#sdk-message-adapter-remote-consumption" id="toc-sdk-message-adapter-remote-consumption" class="nav-link" data-scroll-target="#sdk-message-adapter-remote-consumption">7. SDK Message Adapter: Remote Consumption</a>
+  <ul class="collapse">
+  <li><a href="#the-conversion-function" id="toc-the-conversion-function" class="nav-link" data-scroll-target="#the-conversion-function">7.1 The Conversion Function</a></li>
+  <li><a href="#message-type-mapping" id="toc-message-type-mapping" class="nav-link" data-scroll-target="#message-type-mapping">7.2 Message Type Mapping</a></li>
+  <li><a href="#graceful-degradation" id="toc-graceful-degradation" class="nav-link" data-scroll-target="#graceful-degradation">7.3 Graceful Degradation</a></li>
+  </ul></li>
+  <li><a href="#synthesis-the-protocol-as-architecture" id="toc-synthesis-the-protocol-as-architecture" class="nav-link" data-scroll-target="#synthesis-the-protocol-as-architecture">8. Synthesis: The Protocol as Architecture</a></li>
+  <li><a href="#appendix-sdk-messages" id="toc-appendix-sdk-messages" class="nav-link" data-scroll-target="#appendix-sdk-messages">Appendix A: Full List of SDK Message Types</a></li>
+  <li><a href="#appendix-control-subtypes" id="toc-appendix-control-subtypes" class="nav-link" data-scroll-target="#appendix-control-subtypes">Appendix B: Full List of Control Request Subtypes</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content page-columns page-full" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./02-agent-loop-query-engine.html">II. Agent Harness</a></li><li class="breadcrumb-item"><a href="./15-agent-sdk-structured-io.html">II.2 — Agent SDK &amp; Structured I/O</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Agent SDK &amp; Structured I/O</h1>
+<p class="subtitle lead">How a single agent engine serves three entry modes – CLI, SDK, and MCP – through a data-plane / control-plane message protocol</p>
+  <div class="quarto-categories">
+    <div class="quarto-category">sdk</div>
+    <div class="quarto-category">structured-io</div>
+    <div class="quarto-category">entry-modes</div>
+    <div class="quarto-category">control-protocol</div>
+  </div>
+  </div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="introduction-one-engine-three-doors" class="level2">
+<h2 class="anchored" data-anchor-id="introduction-one-engine-three-doors">1. Introduction: One Engine, Three Doors</h2>
+<p><strong>Claude Code is not merely a terminal application. It is a programmatic agent runtime that happens to ship with a terminal frontend. The same agent engine – the AsyncGenerator loop, the tool registry, the permission system, the context compactor – is reachable through three distinct entry modes: an interactive CLI, a headless SDK, and an MCP server. This post examines the protocol layer that makes this convergence possible.</strong></p>
+<p>Most analyses of coding agents focus on the model loop or the tool system. But the question of <em>how external consumers invoke and observe the agent</em> is an equally consequential architectural decision. A terminal REPL, a CI/CD pipeline, and a VS Code extension have radically different requirements for input delivery, output consumption, and governance interaction. Claude Code solves this with a structured message protocol – defined via <span class="kw-slate">Zod</span> schemas in <code>coreSchemas.ts</code> (1,889 LOC) and <code>controlSchemas.ts</code> (663 LOC) – that separates <span class="kw-sage">conversational data</span> from <span class="kw-terra">governance events</span> and provides machine-readable I/O for every entry mode.</p>
+<p>The following diagram shows the three entry modes converging on the shared engine:</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-three-entry-modes" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-three-entry-modes-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-three-entry-modes">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart TD
+  CLI["CLI Entry&lt;br&gt;&lt;i&gt;cli.tsx (302 LOC)&lt;/i&gt;"] --&gt; INK["TUI Renderer"]
+  SDK["SDK Entry&lt;br&gt;&lt;i&gt;structuredIO.ts (859 LOC)&lt;/i&gt;"] --&gt; SIO["StructuredIO&lt;br&gt;NDJSON Protocol"]
+  MCP["MCP Server&lt;br&gt;&lt;i&gt;mcp.ts (196 LOC)&lt;/i&gt;"] --&gt; MCA["MCP SDK&lt;br&gt;Stdio Transport"]
+
+  INK --&gt; ENGINE["&lt;b&gt;Agent Engine&lt;/b&gt;"]
+  SIO --&gt; ENGINE
+  MCA --&gt; ENGINE
+
+  ENGINE --&gt; QUERY["query.ts&lt;br&gt;Agent Loop"]
+  ENGINE --&gt; TOOLS["Tool Registry&lt;br&gt;40 tools"]
+  ENGINE --&gt; PERMS["Permission&lt;br&gt;System"]
+
+  style CLI fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style SDK fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style MCP fill:#C2856E,color:#fff,stroke:#A06A54
+  style INK fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style SIO fill:#C4A882,color:#fff,stroke:#A08562
+  style MCA fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style ENGINE fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style QUERY fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style TOOLS fill:#C2856E,color:#fff,stroke:#A06A54
+  style PERMS fill:#B39EB5,color:#fff,stroke:#8E7A93
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-three-entry-modes-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Three entry modes converge on a shared agent engine. The CLI renders via a TUI framework; the SDK uses structured NDJSON over stdio; the MCP server exposes tools via the Model Context Protocol. All three share the same query loop, tool registry, and permission system.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Start at the three top nodes representing the three entry modes: CLI, SDK, and MCP Server. Each passes through its own protocol adapter (TUI Renderer, StructuredIO NDJSON, or MCP Stdio Transport) before converging on the shared “Agent Engine” node in the center. Below the engine, three shared subsystems – the query loop, tool registry, and permission system – are available to all three entry modes identically. The key takeaway is that all paths lead to the same engine; the entry mode determines only how I/O is formatted.</p>
+<p>This post sits alongside the agent loop analysis (Part II.1) and multi-agent orchestration (Part II.3) in the Agent Harness section. Where Part II.1 dissects <em>what the loop does</em>, this post examines <em>how the loop is accessed</em>. We begin with the three entry modes (Section 2), proceed to the SDK message schemas (Section 3), examine the control protocol (Section 4), analyze the StructuredIO adapter (Section 5), characterize the data-plane / control-plane split (Section 6), and close with the SDK message adapter for remote consumption (Section 7).</p>
+<p><strong>Source files covered in this post:</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 28%">
+<col style="width: 42%">
+<col style="width: 28%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Purpose</th>
+<th>Size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>src/schemas/coreSchemas.ts</code></td>
+<td>Core SDK message schemas (23 message types, Zod v4)</td>
+<td>~1,889 LOC</td>
+</tr>
+<tr class="even">
+<td><code>src/schemas/controlSchemas.ts</code></td>
+<td>Control protocol schemas (permissions, configuration)</td>
+<td>~663 LOC</td>
+</tr>
+<tr class="odd">
+<td><code>src/cli.tsx</code></td>
+<td>CLI entry point (REPL vs.&nbsp;SDK mode routing)</td>
+<td>~302 LOC</td>
+</tr>
+<tr class="even">
+<td><code>src/remote/sdkMessageAdapter.ts</code></td>
+<td>SDK-to-REPL message adapter for remote consumption</td>
+<td>~302 LOC</td>
+</tr>
+<tr class="odd">
+<td><code>src/entrypoints/</code></td>
+<td>Public SDK entry points and type exports</td>
+<td>~5 files</td>
+</tr>
+<tr class="even">
+<td><code>src/services/mcp/SdkControlTransport.ts</code></td>
+<td>MCP-over-SDK control transport</td>
+<td>~200 LOC</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="three-entry-modes-cli-sdk-mcp" class="level2">
+<h2 class="anchored" data-anchor-id="three-entry-modes-cli-sdk-mcp">2. Three Entry Modes: CLI, SDK, MCP</h2>
+<p><strong>The three entry modes differ in their surface protocol but converge on the same agent engine. Understanding their differences clarifies why the structured message protocol exists.</strong></p>
+<section id="cli-entry-reactink-repl" class="level3">
+<h3 class="anchored" data-anchor-id="cli-entry-reactink-repl">2.1 CLI Entry: React/Ink REPL</h3>
+<p>The CLI entry (<code>cli.tsx</code>, 302 LOC) is a bootstrap dispatcher that examines <code>process.argv</code> and routes to the appropriate handler. It uses dynamic imports extensively – the <code>--version</code> fast path requires zero module loading beyond the entry file itself. The full <span class="kw-sage">React</span> / <span class="kw-sage">Ink</span> REPL loads only when no fast path matches:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Fast-path for --version/-v: zero module loading needed</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (args<span class="op">.</span><span class="at">length</span> <span class="op">===</span> <span class="dv">1</span> <span class="op">&amp;&amp;</span> (args[<span class="dv">0</span>] <span class="op">===</span> <span class="st">'--version'</span> <span class="op">||</span> args[<span class="dv">0</span>] <span class="op">===</span> <span class="st">'-v'</span>)) {</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="vs">`</span><span class="sc">${</span>MACRO<span class="op">.</span><span class="at">VERSION</span><span class="sc">}</span><span class="vs"> (Claude Code)`</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co">// ... other fast paths: --dump-system-prompt, daemon, bridge, bg sessions ...</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co">// No special flags detected, load and run the full CLI</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> { main<span class="op">:</span> cliMain } <span class="op">=</span> <span class="cf">await</span> <span class="im">import</span>(<span class="st">'../main.js'</span>)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="cf">await</span> <span class="fu">cliMain</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The CLI entry handles a remarkable number of sub-modes before reaching the interactive REPL: <span class="kw-mauve">daemon workers</span>, <span class="kw-mauve">bridge/remote-control</span>, background sessions (<code>ps</code>, <code>logs</code>, <code>attach</code>, <code>kill</code>), template jobs, environment runners, self-hosted runners, and worktree/tmux orchestration. Each is guarded by a <code>feature()</code> gate for build-time dead code elimination. The interactive REPL – the mode most users experience – is the <em>fallback</em> path.</p>
+</section>
+<section id="sdk-entry-headless-structured-io" class="level3">
+<h3 class="anchored" data-anchor-id="sdk-entry-headless-structured-io">2.2 SDK Entry: Headless Structured I/O</h3>
+<p>The SDK mode is invoked when an external process (the Python SDK, a VS Code extension, a CI pipeline) spawns the Claude Code process with <code>--output-format stream-json</code>. In this mode, there is no <span class="kw-sage">Ink</span> renderer. Instead, the agent reads <span class="kw-slate">NDJSON</span> messages from stdin and writes NDJSON messages to stdout. The <code>StructuredIO</code> class (<code>structuredIO.ts</code>, 859 LOC) mediates this protocol.</p>
+<p>The SDK mode enables programmatic agent control: send a user message as a JSON object on stdin, receive assistant messages, tool executions, stream events, and result summaries as JSON objects on stdout. Governance interactions (permission requests, elicitations) flow through the same channel as <span class="kw-terra">control protocol</span> messages, distinguished by their <code>type</code> field.</p>
+</section>
+<section id="mcp-server-entry-tool-exposure" class="level3">
+<h3 class="anchored" data-anchor-id="mcp-server-entry-tool-exposure">2.3 MCP Server Entry: Tool Exposure</h3>
+<p>The MCP entry (<code>mcp.ts</code>, 196 LOC) runs Claude Code as an <span class="kw-slate">MCP</span> (Model Context Protocol) server, exposing its tool registry to external MCP clients. This inverts the usual relationship: instead of Claude Code <em>calling</em> MCP servers (as it does when connecting to external tools), Claude Code <em>becomes</em> an MCP server, making its 40 built-in tools available to other agents.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> server <span class="op">=</span> <span class="kw">new</span> <span class="bu">Server</span>(</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  { name<span class="op">:</span> <span class="st">'claude/tengu'</span><span class="op">,</span> version<span class="op">:</span> MACRO<span class="op">.</span><span class="at">VERSION</span> }<span class="op">,</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  { capabilities<span class="op">:</span> { tools<span class="op">:</span> {} } }<span class="op">,</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The MCP server registers two handlers: <code>ListToolsRequestSchema</code> (returns all tools with their <span class="kw-slate">Zod</span>-to-JSON-Schema converted input schemas) and <code>CallToolRequestSchema</code> (executes a tool in a non-interactive context). Notably, the MCP mode creates a minimal <code>ToolUseContext</code> with <code>isNonInteractiveSession: true</code> and thinking disabled – it is a headless tool executor, not a conversational agent.</p>
+<hr>
+</section>
+</section>
+<section id="sdk-core-schemas-the-message-protocol" class="level2">
+<h2 class="anchored" data-anchor-id="sdk-core-schemas-the-message-protocol">3. SDK Core Schemas: The Message Protocol</h2>
+<p><strong>The SDK message protocol is defined by <code>coreSchemas.ts</code> (1,889 LOC) – a single file of <span class="kw-slate">Zod v4</span> schemas that serves as the single source of truth for all SDK data types. TypeScript types are generated from these schemas, not the other way around.</strong></p>
+<p>The schema file is organized into several domains, each defining the wire format for a category of SDK messages.</p>
+<section id="message-type-taxonomy" class="level3">
+<h3 class="anchored" data-anchor-id="message-type-taxonomy">3.1 Message Type Taxonomy</h3>
+<p>The <code>SDKMessageSchema</code> is a union of 23 distinct message types. These can be grouped by function:</p>
+<div id="tbl-message-taxonomy" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-message-taxonomy-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;1: SDK message type taxonomy. The 23 types span conversational data, system lifecycle, governance, and observability.
+</figcaption>
+<div aria-describedby="tbl-message-taxonomy-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Category</th>
+<th>Message Types</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Conversational</td>
+<td><code>user</code>, <code>assistant</code>, <code>stream_event</code></td>
+<td>The data plane – prompts, responses, streaming deltas</td>
+</tr>
+<tr class="even">
+<td>Result</td>
+<td><code>result</code> (success / error variants)</td>
+<td>Turn completion with cost, usage, and duration metrics</td>
+</tr>
+<tr class="odd">
+<td>System</td>
+<td><code>init</code>, <code>status</code>, <code>compact_boundary</code>, <code>api_retry</code>, <code>local_command_output</code></td>
+<td>Session lifecycle and infrastructure events</td>
+</tr>
+<tr class="even">
+<td>Hooks</td>
+<td><code>hook_started</code>, <code>hook_progress</code>, <code>hook_response</code></td>
+<td>Lifecycle hook execution progress</td>
+</tr>
+<tr class="odd">
+<td>Tasks</td>
+<td><code>task_started</code>, <code>task_progress</code>, <code>task_notification</code></td>
+<td>Background task status</td>
+</tr>
+<tr class="even">
+<td>Progress</td>
+<td><code>tool_progress</code>, <code>tool_use_summary</code></td>
+<td>Tool execution observability</td>
+</tr>
+<tr class="odd">
+<td>Auth</td>
+<td><code>auth_status</code></td>
+<td>Authentication state changes</td>
+</tr>
+<tr class="even">
+<td>Rate limits</td>
+<td><code>rate_limit_event</code></td>
+<td>Subscription rate limit information</td>
+</tr>
+<tr class="odd">
+<td>Session</td>
+<td><code>session_state_changed</code>, <code>files_persisted</code></td>
+<td>Session state transitions</td>
+</tr>
+<tr class="even">
+<td>Suggestions</td>
+<td><code>prompt_suggestion</code></td>
+<td>Predicted next user prompt</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+</section>
+<section id="the-sdksystemmessage-session-initialization" class="level3">
+<h3 class="anchored" data-anchor-id="the-sdksystemmessage-session-initialization">3.2 The SDKSystemMessage: Session Initialization</h3>
+<p>The <code>SDKSystemMessage</code> (subtype <code>init</code>) is the first message emitted on every session. It carries the full session configuration: available tools, MCP server status, model identity, <span class="kw-terra">permission mode</span>, slash commands, skills, plugins, API key source, betas, and output style. This single message gives the SDK consumer everything it needs to render a session UI or configure a programmatic client:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">export</span> <span class="kw">const</span> SDKSystemMessageSchema <span class="op">=</span> <span class="fu">lazySchema</span>(() <span class="kw">=&gt;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  z<span class="op">.</span><span class="fu">object</span>({</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    type<span class="op">:</span> z<span class="op">.</span><span class="fu">literal</span>(<span class="st">'system'</span>)<span class="op">,</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    subtype<span class="op">:</span> z<span class="op">.</span><span class="fu">literal</span>(<span class="st">'init'</span>)<span class="op">,</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    tools<span class="op">:</span> z<span class="op">.</span><span class="fu">array</span>(z<span class="op">.</span><span class="fu">string</span>())<span class="op">,</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    model<span class="op">:</span> z<span class="op">.</span><span class="fu">string</span>()<span class="op">,</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    permissionMode<span class="op">:</span> <span class="fu">PermissionModeSchema</span>()<span class="op">,</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    mcp_servers<span class="op">:</span> z<span class="op">.</span><span class="fu">array</span>(z<span class="op">.</span><span class="fu">object</span>({ name<span class="op">:</span> z<span class="op">.</span><span class="fu">string</span>()<span class="op">,</span> status<span class="op">:</span> z<span class="op">.</span><span class="fu">string</span>() }))<span class="op">,</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    slash_commands<span class="op">:</span> z<span class="op">.</span><span class="fu">array</span>(z<span class="op">.</span><span class="fu">string</span>())<span class="op">,</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    skills<span class="op">:</span> z<span class="op">.</span><span class="fu">array</span>(z<span class="op">.</span><span class="fu">string</span>())<span class="op">,</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    plugins<span class="op">:</span> z<span class="op">.</span><span class="fu">array</span>(z<span class="op">.</span><span class="fu">object</span>({ name<span class="op">:</span> z<span class="op">.</span><span class="fu">string</span>()<span class="op">,</span> path<span class="op">:</span> z<span class="op">.</span><span class="fu">string</span>()<span class="op">,</span> <span class="op">...</span> }))<span class="op">,</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ... apiKeySource, betas, output_style, fast_mode_state</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    uuid<span class="op">:</span> <span class="fu">UUIDPlaceholder</span>()<span class="op">,</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    session_id<span class="op">:</span> z<span class="op">.</span><span class="fu">string</span>()<span class="op">,</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  })<span class="op">,</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="the-result-schema-structured-turn-summaries" class="level3">
+<h3 class="anchored" data-anchor-id="the-result-schema-structured-turn-summaries">3.3 The Result Schema: Structured Turn Summaries</h3>
+<p>Turn completion produces an <code>SDKResultMessage</code> – either success or error. The success variant carries <code>duration_ms</code>, <code>duration_api_ms</code>, <code>num_turns</code>, <code>total_cost_usd</code>, per-model usage breakdowns, and the agent’s final text result. The error variant adds a <code>subtype</code> discriminant (<code>error_during_execution</code>, <code>error_max_turns</code>, <code>error_max_budget_usd</code>, <code>error_max_structured_output_retries</code>) and an <code>errors</code> array. This <span class="kw-sage">structured format</span> enables CI pipelines to parse agent outcomes without scraping text.</p>
+</section>
+<section id="schema-driven-design" class="level3">
+<h3 class="anchored" data-anchor-id="schema-driven-design">3.4 Schema-Driven Design</h3>
+<p>A recurring pattern is the use of <span class="kw-sage">lazySchema()</span> wrappers around every schema definition. This defers Zod schema construction until first access, avoiding circular reference issues and reducing startup cost. The schemas are the <span class="kw-sage">canonical definitions</span> – TypeScript types are <em>generated</em> from them via <code>scripts/generate-sdk-types.ts</code>, ensuring that runtime validation and static typing can never drift.</p>
+<hr>
+</section>
+</section>
+<section id="control-protocol-out-of-band-governance" class="level2">
+<h2 class="anchored" data-anchor-id="control-protocol-out-of-band-governance">4. Control Protocol: Out-of-Band Governance</h2>
+<p><strong>The control protocol (<code>controlSchemas.ts</code>, 663 LOC) defines a request-response mechanism that runs alongside the conversational data stream. It handles governance events – permission requests, elicitations, session configuration changes – that require bidirectional communication between the agent engine and its host.</strong></p>
+<section id="the-request-response-pattern" class="level3">
+<h3 class="anchored" data-anchor-id="the-request-response-pattern">4.1 The Request-Response Pattern</h3>
+<p>Every control interaction follows the same envelope:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Outbound: agent -&gt; host</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="im">export</span> <span class="kw">const</span> SDKControlRequestSchema <span class="op">=</span> <span class="fu">lazySchema</span>(() <span class="kw">=&gt;</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  z<span class="op">.</span><span class="fu">object</span>({</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    type<span class="op">:</span> z<span class="op">.</span><span class="fu">literal</span>(<span class="st">'control_request'</span>)<span class="op">,</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    request_id<span class="op">:</span> z<span class="op">.</span><span class="fu">string</span>()<span class="op">,</span>       <span class="co">// correlation ID</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    request<span class="op">:</span> <span class="fu">SDKControlRequestInnerSchema</span>()<span class="op">,</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  })<span class="op">,</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co">// Inbound: host -&gt; agent</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="im">export</span> <span class="kw">const</span> SDKControlResponseSchema <span class="op">=</span> <span class="fu">lazySchema</span>(() <span class="kw">=&gt;</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  z<span class="op">.</span><span class="fu">object</span>({</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    type<span class="op">:</span> z<span class="op">.</span><span class="fu">literal</span>(<span class="st">'control_response'</span>)<span class="op">,</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    response<span class="op">:</span> z<span class="op">.</span><span class="fu">union</span>([</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>      <span class="fu">ControlResponseSchema</span>()<span class="op">,</span>       <span class="co">// { subtype: 'success', ... }</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>      <span class="fu">ControlErrorResponseSchema</span>()<span class="op">,</span>  <span class="co">// { subtype: 'error', ... }</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    ])<span class="op">,</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>  })<span class="op">,</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <code>request_id</code> is a <span class="kw-sage">correlation ID</span> that links a response to its originating request. This is essential because multiple control requests can be in flight simultaneously – for example, two concurrent tool executions may each require permission.</p>
+</section>
+<section id="control-request-taxonomy" class="level3">
+<h3 class="anchored" data-anchor-id="control-request-taxonomy">4.2 Control Request Taxonomy</h3>
+<p>The <code>SDKControlRequestInnerSchema</code> is a union of 20 request subtypes:</p>
+<div id="tbl-control-requests" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-control-requests-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;2: Control protocol request subtypes. The protocol governs permissions, configuration, MCP management, and session lifecycle.
+</figcaption>
+<div aria-describedby="tbl-control-requests-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Subtype</th>
+<th>Direction</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>initialize</code></td>
+<td>Host -&gt; Agent</td>
+<td>Session setup: hooks, MCP servers, agents, JSON schema</td>
+</tr>
+<tr class="even">
+<td><code>can_use_tool</code></td>
+<td>Agent -&gt; Host</td>
+<td><span class="kw-terra">Permission request</span>: tool name, input, suggestions</td>
+</tr>
+<tr class="odd">
+<td><code>interrupt</code></td>
+<td>Host -&gt; Agent</td>
+<td>Cancel current conversation turn</td>
+</tr>
+<tr class="even">
+<td><code>set_permission_mode</code></td>
+<td>Host -&gt; Agent</td>
+<td>Change permission enforcement mode</td>
+</tr>
+<tr class="odd">
+<td><code>set_model</code></td>
+<td>Host -&gt; Agent</td>
+<td>Switch model mid-session</td>
+</tr>
+<tr class="even">
+<td><code>mcp_status</code></td>
+<td>Host -&gt; Agent</td>
+<td>Query MCP server connection states</td>
+</tr>
+<tr class="odd">
+<td><code>get_context_usage</code></td>
+<td>Host -&gt; Agent</td>
+<td>Context window usage breakdown</td>
+</tr>
+<tr class="even">
+<td><code>hook_callback</code></td>
+<td>Agent -&gt; Host</td>
+<td>Deliver hook callback with input data</td>
+</tr>
+<tr class="odd">
+<td><code>elicitation</code></td>
+<td>Agent -&gt; Host</td>
+<td>MCP server requesting user input</td>
+</tr>
+<tr class="even">
+<td><code>rewind_files</code></td>
+<td>Host -&gt; Agent</td>
+<td>Revert file changes to a message boundary</td>
+</tr>
+<tr class="odd">
+<td><code>mcp_message</code></td>
+<td>Host -&gt; Agent</td>
+<td>Forward JSON-RPC to an MCP server</td>
+</tr>
+<tr class="even">
+<td><code>mcp_set_servers</code></td>
+<td>Host -&gt; Agent</td>
+<td>Replace dynamically managed MCP servers</td>
+</tr>
+<tr class="odd">
+<td><code>apply_flag_settings</code></td>
+<td>Host -&gt; Agent</td>
+<td>Merge settings into the flag layer</td>
+</tr>
+<tr class="even">
+<td><code>get_settings</code></td>
+<td>Host -&gt; Agent</td>
+<td>Retrieve effective merged settings</td>
+</tr>
+<tr class="odd">
+<td><code>cancel_async_message</code></td>
+<td>Host -&gt; Agent</td>
+<td>Drop a queued async user message</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+</section>
+<section id="the-permission-request-flow" class="level3">
+<h3 class="anchored" data-anchor-id="the-permission-request-flow">4.3 The Permission Request Flow</h3>
+<p>The most critical control interaction is <span class="kw-terra">permission prompting</span>. When the agent wants to execute a tool that requires user approval, the engine emits a <code>can_use_tool</code> control request containing the tool name, its input, and optional <code>permission_suggestions</code> (pre-computed rules the host can adopt). The host presents this to the user (or to an automated policy), then returns a <code>control_response</code> with <code>behavior: 'allow'</code> or <code>behavior: 'deny'</code>.</p>
+<p>The <code>PermissionResultSchema</code> encodes this decision with optional <code>updatedInput</code> (the host may modify tool arguments before allowing), <code>updatedPermissions</code> (new rules to persist), and <code>decisionClassification</code> (<code>user_temporary</code>, <code>user_permanent</code>, <code>user_reject</code>) for telemetry.</p>
+</section>
+<section id="stdin-and-stdout-aggregates" class="level3">
+<h3 class="anchored" data-anchor-id="stdin-and-stdout-aggregates">4.4 Stdin and Stdout Aggregates</h3>
+<p>The protocol defines two aggregate schemas that enumerate every valid message on each channel:</p>
+<ul>
+<li><strong><code>StdoutMessageSchema</code></strong>: <code>SDKMessage | SDKControlResponse | SDKControlRequest | SDKControlCancelRequest | SDKKeepAliveMessage</code> – everything the agent can write.</li>
+<li><strong><code>StdinMessageSchema</code></strong>: <code>SDKUserMessage | SDKControlRequest | SDKControlResponse | SDKKeepAliveMessage | SDKUpdateEnvironmentVariablesMessage</code> – everything the host can write.</li>
+</ul>
+<p>Note that both <code>SDKControlRequest</code> and <code>SDKControlResponse</code> appear in <em>both</em> directions. Control requests can originate from either side: the agent requests permission from the host; the host requests configuration changes from the agent.</p>
+<hr>
+</section>
+</section>
+<section id="structuredio-the-protocol-adapter" class="level2">
+<h2 class="anchored" data-anchor-id="structuredio-the-protocol-adapter">5. StructuredIO: The Protocol Adapter</h2>
+<p><strong><code>StructuredIO</code> (<code>structuredIO.ts</code>, 859 LOC) is the bridge between the raw NDJSON stream and the agent engine’s typed interfaces. It transforms a stream of text lines into typed messages, manages pending control requests with correlation IDs, and handles the concurrency of racing permission decisions.</strong></p>
+<section id="architecture" class="level3">
+<h3 class="anchored" data-anchor-id="architecture">5.1 Architecture</h3>
+<p>The <code>StructuredIO</code> class maintains three key data structures:</p>
+<ol type="1">
+<li><strong><code>structuredInput</code></strong>: An <span class="kw-slate">AsyncGenerator</span> that yields parsed <code>StdinMessage | SDKMessage</code> objects from the raw stdin line stream.</li>
+<li><strong><code>pendingRequests</code></strong>: A <code>Map&lt;string, PendingRequest&lt;T&gt;&gt;</code> that tracks outstanding control requests by their <code>request_id</code>. Each entry holds a Promise’s resolve/reject callbacks and an optional <span class="kw-slate">Zod</span> schema for response validation.</li>
+<li><strong><code>resolvedToolUseIds</code></strong>: A <code>Set&lt;string&gt;</code> that tracks tool use IDs whose permission flow has completed, preventing duplicate <code>control_response</code> messages from corrupting the conversation.</li>
+</ol>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">export</span> <span class="kw">class</span> StructuredIO {</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">readonly</span> structuredInput<span class="op">:</span> AsyncGenerator<span class="op">&lt;</span>StdinMessage <span class="op">|</span> SDKMessage<span class="op">&gt;</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">private</span> <span class="kw">readonly</span> pendingRequests <span class="op">=</span> <span class="kw">new</span> <span class="bu">Map</span><span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> PendingRequest<span class="op">&lt;</span><span class="dt">unknown</span><span class="op">&gt;&gt;</span>()</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">private</span> <span class="kw">readonly</span> resolvedToolUseIds <span class="op">=</span> <span class="kw">new</span> <span class="bu">Set</span><span class="op">&lt;</span><span class="dt">string</span><span class="op">&gt;</span>()</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">// ...</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="the-read-loop-line-oriented-ndjson-parsing" class="level3">
+<h3 class="anchored" data-anchor-id="the-read-loop-line-oriented-ndjson-parsing">5.2 The Read Loop: Line-Oriented NDJSON Parsing</h3>
+<p>The <code>read()</code> method is a private AsyncGenerator that consumes the raw input stream, splits it into lines, and dispatches each line through <code>processLine()</code>. The implementation handles partial lines (buffering across <code>for await</code> blocks), prepended synthetic user messages, and stream closure:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">private</span> <span class="kw">async</span> <span class="op">*</span><span class="fu">read</span>() {</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> content <span class="op">=</span> <span class="st">''</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> splitAndProcess <span class="op">=</span> <span class="kw">async</span> <span class="kw">function</span><span class="op">*</span> (<span class="kw">this</span><span class="op">:</span> StructuredIO) {</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="op">;;</span>) {</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (<span class="kw">this</span><span class="op">.</span><span class="at">prependedLines</span><span class="op">.</span><span class="at">length</span> <span class="op">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>        content <span class="op">=</span> <span class="kw">this</span><span class="op">.</span><span class="at">prependedLines</span><span class="op">.</span><span class="fu">join</span>(<span class="st">''</span>) <span class="op">+</span> content</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">this</span><span class="op">.</span><span class="at">prependedLines</span> <span class="op">=</span> []</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> newline <span class="op">=</span> content<span class="op">.</span><span class="fu">indexOf</span>(<span class="st">'</span><span class="sc">\n</span><span class="st">'</span>)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (newline <span class="op">===</span> <span class="op">-</span><span class="dv">1</span>) <span class="cf">break</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> line <span class="op">=</span> content<span class="op">.</span><span class="fu">slice</span>(<span class="dv">0</span><span class="op">,</span> newline)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>      content <span class="op">=</span> content<span class="op">.</span><span class="fu">slice</span>(newline <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> message <span class="op">=</span> <span class="cf">await</span> <span class="kw">this</span><span class="op">.</span><span class="fu">processLine</span>(line)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (message) <span class="kw">yield</span> message</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>  }<span class="op">.</span><span class="fu">bind</span>(<span class="kw">this</span>)</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>  <span class="co">// ...</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <code>prependUserMessage()</code> method allows injecting synthetic user turns that are yielded <em>before</em> the next real stdin message. This is used by subsystems that need to inject messages into the conversation programmatically.</p>
+</section>
+<section id="control-request-resolution" class="level3">
+<h3 class="anchored" data-anchor-id="control-request-resolution">5.3 Control Request Resolution</h3>
+<p>When <code>processLine()</code> encounters a <code>control_response</code>, it looks up the matching <code>PendingRequest</code> by <code>request_id</code>, validates the response payload against the stored Zod schema, and resolves or rejects the Promise:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (message<span class="op">.</span><span class="at">type</span> <span class="op">===</span> <span class="st">'control_response'</span>) {</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> request <span class="op">=</span> <span class="kw">this</span><span class="op">.</span><span class="at">pendingRequests</span><span class="op">.</span><span class="fu">get</span>(message<span class="op">.</span><span class="at">response</span><span class="op">.</span><span class="at">request_id</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="op">!</span>request) {</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Check resolvedToolUseIds to ignore duplicates</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ...</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="kw">undefined</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">this</span><span class="op">.</span><span class="fu">trackResolvedToolUseId</span>(request<span class="op">.</span><span class="at">request</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">this</span><span class="op">.</span><span class="at">pendingRequests</span><span class="op">.</span><span class="fu">delete</span>(message<span class="op">.</span><span class="at">response</span><span class="op">.</span><span class="at">request_id</span>)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (message<span class="op">.</span><span class="at">response</span><span class="op">.</span><span class="at">subtype</span> <span class="op">===</span> <span class="st">'error'</span>) {</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    request<span class="op">.</span><span class="fu">reject</span>(<span class="kw">new</span> <span class="bu">Error</span>(message<span class="op">.</span><span class="at">response</span><span class="op">.</span><span class="at">error</span>))</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    request<span class="op">.</span><span class="fu">resolve</span>(request<span class="op">.</span><span class="at">schema</span><span class="op">.</span><span class="fu">parse</span>(result))</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="duplicate-prevention" class="level3">
+<h3 class="anchored" data-anchor-id="duplicate-prevention">5.4 Duplicate Prevention</h3>
+<p>The <code>resolvedToolUseIds</code> set is bounded to 1,000 entries (the <code>MAX_RESOLVED_TOOL_USE_IDS</code> constant) with FIFO eviction. This prevents unbounded memory growth in long sessions while maintaining enough history to catch duplicate <code>control_response</code> deliveries – which can occur from <span class="kw-slate">WebSocket</span> reconnects in remote scenarios. Without this guard, duplicate responses would push duplicate assistant messages into <code>mutableMessages</code>, causing API 400 errors (“tool_use ids must be unique”).</p>
+</section>
+<section id="permission-racing-hooks-vs.-sdk-host" class="level3">
+<h3 class="anchored" data-anchor-id="permission-racing-hooks-vs.-sdk-host">5.5 Permission Racing: Hooks vs.&nbsp;SDK Host</h3>
+<p>The <code>createCanUseTool()</code> method implements a <span class="kw-mauve">race pattern</span> between PermissionRequest hooks and the SDK host’s permission prompt. Both start simultaneously:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> hookPromise <span class="op">=</span> <span class="fu">executePermissionRequestHooksForSDK</span>(<span class="op">...</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">.</span><span class="fu">then</span>(decision <span class="kw">=&gt;</span> ({ source<span class="op">:</span> <span class="st">'hook'</span><span class="op">,</span> decision }))</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> sdkPromise <span class="op">=</span> <span class="kw">this</span><span class="op">.</span><span class="fu">sendRequest</span><span class="op">&lt;</span>PermissionToolOutput<span class="op">&gt;</span>(<span class="op">...</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">.</span><span class="fu">then</span>(result <span class="kw">=&gt;</span> ({ source<span class="op">:</span> <span class="st">'sdk'</span><span class="op">,</span> result }))</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> winner <span class="op">=</span> <span class="cf">await</span> <span class="bu">Promise</span><span class="op">.</span><span class="fu">race</span>([hookPromise<span class="op">,</span> sdkPromise])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>If a hook decides first (allow or deny), it aborts the pending SDK request via an <code>AbortController</code>. If the SDK host responds first, the hook result is ignored. This design ensures that automated policies (hooks) and interactive prompts (SDK host) can coexist without blocking each other.</p>
+<hr>
+</section>
+</section>
+<section id="data-plane-vs.-control-plane" class="level2">
+<h2 class="anchored" data-anchor-id="data-plane-vs.-control-plane">6. Data Plane vs.&nbsp;Control Plane</h2>
+<p><strong>The protocol exhibits a clean separation between data-plane messages (conversational content) and control-plane messages (governance events). This split mirrors network architecture patterns where the data path and the management path are isolated to prevent interference.</strong></p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-data-control-planes" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-data-control-planes-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-data-control-planes">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart LR
+  HOST["&lt;b&gt;SDK Host&lt;/b&gt;&lt;br&gt;&lt;i&gt;VS Code, CI,&lt;br&gt;Python SDK&lt;/i&gt;"]
+  AGENT["&lt;b&gt;Agent Engine&lt;/b&gt;&lt;br&gt;&lt;i&gt;query loop + tools&lt;/i&gt;"]
+
+  subgraph DATA ["Data Plane"]
+    direction LR
+    USER["user"] --&gt; ASST["assistant"]
+    ASST --&gt; STREAM["stream event"]
+    RESULT["result"]
+    SYSTEM["system (init)"]
+  end
+
+  subgraph CTRL ["Control Plane"]
+    direction LR
+    PERM["can use tool"]
+    ELICIT["elicitation"]
+    CONF["set model"]
+    INTR["interrupt"]
+    HOOK["hook callback"]
+  end
+
+  HOST --&gt;|"data"| DATA
+  DATA --&gt;|"data"| AGENT
+  HOST &lt;--&gt;|"control"| CTRL
+  CTRL &lt;--&gt;|"control"| AGENT
+
+  style HOST fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style AGENT fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style USER fill:#C2856E,color:#fff,stroke:#A06A54
+  style ASST fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style STREAM fill:#C4A882,color:#fff,stroke:#A08562
+  style RESULT fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style SYSTEM fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style PERM fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style ELICIT fill:#C2856E,color:#fff,stroke:#A06A54
+  style CONF fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style INTR fill:#C4A882,color:#fff,stroke:#A08562
+  style HOOK fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-data-control-planes-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: Data plane vs.&nbsp;control plane message flow. Conversational messages (user, assistant, stream events, results) flow on the data plane. Governance messages (permission requests, elicitations, configuration changes) flow on the control plane. Both share the same physical NDJSON stream but are logically separated by message type.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> The SDK Host (left) and Agent Engine (right) communicate through two logically separated channels sharing the same NDJSON stream. The upper “Data Plane” group shows unidirectional conversational messages flowing from user to assistant to stream events, plus result and system init messages. The lower “Control Plane” group shows bidirectional governance messages – permission requests, elicitations, model changes, interrupts, and hook callbacks – indicated by the two-headed arrows. The separation illustrates that conversational content and governance events are multiplexed on one stream but never interfere with each other.</p>
+<section id="data-plane-characteristics" class="level3">
+<h3 class="anchored" data-anchor-id="data-plane-characteristics">6.1 Data Plane Characteristics</h3>
+<p>Data-plane messages are <span class="kw-sage">unidirectional</span> and <span class="kw-sage">fire-and-forget</span>. The host sends <code>user</code> messages; the agent responds with <code>assistant</code>, <code>stream_event</code>, and <code>result</code> messages. No acknowledgment is required. The conversation is append-only: messages accumulate in the session transcript, and any participant can reconstruct the conversation state from the message sequence.</p>
+<p>Data-plane messages carry <code>uuid</code> and <code>session_id</code> fields for global identification. The <code>SDKUserMessage</code> includes <code>parent_tool_use_id</code> (for tool result routing), <code>isSynthetic</code> (for programmatically injected messages), <code>priority</code> (<code>now</code>, <code>next</code>, <code>later</code> for message queue ordering), and an optional <code>timestamp</code> for cross-process clock reconciliation.</p>
+</section>
+<section id="control-plane-characteristics" class="level3">
+<h3 class="anchored" data-anchor-id="control-plane-characteristics">6.2 Control Plane Characteristics</h3>
+<p>Control-plane messages are <span class="kw-terra">bidirectional</span> and <span class="kw-terra">request-response</span>. They carry a <code>request_id</code> for correlation. They are <em>transient</em> – they affect the agent’s behavior but are not part of the conversation transcript. A permission decision, once made, modifies the permission context; the decision itself is not replayed on session resume.</p>
+<p>The control plane supports cancellation via <code>SDKControlCancelRequestSchema</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">export</span> <span class="kw">const</span> SDKControlCancelRequestSchema <span class="op">=</span> <span class="fu">lazySchema</span>(() <span class="kw">=&gt;</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  z<span class="op">.</span><span class="fu">object</span>({</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    type<span class="op">:</span> z<span class="op">.</span><span class="fu">literal</span>(<span class="st">'control_cancel_request'</span>)<span class="op">,</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    request_id<span class="op">:</span> z<span class="op">.</span><span class="fu">string</span>()<span class="op">,</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  })<span class="op">,</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This enables scenarios where the bridge (claude.ai forwarding) resolves a permission request before the SDK host does – the bridge injects a <code>control_response</code> and simultaneously sends a <code>control_cancel_request</code> to abort the SDK host’s pending callback.</p>
+</section>
+<section id="why-one-stream" class="level3">
+<h3 class="anchored" data-anchor-id="why-one-stream">6.3 Why One Stream?</h3>
+<p>Both planes share a single NDJSON stream (stdout for outbound, stdin for inbound) rather than using separate channels. This is a pragmatic choice: subprocess stdio is universally available across platforms and runtimes, and multiplexing on a single stream avoids the complexity of managing multiple file descriptors or sockets. The <code>type</code> field on each JSON object (<code>user</code>, <code>assistant</code>, <code>control_request</code>, <code>control_response</code>, <code>keep_alive</code>) provides sufficient discrimination.</p>
+<hr>
+</section>
+</section>
+<section id="sdk-message-adapter-remote-consumption" class="level2">
+<h2 class="anchored" data-anchor-id="sdk-message-adapter-remote-consumption">7. SDK Message Adapter: Remote Consumption</h2>
+<p><strong>The <code>sdkMessageAdapter.ts</code> (302 LOC) bridges the gap between SDK message format and the REPL’s internal <code>Message</code> types. It enables remote clients – particularly the Claude Code Remote (CCR) backend – to render agent output using the same React components as the local CLI.</strong></p>
+<section id="the-conversion-function" class="level3">
+<h3 class="anchored" data-anchor-id="the-conversion-function">7.1 The Conversion Function</h3>
+<p>The central function <code>convertSDKMessage()</code> takes an <code>SDKMessage</code> and returns a discriminated union:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">export type</span> ConvertedMessage <span class="op">=</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> { type<span class="op">:</span> <span class="st">'message'</span><span class="op">;</span> message<span class="op">:</span> Message }</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> { type<span class="op">:</span> <span class="st">'stream_event'</span><span class="op">;</span> event<span class="op">:</span> StreamEvent }</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> { type<span class="op">:</span> <span class="st">'ignored'</span> }</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <code>ignored</code> case is significant. Many SDK message types (auth_status, tool_use_summary, rate_limit_event) are SDK-only events that have no REPL rendering equivalent. The adapter explicitly classifies these as ignorable rather than failing on unknown types, enabling forward compatibility as new message types are added.</p>
+</section>
+<section id="message-type-mapping" class="level3">
+<h3 class="anchored" data-anchor-id="message-type-mapping">7.2 Message Type Mapping</h3>
+<p>The adapter maps SDK types to REPL types:</p>
+<ul>
+<li><strong><code>assistant</code></strong> maps to <code>AssistantMessage</code> (direct structural conversion).</li>
+<li><strong><code>stream_event</code></strong> maps to <code>StreamEvent</code> (extracts the <code>event</code> field).</li>
+<li><strong><code>result</code></strong> maps to <code>SystemMessage</code> only for error results; success results are classified as <code>ignored</code> because the UI uses <code>isLoading=false</code> as the success signal.</li>
+<li><strong><code>system</code> (init)</strong> maps to a <code>SystemMessage</code> with the model name.</li>
+<li><strong><code>system</code> (status)</strong> maps to a <code>SystemMessage</code> for compaction events.</li>
+<li><strong><code>system</code> (compact_boundary)</strong> maps to a <code>SystemMessage</code> with compact metadata for session resume splicing.</li>
+<li><strong><code>tool_progress</code></strong> maps to a <code>SystemMessage</code> with elapsed-time information.</li>
+<li><strong><code>user</code></strong> messages are context-dependent: tool results are converted when <code>convertToolResults</code> is true (direct-connect mode), and user text messages are converted when <code>convertUserTextMessages</code> is true (historical replay). In live WebSocket mode, both are <code>ignored</code> because the REPL adds them locally.</li>
+</ul>
+</section>
+<section id="graceful-degradation" class="level3">
+<h3 class="anchored" data-anchor-id="graceful-degradation">7.3 Graceful Degradation</h3>
+<p>The adapter’s <code>default</code> case logs unknown message types via <code>logForDebugging</code> and returns <code>ignored</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="cf">default</span><span class="op">:</span> {</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">logForDebugging</span>(</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="vs">`[sdkMessageAdapter] Unknown message type: </span><span class="sc">${</span>(msg <span class="im">as</span> { type<span class="op">:</span> <span class="dt">string</span> })<span class="op">.</span><span class="at">type</span><span class="sc">}</span><span class="vs">`</span><span class="op">,</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> { type<span class="op">:</span> <span class="st">'ignored'</span> }</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This pattern is essential for <span class="kw-sage">forward compatibility</span>. The backend may add new message types before clients are updated. Rather than crashing or losing the session, the adapter gracefully degrades – new message types are silently ignored until the client adds explicit support.</p>
+<hr>
+</section>
+</section>
+<section id="synthesis-the-protocol-as-architecture" class="level2">
+<h2 class="anchored" data-anchor-id="synthesis-the-protocol-as-architecture">8. Synthesis: The Protocol as Architecture</h2>
+<p>The structured I/O layer reveals a key architectural principle: <strong>the agent engine is a protocol-defined service, not an application</strong>. The CLI, SDK, and MCP modes are not three different programs – they are three protocol adapters over a single engine.</p>
+<p>This design has several consequences:</p>
+<ol type="1">
+<li><p><strong>Testability</strong>: The SDK mode enables headless testing of the full agent stack. A test harness can send JSON messages and assert on JSON responses without rendering a terminal.</p></li>
+<li><p><strong>Composability</strong>: The MCP server mode makes Claude Code’s tools available to other agents. An orchestrating agent can invoke <code>BashTool</code>, <code>ReadTool</code>, or <code>EditTool</code> through the standard MCP protocol without knowing they belong to Claude Code.</p></li>
+<li><p><strong>Governance at the boundary</strong>: The control plane’s request-response pattern means that <em>every</em> permission decision is explicit and auditable. A CI pipeline can implement <code>dontAsk</code> mode (deny if not pre-approved); a VS Code extension can render a rich permission dialog; both use the same <code>can_use_tool</code> protocol.</p></li>
+<li><p><strong>Forward compatibility</strong>: The schema-driven approach (Zod schemas as canonical definitions, generated types) means that adding a new message type requires only adding a schema variant and extending the union. Existing consumers that do not handle the new type default to <code>ignored</code>.</p></li>
+</ol>
+<p>The <span class="kw-slate">25 data-plane message types</span> and <span class="kw-slate">21 control-plane request subtypes</span> may appear excessive. But they reflect the genuine complexity of operating an AI agent as a service: session initialization, streaming, tool progress, hook lifecycle, task management, rate limiting, authentication, and configuration – each demands its own wire format. The alternative – a simpler protocol with opaque payloads – would push parsing complexity into every consumer. By making the protocol explicit and schema-validated, Claude Code ensures that the same agent engine can serve a terminal user, a Python script, and an MCP client with equal fidelity.</p>
+<hr>
+</section>
+<section id="appendix-sdk-messages" class="level2 column-page">
+<h2 class="anchored" data-anchor-id="appendix-sdk-messages">Appendix A: Full List of SDK Message Types</h2>
+<p>All data-plane messages are defined in <code>src/schemas/coreSchemas.ts</code>. Messages flow from agent to host (stdout) unless noted otherwise.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 25%">
+<col style="width: 29%">
+<col style="width: 21%">
+<col style="width: 17%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Schema Name</th>
+<th>Type / Subtype</th>
+<th>Direction</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td><code>SDKUserMessage</code></td>
+<td><code>user</code></td>
+<td>stdin</td>
+<td>User prompt or tool results</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td><code>SDKAssistantMessage</code></td>
+<td><code>assistant</code></td>
+<td>stdout</td>
+<td>Model response with text and tool calls</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td><code>SDKPartialAssistantMessage</code></td>
+<td><code>stream_event</code></td>
+<td>stdout</td>
+<td>Streaming delta from API</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td><code>SDKResultMessage</code></td>
+<td><code>result</code> / <code>success</code></td>
+<td>stdout</td>
+<td>Turn completed successfully (cost, usage, duration)</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td></td>
+<td><code>result</code> / <code>error_during_execution</code></td>
+<td>stdout</td>
+<td>Error during conversation execution</td>
+</tr>
+<tr class="even">
+<td>6</td>
+<td></td>
+<td><code>result</code> / <code>error_max_turns</code></td>
+<td>stdout</td>
+<td>Hit max turn limit</td>
+</tr>
+<tr class="odd">
+<td>7</td>
+<td></td>
+<td><code>result</code> / <code>error_max_budget_usd</code></td>
+<td>stdout</td>
+<td>Hit cost budget limit</td>
+</tr>
+<tr class="even">
+<td>8</td>
+<td><code>SDKSystemMessage</code></td>
+<td><code>system</code> / <code>init</code></td>
+<td>stdout</td>
+<td>Session initialization (tools, model, MCP, permissions)</td>
+</tr>
+<tr class="odd">
+<td>9</td>
+<td><code>SDKStatusMessage</code></td>
+<td><code>system</code> / <code>status</code></td>
+<td>stdout</td>
+<td>Status update (e.g., “compacting”)</td>
+</tr>
+<tr class="even">
+<td>10</td>
+<td><code>SDKCompactBoundaryMessage</code></td>
+<td><code>system</code> / <code>compact_boundary</code></td>
+<td>stdout</td>
+<td>Compaction boundary with token counts</td>
+</tr>
+<tr class="odd">
+<td>11</td>
+<td><code>SDKAPIRetryMessage</code></td>
+<td><code>system</code> / <code>api_retry</code></td>
+<td>stdout</td>
+<td>API request failed, retrying after delay</td>
+</tr>
+<tr class="even">
+<td>12</td>
+<td><code>SDKLocalCommandOutputMessage</code></td>
+<td><code>system</code> / <code>local_command_output</code></td>
+<td>stdout</td>
+<td>Slash command output (e.g., <code>/cost</code>)</td>
+</tr>
+<tr class="odd">
+<td>13</td>
+<td><code>SDKPostTurnSummaryMessage</code></td>
+<td><code>system</code> / <code>post_turn_summary</code></td>
+<td>stdout</td>
+<td>Background summary of turn outcome</td>
+</tr>
+<tr class="even">
+<td>14</td>
+<td><code>SDKHookStartedMessage</code></td>
+<td><code>system</code> / <code>hook_started</code></td>
+<td>stdout</td>
+<td>Hook execution began</td>
+</tr>
+<tr class="odd">
+<td>15</td>
+<td><code>SDKHookProgressMessage</code></td>
+<td><code>system</code> / <code>hook_progress</code></td>
+<td>stdout</td>
+<td>Hook stdout/stderr output</td>
+</tr>
+<tr class="even">
+<td>16</td>
+<td><code>SDKHookResponseMessage</code></td>
+<td><code>system</code> / <code>hook_response</code></td>
+<td>stdout</td>
+<td>Hook completed with exit code</td>
+</tr>
+<tr class="odd">
+<td>17</td>
+<td><code>SDKTaskStartedMessage</code></td>
+<td><code>system</code> / <code>task_started</code></td>
+<td>stdout</td>
+<td>Background task spawned</td>
+</tr>
+<tr class="even">
+<td>18</td>
+<td><code>SDKTaskProgressMessage</code></td>
+<td><code>system</code> / <code>task_progress</code></td>
+<td>stdout</td>
+<td>Background task progress (tokens, summary)</td>
+</tr>
+<tr class="odd">
+<td>19</td>
+<td><code>SDKTaskNotificationMessage</code></td>
+<td><code>system</code> / <code>task_notification</code></td>
+<td>stdout</td>
+<td>Background task completed/failed</td>
+</tr>
+<tr class="even">
+<td>20</td>
+<td><code>SDKSessionStateChangedMessage</code></td>
+<td><code>system</code> / <code>session_state_changed</code></td>
+<td>stdout</td>
+<td>Session state transition (idle/running/requires_action)</td>
+</tr>
+<tr class="odd">
+<td>21</td>
+<td><code>SDKFilesPersistedEventSchema</code></td>
+<td><code>system</code> / <code>files_persisted</code></td>
+<td>stdout</td>
+<td>Files persisted with IDs</td>
+</tr>
+<tr class="even">
+<td>22</td>
+<td><code>SDKToolProgressMessage</code></td>
+<td><code>tool_progress</code></td>
+<td>stdout</td>
+<td>Tool execution in progress (elapsed time)</td>
+</tr>
+<tr class="odd">
+<td>23</td>
+<td><code>SDKToolUseSummaryMessage</code></td>
+<td><code>tool_use_summary</code></td>
+<td>stdout</td>
+<td>Cumulative tool call summary</td>
+</tr>
+<tr class="even">
+<td>24</td>
+<td><code>SDKAuthStatusMessage</code></td>
+<td><code>auth_status</code></td>
+<td>stdout</td>
+<td>Authentication state change</td>
+</tr>
+<tr class="odd">
+<td>25</td>
+<td><code>SDKRateLimitEventMessage</code></td>
+<td><code>rate_limit_event</code></td>
+<td>stdout</td>
+<td>Rate limit status change</td>
+</tr>
+<tr class="even">
+<td>26</td>
+<td><code>SDKElicitationCompleteMessage</code></td>
+<td><code>system</code> / <code>elicitation_complete</code></td>
+<td>stdout</td>
+<td>MCP elicitation confirmed</td>
+</tr>
+<tr class="odd">
+<td>27</td>
+<td><code>SDKPromptSuggestionMessage</code></td>
+<td><code>prompt_suggestion</code></td>
+<td>stdout</td>
+<td>Predicted next user prompt</td>
+</tr>
+</tbody>
+</table>
+<p>Wire-level wrapper types (both directions): <code>SDKControlRequest</code>, <code>SDKControlResponse</code>, <code>SDKControlCancelRequest</code>, <code>SDKKeepAliveMessage</code>, <code>SDKUpdateEnvironmentVariablesMessage</code>.</p>
+<hr>
+</section>
+<section id="appendix-control-subtypes" class="level2 column-page">
+<h2 class="anchored" data-anchor-id="appendix-control-subtypes">Appendix B: Full List of Control Request Subtypes</h2>
+<p>All control-plane request subtypes are defined in <code>src/schemas/controlSchemas.ts</code>. Requests can originate from either side; responses flow in the opposite direction.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 6%">
+<col style="width: 19%">
+<col style="width: 23%">
+<col style="width: 30%">
+<col style="width: 19%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Subtype</th>
+<th>Direction</th>
+<th>Has Response?</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td><code>initialize</code></td>
+<td>host→agent</td>
+<td>Yes</td>
+<td>Initialize session (hooks, MCP, agents, system prompt)</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td><code>interrupt</code></td>
+<td>host→agent</td>
+<td>No</td>
+<td>Interrupt current conversation turn</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td><code>can_use_tool</code></td>
+<td>agent→host</td>
+<td>Yes</td>
+<td>Request permission to use a tool</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td><code>set_permission_mode</code></td>
+<td>host→agent</td>
+<td>No</td>
+<td>Set permission mode (default/acceptEdits/bypassPermissions/plan/dontAsk)</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td><code>set_model</code></td>
+<td>host→agent</td>
+<td>No</td>
+<td>Switch model for subsequent turns</td>
+</tr>
+<tr class="even">
+<td>6</td>
+<td><code>set_max_thinking_tokens</code></td>
+<td>host→agent</td>
+<td>No</td>
+<td>Set extended thinking token budget</td>
+</tr>
+<tr class="odd">
+<td>7</td>
+<td><code>mcp_status</code></td>
+<td>host→agent</td>
+<td>Yes</td>
+<td>Query MCP server connection status</td>
+</tr>
+<tr class="even">
+<td>8</td>
+<td><code>get_context_usage</code></td>
+<td>host→agent</td>
+<td>Yes</td>
+<td>Query context window token breakdown</td>
+</tr>
+<tr class="odd">
+<td>9</td>
+<td><code>hook_callback</code></td>
+<td>host→agent</td>
+<td>No</td>
+<td>Deliver hook callback with event data</td>
+</tr>
+<tr class="even">
+<td>10</td>
+<td><code>mcp_message</code></td>
+<td>host→agent</td>
+<td>No</td>
+<td>Send JSON-RPC message to MCP server</td>
+</tr>
+<tr class="odd">
+<td>11</td>
+<td><code>mcp_set_servers</code></td>
+<td>host→agent</td>
+<td>Yes</td>
+<td>Replace dynamically managed MCP servers</td>
+</tr>
+<tr class="even">
+<td>12</td>
+<td><code>mcp_reconnect</code></td>
+<td>host→agent</td>
+<td>No</td>
+<td>Reconnect a disconnected MCP server</td>
+</tr>
+<tr class="odd">
+<td>13</td>
+<td><code>mcp_toggle</code></td>
+<td>host→agent</td>
+<td>No</td>
+<td>Enable or disable an MCP server</td>
+</tr>
+<tr class="even">
+<td>14</td>
+<td><code>rewind_files</code></td>
+<td>host→agent</td>
+<td>Yes</td>
+<td>Rewind file changes since a specific message</td>
+</tr>
+<tr class="odd">
+<td>15</td>
+<td><code>cancel_async_message</code></td>
+<td>host→agent</td>
+<td>Yes</td>
+<td>Drop pending async user message by UUID</td>
+</tr>
+<tr class="even">
+<td>16</td>
+<td><code>seed_read_state</code></td>
+<td>host→agent</td>
+<td>No</td>
+<td>Seed file read cache with path + mtime</td>
+</tr>
+<tr class="odd">
+<td>17</td>
+<td><code>reload_plugins</code></td>
+<td>host→agent</td>
+<td>Yes</td>
+<td>Reload plugins, return refreshed session</td>
+</tr>
+<tr class="even">
+<td>18</td>
+<td><code>stop_task</code></td>
+<td>host→agent</td>
+<td>No</td>
+<td>Stop a running background task by ID</td>
+</tr>
+<tr class="odd">
+<td>19</td>
+<td><code>apply_flag_settings</code></td>
+<td>host→agent</td>
+<td>No</td>
+<td>Merge settings into flag settings layer</td>
+</tr>
+<tr class="even">
+<td>20</td>
+<td><code>get_settings</code></td>
+<td>host→agent</td>
+<td>Yes</td>
+<td>Return effective merged settings</td>
+</tr>
+<tr class="odd">
+<td>21</td>
+<td><code>elicitation</code></td>
+<td>agent→host</td>
+<td>Yes</td>
+<td>Request SDK consumer to handle MCP elicitation</td>
+</tr>
+</tbody>
+</table>
+<p>Note that <code>can_use_tool</code> (#3) and <code>elicitation</code> (#21) flow agent→host — the agent asks the host for a decision. All other requests flow host→agent.</p>
+<hr>
+<p><em>Series: Inside Claude Code | Part II.2</em></p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./02-agent-loop-query-engine.html" class="pagination-link" aria-label="II.1 — Agent Loop &amp; Query Engine">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">II.1 — Agent Loop &amp; Query Engine</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./07-multi-agent-orchestration.html" class="pagination-link" aria-label="II.3 — Multi-Agent Orchestration">
+        <span class="nav-page-text">II.3 — Multi-Agent Orchestration</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.quarto-figure img[src$=".svg"]:not(.nozoom)').forEach(function(img) {
+    fetch(img.src).then(r => r.text()).then(function(svgText) {
+      var div = document.createElement('div');
+      div.innerHTML = svgText;
+      var svg = div.querySelector('svg');
+      if (svg) {
+        var vb = svg.getAttribute('viewBox');
+        if (vb) {
+          var parts = vb.split(/\s+/);
+          var w = parseFloat(parts[2]), h = parseFloat(parts[3]);
+          var ratio = h / w;
+          var containerH = Math.max(250, Math.min(700, 900 * ratio));
+          svg.style.width = '100%';
+          svg.style.height = containerH + 'px';
+        } else {
+          svg.style.width = '100%';
+          svg.style.height = '400px';
+        }
+        svg.style.border = '1px solid var(--bs-border-color, #dee2e6)';
+        svg.style.borderRadius = '6px';
+        svg.style.cursor = 'grab';
+        svg.style.background = 'var(--bs-body-bg, #fff)';
+        img.parentNode.replaceChild(svg, img);
+        svgPanZoom(svg, {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true, minZoom: 0.5, maxZoom: 10});
+      }
+    });
+  });
+  // Mermaid post-processing: apply Palatino font + pan-zoom
+  function initMermaid() {
+    document.querySelectorAll('.cell-output-display svg').forEach(function(svg) {
+      if (svg.dataset.mInit) return;
+      svg.dataset.mInit = '1';
+      // Step 1: Apply Palatino to all text AFTER Mermaid layout
+      svg.querySelectorAll('.nodeLabel, .edgeLabel, .cluster-label span, text').forEach(function(el) {
+        el.style.fontFamily = '"Palatino Linotype", Palatino, Georgia, serif';
+      });
+      // Step 2: Ensure foreignObjects don't clip
+      svg.querySelectorAll('foreignObject').forEach(function(fo) {
+        fo.style.overflow = 'visible';
+      });
+      // Step 3: Size the container
+      var vb = svg.getAttribute('viewBox');
+      if (vb) {
+        var parts = vb.split(/[\s,]+/);
+        var w = parseFloat(parts[2]), h = parseFloat(parts[3]);
+        var ratio = h / w;
+        var containerH = Math.max(350, Math.min(800, 900 * ratio));
+        svg.style.width = '100%';
+        svg.style.height = containerH + 'px';
+      } else {
+        svg.style.width = '100%';
+        svg.style.height = '500px';
+      }
+      svg.style.border = '1px solid var(--bs-border-color, #dee2e6)';
+      svg.style.borderRadius = '6px';
+      svg.style.cursor = 'grab';
+      svg.style.background = 'var(--bs-body-bg, #fff)';
+      // Step 4: Enable pan-zoom
+      try {
+        svgPanZoom(svg, {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true, minZoom: 0.5, maxZoom: 10});
+      } catch(e) {}
+    });
+  }
+  setTimeout(initMermaid, 800);
+  setTimeout(initMermaid, 2000);
+  setTimeout(initMermaid, 4000);
+});
+</script>
+
+
+
+
+</body></html>

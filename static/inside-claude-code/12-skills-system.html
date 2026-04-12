@@ -1,0 +1,1913 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>The Skills System – Inside Claude Code</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./13-plugin-architecture.html" rel="next">
+<link href="./10-model-context-protocol.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-f2aa3fcab4a3c0cbb1a885f128e95a4e.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-4486e80548b20dd029182ccec781b91c.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-f2aa3fcab4a3c0cbb1a885f128e95a4e.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-e429c51d478a3f7fe436edff7d8b5e18.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-89366f393ab88770656785fe4740de67.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-e429c51d478a3f7fe436edff7d8b5e18.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<meta name="mermaid-theme" content="neutral">
+<script src="site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Palatino+Linotype&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+
+
+<link rel="stylesheet" href="styles/custom.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Inside Claude Code</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="./index.html" aria-current="page"> 
+<span class="menu-text">Series Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./explorer-dist/index.html" target="_blank"> 
+<span class="menu-text">Code Explorer</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ZhuoranYang/claude_code_analysis"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./10-model-context-protocol.html">VI. Extensions</a></li><li class="breadcrumb-item"><a href="./12-skills-system.html">VI.2 — Skills System</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Inside Claude Code</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./explorer-dist/index.html" class="sidebar-item-text sidebar-link" target="_blank">
+ <span class="menu-text">Code Explorer</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false">
+ <span class="menu-text">I. Overview</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./00-birds-eye-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">I.1 — Bird’s Eye Architecture</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-end-to-end-workflow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">I.2 — End-to-End Workflow</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false">
+ <span class="menu-text">II. Agent Harness</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-agent-loop-query-engine.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.1 — Agent Loop &amp; Query Engine</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./15-agent-sdk-structured-io.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.2 — Agent SDK &amp; Structured I/O</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-multi-agent-orchestration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.3 — Multi-Agent Orchestration</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./19-plan-mode.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.4 — Plan Mode</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false">
+ <span class="menu-text">III. Context Engineering</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-prompt-assembly.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.1 — Prompt Assembly</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-context-compaction.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.2 — Context Compaction</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./17-memory-hierarchy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.3 — Memory Hierarchy</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./11-hooks-lifecycle.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.4 — Hooks &amp; Lifecycle</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false">
+ <span class="menu-text">IV. Tools</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-tool-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IV.1 — Tool System &amp; Registry</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-safety-sandbox.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IV.2 — Safety &amp; Sandbox</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false">
+ <span class="menu-text">V. Invocation</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-cli-commands-ui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">V.1 — CLI, Commands &amp; UI</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-auth-providers-flags.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">V.2 — Auth, Providers &amp; Flags</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">VI. Extensions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./10-model-context-protocol.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.1 — Model Context Protocol</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./12-skills-system.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">VI.2 — Skills System</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./13-plugin-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.3 — Plugin Architecture</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="false">
+ <span class="menu-text">VII. Remote Runtime</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./16-remote-runtime-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VII.1 — Remote Runtime &amp; Bridge</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="false">
+ <span class="menu-text">VIII. Native Runtime</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./18-native-runtime-voice-portability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VIII.1 — Native Runtime, Voice &amp; Portability</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="false">
+ <span class="menu-text">IX. Transparency &amp; Trust</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./14-hidden-costs-context-manipulation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IX.1 — Transparency &amp; Trust</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#why-skills-exist-the-expertise-gap" id="toc-why-skills-exist-the-expertise-gap" class="nav-link active" data-scroll-target="#why-skills-exist-the-expertise-gap">Why Skills Exist: The Expertise Gap</a></li>
+  <li><a href="#the-skill.md-format-markdown-as-configuration" id="toc-the-skill.md-format-markdown-as-configuration" class="nav-link" data-scroll-target="#the-skill.md-format-markdown-as-configuration">The SKILL.md Format: Markdown as Configuration</a></li>
+  <li><a href="#the-built-in-skills-inventory-11-bundled-specialists" id="toc-the-built-in-skills-inventory-11-bundled-specialists" class="nav-link" data-scroll-target="#the-built-in-skills-inventory-11-bundled-specialists">The Built-in Skills Inventory: 11 Bundled Specialists</a></li>
+  <li><a href="#trigger-conditions-and-matching-when-skills-activate" id="toc-trigger-conditions-and-matching-when-skills-activate" class="nav-link" data-scroll-target="#trigger-conditions-and-matching-when-skills-activate">Trigger Conditions and Matching: When Skills Activate</a></li>
+  <li><a href="#system-prompt-injection-compile-time-not-runtime" id="toc-system-prompt-injection-compile-time-not-runtime" class="nav-link" data-scroll-target="#system-prompt-injection-compile-time-not-runtime">System Prompt Injection: Compile-Time, Not Runtime</a></li>
+  <li><a href="#the-1-context-window-budget-token-economics-of-skills" id="toc-the-1-context-window-budget-token-economics-of-skills" class="nav-link" data-scroll-target="#the-1-context-window-budget-token-economics-of-skills">The 1% Context Window Budget: Token Economics of Skills</a></li>
+  <li><a href="#skills-are-not-tools-a-fundamental-distinction" id="toc-skills-are-not-tools-a-fundamental-distinction" class="nav-link" data-scroll-target="#skills-are-not-tools-a-fundamental-distinction">Skills Are Not Tools: A Fundamental Distinction</a></li>
+  <li><a href="#the-claude-api-skill-a-case-study-in-curated-knowledge" id="toc-the-claude-api-skill-a-case-study-in-curated-knowledge" class="nav-link" data-scroll-target="#the-claude-api-skill-a-case-study-in-curated-knowledge">The claude-api Skill: A Case Study in Curated Knowledge</a></li>
+  <li><a href="#custom-skill-development-building-your-own-expertise-modules" id="toc-custom-skill-development-building-your-own-expertise-modules" class="nav-link" data-scroll-target="#custom-skill-development-building-your-own-expertise-modules">Custom Skill Development: Building Your Own Expertise Modules</a>
+  <ul class="collapse">
+  <li><a href="#rate-limiting" id="toc-rate-limiting" class="nav-link" data-scroll-target="#rate-limiting">Rate Limiting</a></li>
+  <li><a href="#testing" id="toc-testing" class="nav-link" data-scroll-target="#testing">Testing</a></li>
+  </ul></li>
+  <li><a href="#design-patterns-in-the-skills-system" id="toc-design-patterns-in-the-skills-system" class="nav-link" data-scroll-target="#design-patterns-in-the-skills-system">Design Patterns in the Skills System</a>
+  <ul class="collapse">
+  <li><a href="#template-method-base-behavior-skill-customizations" id="toc-template-method-base-behavior-skill-customizations" class="nav-link" data-scroll-target="#template-method-base-behavior-skill-customizations">Template Method: Base Behavior + Skill Customizations</a></li>
+  <li><a href="#dependency-injection-of-knowledge" id="toc-dependency-injection-of-knowledge" class="nav-link" data-scroll-target="#dependency-injection-of-knowledge">Dependency Injection of Knowledge</a></li>
+  <li><a href="#separation-of-concerns-capabilities-vs.-behavior" id="toc-separation-of-concerns-capabilities-vs.-behavior" class="nav-link" data-scroll-target="#separation-of-concerns-capabilities-vs.-behavior">Separation of Concerns: Capabilities vs.&nbsp;Behavior</a></li>
+  </ul></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">Summary</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./10-model-context-protocol.html">VI. Extensions</a></li><li class="breadcrumb-item"><a href="./12-skills-system.html">VI.2 — Skills System</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">The Skills System</h1>
+<p class="subtitle lead">Plugins for Agent Cognition</p>
+  <div class="quarto-categories">
+    <div class="quarto-category">skills</div>
+    <div class="quarto-category">extensibility</div>
+    <div class="quarto-category">prompts</div>
+  </div>
+  </div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>A tool gives an agent new capabilities – read files, run commands, search the web. A <span class="kw-sage">skill</span> gives it new expertise – how to write production-grade frontends, how to debug methodically, how to use the Anthropic SDK correctly across eight languages. Tools change what the agent <em>does</em>; skills change how it <em>thinks</em>. This distinction between capability and expertise is the central design insight of Claude Code’s skills system. Skills are Markdown files that inject domain-specific instructions directly into the <span class="kw-terra">system prompt</span>, so the model reasons with that expertise from its first decision.</p>
+<p>This post is a deep dive into the skills architecture: the <span class="kw-terra">SKILL.md format</span>, the <span class="kw-slate">11 built-in skills</span>, the <span class="kw-sage">trigger system</span>, the <span class="kw-sage">prompt injection</span> mechanism, the <span class="kw-slate">1% context budget</span>, and the design patterns that make skills a compelling extension point. We covered skills at the survey level in <a href="./11-hooks-lifecycle.html">Part III.4: Hooks &amp; Lifecycle</a>. Here we go deep.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-territory" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-territory-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-territory">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart TD
+  SK["&lt;b&gt;The Skills System&lt;/b&gt;"]
+  FMT["SKILL.md Format&lt;br&gt;and Discovery"]
+  INV["11 Built-in&lt;br&gt;Skills (Inventory)"]
+  TRG["Trigger Conditions&lt;br&gt;and Matching"]
+  PIJ["Prompt Injection&lt;br&gt;and Token Budget"]
+  CMP["Skills vs Tools&lt;br&gt;vs MCP vs Hooks"]
+
+  SK --&gt; FMT
+  SK --&gt; INV
+  SK --&gt; TRG
+  SK --&gt; PIJ
+  SK --&gt; CMP
+  style SK fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style FMT fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style INV fill:#C2856E,color:#fff,stroke:#A06A54
+  style TRG fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style PIJ fill:#C4A882,color:#fff,stroke:#A08562
+  style CMP fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-territory-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: This post’s coverage of the skills system. Five subtopics radiate from the central node: SKILL.md format and discovery, the 11 built-in skills inventory, trigger condition matching (four mechanisms), prompt injection and the 1% token budget, and the comparison of skills with tools, MCP, and hooks. Each subtopic is explored as a standalone section.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> The central node is “The Skills System,” and five branches radiate outward to the subtopics covered in this post. Each leaf represents a standalone section: SKILL.md Format and Discovery, the 11 Built-in Skills Inventory, Trigger Conditions and Matching, Prompt Injection and Token Budget, and the comparison of Skills versus other extension mechanisms. Read the branches as a table of contents for the post.</p>
+<p><strong>Source files covered in this post:</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 28%">
+<col style="width: 42%">
+<col style="width: 28%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Purpose</th>
+<th>Size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>src/skills/bundledSkills.ts</code></td>
+<td>11 built-in skill definitions</td>
+<td>~200 LOC</td>
+</tr>
+<tr class="even">
+<td><code>src/skills/loadSkillsDir.ts</code></td>
+<td>Skill discovery from <code>.claude/skills/</code></td>
+<td>~300 LOC</td>
+</tr>
+<tr class="odd">
+<td><code>src/tools/SkillTool/SkillTool.ts</code></td>
+<td>Skill invocation and trigger matching</td>
+<td>~400 LOC</td>
+</tr>
+<tr class="even">
+<td><code>src/tools/SkillTool/prompt.ts</code></td>
+<td>Skill prompt injection templates</td>
+<td>~200 LOC</td>
+</tr>
+<tr class="odd">
+<td><code>.claude/skills/</code></td>
+<td>User-defined skill directory (SKILL.md files)</td>
+<td>N custom files</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<section id="why-skills-exist-the-expertise-gap" class="level2">
+<h2 class="anchored" data-anchor-id="why-skills-exist-the-expertise-gap">Why Skills Exist: The Expertise Gap</h2>
+<p><strong>LLMs are trained on broad knowledge but lack situational expertise. Skills fill this gap by injecting curated, domain-specific instructions at prompt assembly time.</strong></p>
+<p>Consider a concrete scenario. A developer asks Claude Code to build a React component. The model has been trained on millions of React examples and can produce plausible code. But “plausible” is not “production-grade.” A production React component needs ARIA labels for accessibility, responsive breakpoints, performant rendering patterns, and consistent design tokens. The model <em>knows</em> about these things – it has seen them in training data – but it does not <em>prioritize</em> them unless instructed to.</p>
+<p>This is the <span class="kw-sage">expertise gap</span>. Training data gives the model knowledge. Skills give it priorities. The <span class="kw-terra">frontend-design</span> skill injects instructions that say, in effect: “When building UI, you are a senior frontend engineer. Accessibility is non-negotiable. Use semantic HTML. Follow responsive design patterns. Avoid generic AI aesthetics.” These are not new capabilities – the model could already do all of this. The skill ensures it actually does.</p>
+<p>The distinction maps to a concept in cognitive science: <span class="kw-mauve">declarative knowledge</span> (knowing that) versus <span class="kw-mauve">procedural knowledge</span> (knowing how). The model’s training data provides declarative knowledge – it knows that ARIA labels exist. Skills provide procedural knowledge – they tell the model <em>when</em> and <em>how</em> to apply ARIA labels. This is why skills are called “plugins for cognition” rather than “plugins for capability.”</p>
+<hr>
+</section>
+<section id="the-skill.md-format-markdown-as-configuration" class="level2">
+<h2 class="anchored" data-anchor-id="the-skill.md-format-markdown-as-configuration">The SKILL.md Format: Markdown as Configuration</h2>
+<p><strong>A skill is a Markdown file with trigger conditions and instructions. Discovery is filesystem-based: Claude Code scans <code>.claude/skills/</code> for SKILL.md files at startup.</strong></p>
+<p>The format is deliberately simple. A SKILL.md file contains:</p>
+<ol type="1">
+<li><strong>A trigger block</strong> specifying when the skill should activate</li>
+<li><strong>Instruction content</strong> that gets injected into the system prompt</li>
+<li><strong>Optional metadata</strong> (name, description, priority)</li>
+</ol>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu"># Example: custom-api-style.md in .claude/skills/</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>---</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>name: custom-api-style</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>trigger:</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  slash_command: /api-style</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  keywords: <span class="co">[</span><span class="ot">"REST API", "endpoint", "route handler"</span><span class="co">]</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>---</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>When writing REST API endpoints, follow these conventions:</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>Use explicit HTTP status codes (never rely on framework defaults)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>Validate all input with zod schemas before processing</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>Return consistent error shapes: { error: string, code: number }</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>Log every request with correlation IDs</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>Write integration tests, not just unit tests</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The discovery mechanism is straightforward. The <code>loadSkillsDir.ts</code> function scans the <code>.claude/skills/</code> directory recursively, parsing each Markdown file into a skill registration. Built-in skills ship in the Claude Code binary itself, loaded from <code>src/skills/</code> (<span class="kw-slate">4,066 lines of code</span>). The <span class="kw-terra">SkillTool</span> implementation in <code>tools/SkillTool/</code> (<span class="kw-slate">1,477 lines</span>) handles invocation, trigger matching, and content injection.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-discovery" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-discovery-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-discovery">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart LR
+  A["Scan built-in skills&lt;br&gt;&lt;i&gt;src/skills/&lt;/i&gt;&lt;br&gt;11 bundled skills"]
+  B["Scan .claude/skills/&lt;br&gt;&lt;i&gt;user-defined&lt;/i&gt;&lt;br&gt;N custom skills"]
+  C["Register all skills&lt;br&gt;in SkillRegistry"]
+  D["Ready for trigger&lt;br&gt;matching on each turn"]
+
+  A --&gt; C
+  B --&gt; C
+  C --&gt; D
+  style A fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style B fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style C fill:#C2856E,color:#fff,stroke:#A06A54
+  style D fill:#B39EB5,color:#fff,stroke:#8E7A93
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-discovery-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: Skill discovery pipeline from startup to registration. Built-in skills from src/skills/ (11 bundled) and user-defined skills from .claude/skills/ (N custom) are scanned in parallel and merged into a unified SkillRegistry. Once registered, all skills are available for trigger matching on every conversational turn.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Two sources on the left – built-in skills from <code>src/skills/</code> (11 bundled) and user-defined skills from <code>.claude/skills/</code> (N custom) – both feed into the central SkillRegistry node. From there, a single arrow leads to the “Ready for trigger matching” state on the right. The key point is that built-in and custom skills are merged into one unified registry at startup, and from that point forward the system treats them identically.</p>
+<p>The choice of Markdown is not accidental. Skills are natural language instructions injected into a natural language prompt. Using Markdown means the skill content IS the prompt content – no serialization, no template language, no compilation step. The file you write is the text the model reads. This directness eliminates an entire class of “the template rendered wrong” bugs.</p>
+<hr>
+</section>
+<section id="the-built-in-skills-inventory-11-bundled-specialists" class="level2">
+<h2 class="anchored" data-anchor-id="the-built-in-skills-inventory-11-bundled-specialists">The Built-in Skills Inventory: 11 Bundled Specialists</h2>
+<p><strong>Claude Code ships with 11 built-in skills, ranging from a 143-fragment API reference to a one-command loop timer. Each skill represents a curated expertise domain that Anthropic determined was valuable enough to bundle.</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 16%">
+<col style="width: 20%">
+<col style="width: 39%">
+<col style="width: 23%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Skill</th>
+<th>Trigger</th>
+<th>What It Injects</th>
+<th>Category</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>claude-api</code></td>
+<td>Anthropic SDK imports</td>
+<td>143 prompt fragments, 8 langs</td>
+<td>Reference</td>
+</tr>
+<tr class="even">
+<td><code>frontend-design</code></td>
+<td>Web UI building requests</td>
+<td>Production-grade UI guide</td>
+<td>Methodology</td>
+</tr>
+<tr class="odd">
+<td><code>code-review</code></td>
+<td><code>/code-review</code> command</td>
+<td>Structured review format</td>
+<td>Methodology</td>
+</tr>
+<tr class="even">
+<td><code>debugging</code></td>
+<td><code>/debugging</code> or stuck pattern</td>
+<td>Reproduce-hypothesize-fix</td>
+<td>Methodology</td>
+</tr>
+<tr class="odd">
+<td><code>simplify</code></td>
+<td><code>/simplify</code> command</td>
+<td>Reuse/quality/efficiency</td>
+<td>Methodology</td>
+</tr>
+<tr class="even">
+<td><code>loop</code></td>
+<td><code>/loop 5m /foo</code></td>
+<td>Recurring command execution</td>
+<td>Automation</td>
+</tr>
+<tr class="odd">
+<td><code>init-claudemd</code></td>
+<td>New project setup</td>
+<td>Generate CLAUDE.md</td>
+<td>Setup</td>
+</tr>
+<tr class="even">
+<td><code>stuck</code></td>
+<td><code>/stuck</code> command</td>
+<td>Reset approach, alternatives</td>
+<td>Methodology</td>
+</tr>
+<tr class="odd">
+<td><code>update-config</code></td>
+<td>Configuration requests</td>
+<td>settings.json guidance</td>
+<td>Setup</td>
+</tr>
+<tr class="even">
+<td><code>create-verifier</code></td>
+<td>Verification needs</td>
+<td>Build validation skills</td>
+<td>Automation</td>
+</tr>
+<tr class="odd">
+<td><code>pdf</code></td>
+<td>PDF operations</td>
+<td>Read/combine/split/create</td>
+<td>Reference</td>
+</tr>
+</tbody>
+</table>
+<p>The skills fall into four functional categories:</p>
+<p><span class="kw-sage">Reference skills</span> (<code>claude-api</code>, <code>pdf</code>) inject domain-specific documentation. The <code>claude-api</code> skill is the heavyweight: <span class="kw-slate">143 curated prompt fragments</span> covering the Anthropic SDK across Python, TypeScript, Go, C#, Java, Ruby, PHP, and Kotlin. When activated, it gives the model accurate, version-specific API references rather than relying on potentially outdated training data.</p>
+<p><span class="kw-sage">Methodology skills</span> (<code>code-review</code>, <code>debugging</code>, <code>simplify</code>, <code>stuck</code>) inject structured approaches. Instead of letting the model debug however it pleases, the <code>debugging</code> skill enforces a <span class="kw-mauve">reproduce-hypothesize-test-fix</span> cycle. Instead of an ad hoc code review, <code>code-review</code> mandates checking bugs, security, performance, and maintainability in sequence. These skills impose engineering discipline.</p>
+<p><strong>Automation skills</strong> (<code>loop</code>, <code>create-verifier</code>) enable recurring or self-referential workflows. The <code>loop</code> skill lets users run commands on intervals – useful for watching CI pipelines or monitoring deploys. The <code>create-verifier</code> skill is meta: it helps build skills that validate Claude Code’s own output.</p>
+<p><strong>Setup skills</strong> (<code>init-claudemd</code>, <code>update-config</code>) guide project initialization. They are activated during onboarding and help configure Claude Code for new repositories.</p>
+<div class="callout callout-style-default callout-important callout-titled" title="Key Insight">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Key Insight
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The distribution is telling. Four of 11 skills are methodology skills – they inject <em>process</em>, not <em>data</em>. This reflects a core truth about LLM agents: the model’s knowledge base is rarely the bottleneck. Its <em>approach</em> is. Skills correct the approach by injecting expert workflows that training data alone does not reliably produce.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="trigger-conditions-and-matching-when-skills-activate" class="level2">
+<h2 class="anchored" data-anchor-id="trigger-conditions-and-matching-when-skills-activate">Trigger Conditions and Matching: When Skills Activate</h2>
+<p><strong>Skills are not always active. Each skill defines trigger conditions that determine when its content should be injected. The trigger system supports four activation mechanisms, and they can be composed.</strong></p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-triggers" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-triggers-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-triggers">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart TD
+  UI["&lt;b&gt;User Input&lt;/b&gt;"]
+  SC["Slash Command Match&lt;br&gt;&lt;i&gt;exact string match&lt;/i&gt;&lt;br&gt;/code-review, /simplify, /loop 5m"]
+  ID["Import Detection&lt;br&gt;&lt;i&gt;AST/regex scan&lt;/i&gt;&lt;br&gt;import anthropic, @anthropic-ai/sdk"]
+  KP["Keyword Pattern&lt;br&gt;&lt;i&gt;fuzzy match&lt;/i&gt;&lt;br&gt;debug+stuck, PDF+merge, React+UI"]
+  TC["Task Context Match&lt;br&gt;&lt;i&gt;environment analysis&lt;/i&gt;&lt;br&gt;New project + no CLAUDE.md"]
+  MS["&lt;b&gt;Matched Skills&lt;/b&gt;&lt;br&gt;0 to N skills can match simultaneously"]
+
+  UI --&gt; SC --&gt; ID --&gt; KP --&gt; TC --&gt; MS
+  style UI fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style SC fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style ID fill:#C2856E,color:#fff,stroke:#A06A54
+  style KP fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style TC fill:#C4A882,color:#fff,stroke:#A08562
+  style MS fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-triggers-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: Trigger matching pipeline from user input to skill activation. Four mechanisms are evaluated in sequence: slash command exact-string matching, AST/regex import detection, fuzzy keyword pattern matching, and environment-aware task context analysis. Zero to N skills can match simultaneously, allowing expertise to compose across domains.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Start at the top with User Input and follow the arrows downward through four sequential matching stages: Slash Command Match (exact string), Import Detection (AST/regex scan), Keyword Pattern (fuzzy match), and Task Context Match (environment analysis). Each stage can independently match zero or more skills. All matches accumulate into the “Matched Skills” node at the bottom, where zero to N skills may be active simultaneously.</p>
+<p><span class="kw-terra">Slash command triggers</span> are the most explicit. When a user types <code>/code-review</code>, the skill system matches on the exact command string and activates the corresponding skill. This is direct, unambiguous, and user-initiated. Four of the 11 built-in skills use slash commands as their primary trigger: <code>code-review</code>, <code>simplify</code>, <code>debugging</code>, <code>stuck</code>, and <code>loop</code>.</p>
+<p><span class="kw-terra">Import detection triggers</span> are the most clever. The <code>claude-api</code> skill activates when the code being worked on imports the Anthropic SDK – detected by scanning recent file reads for patterns like <code>import anthropic</code>, <code>from anthropic</code>, or <code>@anthropic-ai/sdk</code>. This is <span class="kw-sage">event-driven activation</span>: the skill engages when the context demands it, not when the user explicitly requests it.</p>
+<p><strong>Keyword pattern triggers</strong> scan the user’s prompt for relevant terms. A prompt mentioning “React component” and “accessibility” might trigger <code>frontend-design</code>. A prompt mentioning “PDF” and “merge” triggers <code>pdf</code>. These are fuzzy matches – they do not require exact strings, but rather semantic relevance to the skill’s domain.</p>
+<p><strong>Task context triggers</strong> analyze the broader session state. When Claude Code detects it is working in a new repository with no CLAUDE.md file, <code>init-claudemd</code> activates. When the user asks about configuration, <code>update-config</code> activates. These triggers are the most sophisticated because they reason about the environment, not just the immediate prompt.</p>
+<p>Multiple triggers can fire simultaneously. A user writing Anthropic SDK code in a React frontend could activate both <code>claude-api</code> and <code>frontend-design</code> at once, receiving both API reference material and UI design guidelines. The skill system does not enforce mutual exclusion – expertise composes.</p>
+<hr>
+</section>
+<section id="system-prompt-injection-compile-time-not-runtime" class="level2">
+<h2 class="anchored" data-anchor-id="system-prompt-injection-compile-time-not-runtime">System Prompt Injection: Compile-Time, Not Runtime</h2>
+<p><strong>Skills inject their content at prompt assembly time – before the model sees its first token. This is a fundamental architectural choice that distinguishes skills from every other extension mechanism.</strong></p>
+<p>Think of it in compiler terms. The system prompt is assembled from fragments (see <a href="./03-prompt-assembly.html">Part III.1: Prompt Assembly</a> for the full pipeline). Skills inject at assembly time, meaning their content becomes part of the prompt the model reasons with from the start. This is <span class="kw-sage">compile-time injection</span>: the skill modifies the program (the prompt) before it runs (the model generates).</p>
+<p>Compare this to hooks, which fire during execution. A PreToolUse hook runs after the model has already decided to use a tool – it intercepts the action, not the reasoning. Skills operate earlier: they shape the reasoning itself.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-injection" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-injection-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-injection">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart TD
+  S1["S1: Identity&lt;br&gt;&lt;i&gt;You are Claude...&lt;/i&gt;"]
+  S2["S2: Tool Policy&lt;br&gt;&lt;i&gt;10 rules&lt;/i&gt;"]
+  S3["S3: Safety&lt;br&gt;&lt;i&gt;anti-patterns, limits&lt;/i&gt;"]
+  S4["S4: Mode-specific instructions"]
+  S5["&lt;b&gt;S5: SKILL INJECTION&lt;/b&gt;&lt;br&gt;Matched skills inject here"]
+  D1["D1: Memory&lt;br&gt;&lt;i&gt;CLAUDE.md&lt;/i&gt;"]
+  D2["D2: Environment&lt;br&gt;&lt;i&gt;CWD, git, OS&lt;/i&gt;"]
+  D3["D3-D7: Language, output style,&lt;br&gt;MCP, scratchpad, tool descriptions"]
+  D8["D8-D9: System reminders,&lt;br&gt;conversation history"]
+  MODEL["&lt;b&gt;MODEL REASONING BEGINS&lt;/b&gt;&lt;br&gt;Skills already internalized"]
+
+  S1 --&gt; S2 --&gt; S3 --&gt; S4 --&gt; S5 --&gt; D1 --&gt; D2 --&gt; D3 --&gt; D8 --&gt; MODEL
+  style S1 fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style S2 fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style S3 fill:#C2856E,color:#fff,stroke:#A06A54
+  style S4 fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style S5 fill:#C4A882,color:#fff,stroke:#A06A54,stroke-width:3px
+  style D1 fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style D2 fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style D3 fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style D8 fill:#C2856E,color:#fff,stroke:#A06A54
+  style MODEL fill:#B39EB5,color:#fff,stroke:#8E7A93
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-injection-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4: Where skills inject in the prompt assembly pipeline. The flow shows 10 assembly stages from S1 (Identity) through D8-D9 (system reminders and conversation history). Skills appear at position S5 (highlighted with a thick border), after core personality (S1-S4) but before dynamic context (D1-D7). This placement ensures skills shape reasoning from the first token while remaining overridable by user CLAUDE.md instructions at D1.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Follow the arrow chain from S1 (Identity) at the top through each assembly stage down to MODEL REASONING BEGINS at the bottom. The S5 node – SKILL INJECTION – is highlighted with a thick border, marking where matched skills insert their content. Notice that skills appear after the core personality (S1-S4) but before user-defined CLAUDE.md instructions (D1) and conversation history (D8-D9), meaning skills shape reasoning from the start but can be overridden by user instructions.</p>
+<p>The injection position matters. Skills appear after the core personality but before dynamic context. This means:</p>
+<ol type="1">
+<li>Skills can override default behaviors (they come after identity)</li>
+<li>Skills are overridden by user-specific CLAUDE.md instructions (which come after skills)</li>
+<li>Skills are cache-stable (they do not change between turns in the same session)</li>
+</ol>
+<p>Point 3 has a direct economic benefit. Because skill content does not change between turns, it benefits from Anthropic’s <span class="kw-sage">prompt caching</span> – the <span class="kw-slate">90% input token savings</span> described in <a href="./03-prompt-assembly.html">Part III.1</a>. This makes skills effectively “free” after the first turn: their tokens are cached, and subsequent turns pay only <span class="kw-slate">10% of the cost</span>.</p>
+<div class="callout callout-style-default callout-caution callout-titled" title="Pattern Spotted">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Caution</span>Pattern Spotted
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Skill injection is the <strong>Dependency Injection</strong> pattern applied to knowledge. In a DI container, you do not hardcode which <code>ILogger</code> implementation a class uses – you inject it at construction time based on configuration. In Claude Code, you do not hardcode which domain expertise the model has – you inject it at prompt assembly time based on trigger conditions. The prompt is the constructor. The skill is the injected dependency. The model is the class that consumes it.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="the-1-context-window-budget-token-economics-of-skills" class="level2">
+<h2 class="anchored" data-anchor-id="the-1-context-window-budget-token-economics-of-skills">The 1% Context Window Budget: Token Economics of Skills</h2>
+<p><strong>Skills compete for the same scarce resource as everything else: the context window. Claude Code allocates approximately 1% of the context window as the truncation budget for skill content.</strong></p>
+<p>The math is concrete. Claude Sonnet 4.5’s context window is <span class="kw-slate">200,000 tokens</span>. 1% is <span class="kw-slate">2,000 tokens</span> – roughly 1,500 words. That is the total budget for ALL active skills on a given turn. If two skills are active and each wants 1,500 tokens, something has to give.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Region</th>
+<th>Tokens</th>
+<th>Share</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>System Prompt (static)</td>
+<td>~15,000</td>
+<td>7.5%</td>
+</tr>
+<tr class="even">
+<td>Tool Descriptions (core 14)</td>
+<td>~4,000</td>
+<td>2.0%</td>
+</tr>
+<tr class="odd">
+<td>CLAUDE.md / Memory</td>
+<td>~3,000</td>
+<td>1.5%</td>
+</tr>
+<tr class="even">
+<td><strong>SKILL CONTENT</strong></td>
+<td><strong>~2,000</strong></td>
+<td><strong>1.0%</strong></td>
+</tr>
+<tr class="odd">
+<td>MCP Server Instructions</td>
+<td>~500</td>
+<td>0.25%</td>
+</tr>
+<tr class="even">
+<td>System Reminders (volatile)</td>
+<td>~500</td>
+<td>0.25%</td>
+</tr>
+<tr class="odd">
+<td>Conversation History</td>
+<td>~175,000</td>
+<td>87.5%</td>
+</tr>
+</tbody>
+</table>
+<p>The 1% skill budget must hold ALL active skills. If a skill exceeds the budget, it is truncated.</p>
+<p>This budget constraint has design implications:</p>
+<p><strong>Skills must be concise.</strong> A skill that dumps 5,000 tokens of documentation into the prompt will be truncated, losing its most important content (which is often at the end). Effective skills are dense: high information per token, no filler, no redundancy with the system prompt.</p>
+<p>The <code>claude-api</code> skill is the exception that proves the rule. Its 143 prompt fragments are not all loaded simultaneously. The skill <span class="kw-sage">selectively loads</span> only the fragments relevant to the detected programming language. Working in Python? You get Python SDK fragments. Working in TypeScript? You get TypeScript fragments. This selective loading is what makes a 143-fragment skill fit within a 2,000-token budget.</p>
+<p><strong>Multiple active skills share the budget.</strong> If <code>claude-api</code> and <code>frontend-design</code> are both active, their combined content must fit within the budget. This creates an implicit priority system: skills loaded earlier consume budget that later skills cannot use.</p>
+<div class="callout callout-style-default callout-warning callout-titled" title="Trade-off">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Trade-off
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The 1% budget is a deliberate constraint, not a technical limitation. Anthropic could allocate more. But every token given to skills is a token taken from conversation history – which is where the actual work happens. The budget forces skill authors to write tight, actionable instructions rather than encyclopedic documentation. This constraint produces better skills, the same way Twitter’s 140-character limit produced more concise communication.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="skills-are-not-tools-a-fundamental-distinction" class="level2">
+<h2 class="anchored" data-anchor-id="skills-are-not-tools-a-fundamental-distinction">Skills Are Not Tools: A Fundamental Distinction</h2>
+<p><strong>Skills do not appear in the tool registry. They cannot be called with <code>tool_use</code> blocks. They do not return results. They modify the model’s reasoning context, not its action space.</strong></p>
+<p>This confusion is common enough to warrant an explicit comparison. When people hear “extensibility,” they think plugins that add new functions. Skills are not that. They are closer to configuration than to code. A tool call says “do this thing.” A skill says “when doing things, reason this way.”</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 28%">
+<col style="width: 21%">
+<col style="width: 18%">
+<col style="width: 13%">
+<col style="width: 18%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Dimension</th>
+<th>Skills</th>
+<th>Tools</th>
+<th>MCP</th>
+<th>Hooks</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>What it is</td>
+<td>Prompt content</td>
+<td>Executable function</td>
+<td>External service</td>
+<td>Shell cmd interceptor</td>
+</tr>
+<tr class="even">
+<td>Modifies</td>
+<td>System prompt</td>
+<td>Tool registry</td>
+<td>Tool registry + prompt</td>
+<td>Execution pipeline</td>
+</tr>
+<tr class="odd">
+<td>Called via</td>
+<td>NOT called. Injected automatically</td>
+<td>tool_use blocks from model output</td>
+<td>tool_use blocks via mcp__*</td>
+<td>Lifecycle events (auto)</td>
+</tr>
+<tr class="even">
+<td>Returns results?</td>
+<td>Nothing. Shapes reasoning</td>
+<td>tool_result message to conversation</td>
+<td>tool_result via JSON-RPC</td>
+<td>Exit code + stdout as reminder</td>
+</tr>
+<tr class="odd">
+<td>When active</td>
+<td>Prompt assembly (compile-time)</td>
+<td>During tool execution (runtime)</td>
+<td>During tool execution (runtime, cross-proc)</td>
+<td>During execution (runtime)</td>
+</tr>
+<tr class="even">
+<td>Can block actions?</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+<td>YES (exit 2)</td>
+</tr>
+</tbody>
+</table>
+<p>The temporal distinction is the key architectural difference:</p>
+<ul>
+<li><strong>Skills</strong> operate at compile-time (prompt assembly). They shape how the model <em>thinks</em>.</li>
+<li><strong>Tools</strong> operate at runtime (tool execution). They determine what the model <em>does</em>.</li>
+<li><strong>MCP</strong> operates at runtime across process boundaries. It extends what the model <em>can reach</em>.</li>
+<li><strong>Hooks</strong> operate at runtime as interceptors. They enforce what the model <em>must not do</em>.</li>
+</ul>
+<p>This gives you a clean decision tree for extensibility:</p>
+<blockquote class="blockquote">
+<p>Need to change HOW the model reasons? –&gt; Skill</p>
+<p>Need to give the model a NEW capability? –&gt; Tool or MCP</p>
+<p>Need to CONNECT to an external system? –&gt; MCP</p>
+<p>Need to ENFORCE a policy on actions? –&gt; Hook</p>
+<p>Need a SPECIALIZED persona? –&gt; Custom Agent</p>
+</blockquote>
+<hr>
+</section>
+<section id="the-claude-api-skill-a-case-study-in-curated-knowledge" class="level2">
+<h2 class="anchored" data-anchor-id="the-claude-api-skill-a-case-study-in-curated-knowledge">The claude-api Skill: A Case Study in Curated Knowledge</h2>
+<p><strong>The <code>claude-api</code> skill is Claude Code’s most data-intensive skill: 143 prompt fragments providing SDK reference documentation for 8 programming languages. It is a case study in the difference between training data and curated instructions.</strong></p>
+<p>The model’s training data includes Anthropic SDK documentation. So why inject it again as a skill? Three reasons:</p>
+<p><strong>Freshness.</strong> Training data has a cutoff. The SDK evolves. New endpoints, changed parameter names, deprecated methods – the skill carries the current version, not the version the model was trained on.</p>
+<p><strong>Accuracy.</strong> Training data is noisy. The model has seen correct usage, incorrect usage, outdated tutorials, and hallucinated blog posts. The skill provides a single authoritative reference that overrides the noise.</p>
+<p><strong>Specificity.</strong> Training data is broad. The skill provides language-specific patterns, not generic API concepts. The Python fragment shows <code>client.messages.create(model="claude-sonnet-4-20250514")</code> with real model IDs. The TypeScript fragment shows the equivalent with proper typing. Each fragment is tailored to the conventions of its language.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-claude-api" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-claude-api-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-claude-api">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart TD
+  SKILL["&lt;b&gt;claude-api skill&lt;/b&gt;"]
+  TRIGGER["Trigger: import detection&lt;br&gt;&lt;i&gt;import anthropic, @anthropic-ai/sdk&lt;/i&gt;"]
+  FRAGS["143 prompt fragments"]
+
+  SKILL --&gt; TRIGGER
+  SKILL --&gt; FRAGS
+
+  FRAGS --&gt; PY["Python (18)"]
+  FRAGS --&gt; TS["TypeScript (18)"]
+  FRAGS --&gt; GO["Go (18)"]
+  FRAGS --&gt; CS["C# (18)"]
+  FRAGS --&gt; JAVA["Java (18)"]
+  FRAGS --&gt; RUBY["Ruby (18)"]
+  FRAGS --&gt; PHP["PHP (18)"]
+  FRAGS --&gt; KT["Kotlin (17)"]
+  FRAGS --&gt; GEN["Language-agnostic&lt;br&gt;&lt;i&gt;model IDs, rate limits, caching&lt;/i&gt;"]
+
+  GEN -.- NOTE["Only fragments matching the&lt;br&gt;detected language are loaded"]
+  style SKILL fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style TRIGGER fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style FRAGS fill:#C2856E,color:#fff,stroke:#A06A54
+  style PY fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style TS fill:#C4A882,color:#fff,stroke:#A08562
+  style GO fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style CS fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style JAVA fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style RUBY fill:#C2856E,color:#fff,stroke:#A06A54
+  style PHP fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style KT fill:#C4A882,color:#fff,stroke:#A08562
+  style GEN fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style NOTE fill:#8B9DAF,color:#fff,stroke:#6E7F91,stroke-dasharray:5 5
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-claude-api-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5: Language fragment architecture for the claude-api skill. The tree fans out from 143 total prompt fragments into 8 language-specific branches (Python, TypeScript, Go, C#, Java, Ruby, PHP, Kotlin – approximately 18 fragments each) plus a language-agnostic branch covering model IDs, rate limits, and caching. Only the branch matching the detected working language is loaded at runtime, enabling a 143-fragment skill to fit within the 2,000-token budget.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Start at the top with the claude-api skill node, which branches into its trigger mechanism (import detection) and its 143 prompt fragments. The fragments node fans out into 8 language-specific branches (Python, TypeScript, Go, etc.) plus a language-agnostic branch covering shared concepts like model IDs and rate limits. The dashed note at the bottom emphasizes the critical constraint: only fragments matching the detected working language are loaded at runtime, which is how a 143-fragment skill fits within the 2,000-token budget.</p>
+<p>The selective loading mechanism is critical. Loading all 143 fragments would consume far more than the 1% skill budget. Instead, the skill detects which language the user is working in (from the import syntax, file extensions, and recent tool results) and loads only the relevant fragments. A developer writing Python gets ~18 Python-specific fragments plus a few language-agnostic ones. The rest are never loaded.</p>
+<p>This is the same principle behind <span class="kw-mauve">lazy evaluation</span> in functional programming. Haskell does not evaluate an expression until its value is needed. The <code>claude-api</code> skill does not load a fragment until its language is needed. Both strategies conserve a scarce resource (Haskell: computation time and memory; skills: context window tokens) by deferring work until it is known to be necessary.</p>
+<div class="callout callout-style-default callout-important callout-titled" title="Key Insight">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Key Insight
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The <code>claude-api</code> skill demonstrates a general principle: <strong>curated instructions beat training data</strong> for task-specific accuracy. The model’s training data is vast but noisy. A skill’s instructions are small but precise. When the two conflict, the skill wins because it appears in the system prompt, which has higher influence weight than conversation history or training data. Skills are not redundant with training – they are corrections to it.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="custom-skill-development-building-your-own-expertise-modules" class="level2">
+<h2 class="anchored" data-anchor-id="custom-skill-development-building-your-own-expertise-modules">Custom Skill Development: Building Your Own Expertise Modules</h2>
+<p><strong>Creating a custom skill requires a Markdown file in <code>.claude/skills/</code> with trigger conditions and domain instructions. No code, no compilation, no registration API.</strong></p>
+<p>Here is a practical example. Suppose your team has a specific coding convention: all database queries must use parameterized statements, all error responses must follow a consistent shape, and all API endpoints must include rate limiting. You can encode this as a skill:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu"># .claude/skills/team-api-standards.md</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>---</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>name: team-api-standards</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>trigger:</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  keywords: <span class="co">[</span><span class="ot">"API", "endpoint", "route", "handler", "controller"</span><span class="co">]</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>---</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="fu">## Team API Standards</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>When writing API code for this project, follow these conventions:</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="fu">### Database Queries</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>ALWAYS use parameterized queries. Never interpolate values into SQL strings.</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Use the query builder from <span class="in">`src/db/query.ts`</span>, not raw SQL.</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="fu">### Error Responses</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>Return consistent error shapes:</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="in">```json</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>{ <span class="st">"error"</span><span class="op">:</span> { <span class="st">"code"</span><span class="op">:</span> <span class="st">"VALIDATION_ERROR"</span><span class="op">,</span> <span class="st">"message"</span><span class="op">:</span> <span class="st">"..."</span><span class="op">,</span> <span class="st">"details"</span><span class="op">:</span> [<span class="op">...</span>] } }</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="rate-limiting" class="level3">
+<h3 class="anchored" data-anchor-id="rate-limiting">Rate Limiting</h3>
+<ul>
+<li>Every public endpoint must use the <code>@rateLimit</code> decorator.</li>
+<li>Default: 100 requests/minute for authenticated, 20 for anonymous.</li>
+<li>Document the limit in the endpoint’s JSDoc comment.</li>
+</ul>
+</section>
+<section id="testing" class="level3">
+<h3 class="anchored" data-anchor-id="testing">Testing</h3>
+<ul>
+<li>Every endpoint needs at least one happy-path and one error-path integration test.</li>
+<li>Use <code>supertest</code> for HTTP assertions.</li>
+<li>Mock external services with <code>msw</code>.</li>
+</ul>
+<pre><code>
+This skill activates whenever the user's prompt mentions API-related keywords. It does not add any tools -- the model already knows how to write code. It shapes *how* the model writes code for your specific project, ensuring consistent adherence to team conventions.
+
+Best practices for custom skills:
+
+Keep it under [500 tokens]{.kw-slate}. Remember the 1% budget. A skill that consumes the entire budget crowds out other active skills. Aim for density: every sentence should change the model's behavior.
+
+Use [imperative language]{.kw-sage}. "ALWAYS use parameterized queries" is more effective than "It's generally a good idea to consider using parameterized queries." The model responds to clear directives.
+
+**Be specific to your project.** Generic advice ("write clean code") is already in the model's training data. Skill content should encode project-specific decisions that the model cannot infer: your query builder's API, your error shape, your rate limit defaults.
+
+**Test trigger conditions.** If your trigger keywords are too broad ("code", "fix", "write"), the skill will activate on nearly every prompt, consuming budget unnecessarily. If they are too narrow ("PostgreSQL connection pool configuration"), the skill will rarely fire. Find the middle ground.
+
+
+---
+
+## Skills and the Extensibility Stack: Composition Patterns
+
+**Skills compose with hooks, MCP, and custom agents to form a complete extensibility architecture. Each mechanism operates at a different layer, and they complement rather than compete.**
+
+Consider a full-stack development workflow:
+
+```{mermaid}
+%%| label: fig-composition
+%%| fig-cap: "Extensibility composition across four layers in a full-stack workflow. Layer 1 (Skills) injects behavioral guidance such as semantic HTML rules and parameterized-query mandates. Layer 2 (Tools + MCP) provides executable capabilities including built-in file operations and external Postgres/GitHub integrations. Layer 3 (Hooks) enforces policies via PreToolUse and PostToolUse interceptors. Layer 4 (Custom Agents) adds isolated personas like a security-reviewer or API doc-writer. Data flows downward: skills shape how the model reasons, tools define what it can do, hooks enforce what it must not do, and agents provide specialized execution contexts."
+%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart TD
+  subgraph L1["LAYER 1: SKILLS (shape reasoning)"]
+    FD["frontend-design: semantic HTML, ARIA labels"]
+    TA["team-api-standards: parameterized queries only"]
+  end
+
+  subgraph L2["LAYER 2: TOOLS + MCP (enable actions)"]
+    BI["Built-in: Read, Write, Edit, Bash, Grep"]
+    PG["MCP: postgres query"]
+    GH["MCP: github create pr"]
+  end
+
+  subgraph L3["LAYER 3: HOOKS (enforce policies)"]
+    H1["PreToolUse on Bash: block rm -rf / patterns"]
+    H2["PostToolUse on Write: run prettier"]
+    H3["PostToolUse on Edit: run eslint"]
+  end
+
+  subgraph L4["LAYER 4: CUSTOM AGENTS (specialized personas)"]
+    SR["security-reviewer: read-only, checks for vulns"]
+    DW["api-doc-writer: Write access, generates OpenAPI"]
+  end
+
+  L1 -- "Skills shape HOW the model reasons" --&gt; L2
+  L2 -- "Tools + MCP define WHAT the model can do" --&gt; L3
+  L3 -- "Hooks enforce WHAT the model must not do" --&gt; L4
+  style FD fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style TA fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style BI fill:#C2856E,color:#fff,stroke:#A06A54
+  style PG fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style GH fill:#C4A882,color:#fff,stroke:#A08562
+  style H1 fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style H2 fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style H3 fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style SR fill:#C2856E,color:#fff,stroke:#A06A54
+  style DW fill:#B39EB5,color:#fff,stroke:#8E7A93</code></pre>
+<p><strong>How to read this diagram.</strong> Four horizontal layers stack from top to bottom, each representing a different extension mechanism. Layer 1 (Skills) contains behavioral guidance like semantic HTML rules. Layer 2 (Tools + MCP) lists executable capabilities. Layer 3 (Hooks) shows enforcement interceptors. Layer 4 (Custom Agents) defines specialized personas. Arrows between layers indicate the direction of influence: skills shape reasoning, which flows into tool execution, which is gated by hooks, which feeds into agent-specific review contexts.</p>
+<p>The composition works because each layer is independent:</p>
+<ul>
+<li><strong>Skills</strong> tell the model to use parameterized queries. They cannot enforce it.</li>
+<li><strong>Hooks</strong> enforce that no raw SQL reaches the database. They do not know <em>why</em> parameterized queries matter.</li>
+<li><strong>MCP</strong> provides the database connection. It does not care about query style.</li>
+<li><strong>Custom agents</strong> apply specialized review. They inherit the skill context of their parent.</li>
+</ul>
+<p>This layered independence is the <strong>separation of concerns</strong> principle applied to agent extensibility. No single mechanism tries to do everything. Skills are pure knowledge injection. Hooks are pure policy enforcement. MCP is pure capability extension. The composition produces behavior that no single mechanism could achieve alone.</p>
+<p>The decision tree for choosing the right extension point:</p>
+<blockquote class="blockquote">
+<p>“I want the model to follow our coding standards” –&gt; Skill (modify reasoning)</p>
+<p>“I want every file write to be auto-formatted” –&gt; Hook (PostToolUse on Write)</p>
+<p>“I want the model to query our internal database” –&gt; MCP server (add capability)</p>
+<p>“I want a security-focused review of my PR” –&gt; Custom agent (isolated persona)</p>
+<p>“I want to block deployment on Fridays” –&gt; Hook (PreToolUse on Bash, check day-of-week)</p>
+<p>“I want the model to know our deployment process” –&gt; Skill (inject process documentation)</p>
+</blockquote>
+<hr>
+</section>
+</section>
+<section id="design-patterns-in-the-skills-system" class="level2">
+<h2 class="anchored" data-anchor-id="design-patterns-in-the-skills-system">Design Patterns in the Skills System</h2>
+<p><strong>Three classical design patterns converge in the skills architecture: Template Method, Dependency Injection, and Separation of Concerns.</strong></p>
+<section id="template-method-base-behavior-skill-customizations" class="level3">
+<h3 class="anchored" data-anchor-id="template-method-base-behavior-skill-customizations">Template Method: Base Behavior + Skill Customizations</h3>
+<p>The <span class="kw-sage">Template Method</span> pattern defines the skeleton of an algorithm in a base class, letting subclasses override specific steps. Claude Code’s base system prompt defines the agent’s general behavior: be helpful, use tools effectively, follow safety rules. Skills “override” specific aspects by injecting domain-specific instructions that customize behavior for particular contexts.</p>
+<p>The model’s general behavior is the template method. Each skill is a hook method that customizes one aspect. Without skills, the reasoning step uses general reasoning. With <code>frontend-design</code>, it prioritizes accessibility and responsive design. With <code>debugging</code>, it follows reproduce-hypothesize-test-fix. With <code>code-review</code>, it checks bugs, security, performance, and maintainability in sequence.</p>
+<p>The base behavior is never modified. Skills overlay additional constraints that specialize the general algorithm for a specific domain.</p>
+</section>
+<section id="dependency-injection-of-knowledge" class="level3">
+<h3 class="anchored" data-anchor-id="dependency-injection-of-knowledge">Dependency Injection of Knowledge</h3>
+<p>In a traditional <span class="kw-sage">DI container</span>, you inject <em>services</em> at construction time: <code>new OrderController(paymentService, inventoryService)</code>. The controller does not know which payment implementation it uses – it depends on the abstraction, and the container provides the concrete implementation.</p>
+<p>Skills inject <em>knowledge</em> at prompt construction time. The agent does not know which coding standards it follows until the prompt is assembled and the relevant skill is injected. The <span class="kw-terra">skill registry</span> is the DI container. The <span class="kw-terra">trigger conditions</span> are the binding configuration. The assembled prompt is the fully-constructed object with all dependencies resolved.</p>
+</section>
+<section id="separation-of-concerns-capabilities-vs.-behavior" class="level3">
+<h3 class="anchored" data-anchor-id="separation-of-concerns-capabilities-vs.-behavior">Separation of Concerns: Capabilities vs.&nbsp;Behavior</h3>
+<p>The cleanest design pattern in the skills system is the separation of <strong>what the agent can do</strong> (tools) from <strong>how it should behave</strong> (skills). This separation means:</p>
+<ul>
+<li>Adding a new tool does not change the agent’s coding style</li>
+<li>Adding a new skill does not change the agent’s capability set</li>
+<li>Changing a skill’s trigger does not affect other skills</li>
+<li>Each concern evolves independently</li>
+</ul>
+<p>This is the same principle that separates CSS from HTML, business logic from data access, and policy from mechanism in operating systems.</p>
+<div class="callout callout-style-default callout-caution callout-titled" title="Pattern Spotted">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Caution</span>Pattern Spotted
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The skills system as a whole implements the <strong>Strategy pattern at the knowledge level</strong>. Traditional Strategy lets you swap algorithms at runtime. Skills let you swap domain expertise at prompt assembly time. The context (the agent) has a placeholder for expertise. The concrete strategy (the skill) fills it based on trigger conditions. The model’s reasoning is parameterized by the injected knowledge.</p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="summary" class="level2">
+<h2 class="anchored" data-anchor-id="summary">Summary</h2>
+<p>The skills system reveals several principles that generalize well beyond Claude Code:</p>
+<p><strong>Skills decouple expertise from capabilities.</strong> The model’s capability set (tools) and its behavioral expertise (skills) evolve independently. Adding a new tool does not require updating any skill. Adding a new skill does not touch the tool registry. This separation makes the system composable: any skill works with any tool combination. In traditional software, this is the interface segregation principle – clients should not depend on interfaces they do not use.</p>
+<p><strong>The system prompt is a configuration surface, not a static string.</strong> Skills, MCP instructions, CLAUDE.md content, and system reminders all inject into the system prompt. It is assembled at runtime from fragments selected by context. This transforms Claude Code from a fixed-behavior agent into a configurable platform – the same binary serves different workflows by assembling different prompts.</p>
+<p><strong>Compile-time injection beats runtime correction.</strong> Skills inject before reasoning begins, shaping the model’s approach from its first token. This is cheaper and more effective than trying to correct the model’s behavior after it has already started down the wrong path. The same principle applies in traditional software: it is cheaper to prevent bugs at compile time (type systems, static analysis) than to detect them at runtime (testing, monitoring).</p>
+<p><strong>Token economics are the physics of LLM engineering.</strong> The 1% skill budget is not arbitrary – it reflects a real constraint. Every token allocated to skills is a token taken from conversation history. The budget forces conciseness, which produces better skills. Constraint breeds creativity; scarcity breeds efficiency.</p>
+<p><strong>Curated instructions beat training data for task-specific work.</strong> The <code>claude-api</code> skill exists even though the model was trained on Anthropic SDK documentation. The skill wins because it is authoritative (single source of truth), current (updated with the SDK), and prominent (injected into the system prompt, which has higher influence weight than training data). When accuracy matters, curate.</p>
+<p><strong>Skills transform a general agent into a specialist without forking.</strong> A single Claude Code binary serves React developers, backend engineers, data scientists, and DevOps teams. Skills are the mechanism: each specialty loads its own expertise modules. This is the <strong>plugin architecture</strong> pattern applied to cognition – the same pattern that lets VS Code serve every programming language through extensions.</p>
+<hr>
+<p><em>This post extends the Inside Claude Code series with a deep dive into the skills system that was surveyed in <a href="./11-hooks-lifecycle.html">Part III.4: Hooks &amp; Lifecycle</a>. For the prompt assembly pipeline that skills inject into, see <a href="./03-prompt-assembly.html">Part III.1: Prompt Assembly</a>. For system reminders – the runtime counterpart to compile-time skills – see <a href="./04-context-compaction.html">Part III.2: Context Compaction</a>.</em></p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./10-model-context-protocol.html" class="pagination-link" aria-label="VI.1 — Model Context Protocol">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">VI.1 — Model Context Protocol</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./13-plugin-architecture.html" class="pagination-link" aria-label="VI.3 — Plugin Architecture">
+        <span class="nav-page-text">VI.3 — Plugin Architecture</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.quarto-figure img[src$=".svg"]:not(.nozoom)').forEach(function(img) {
+    fetch(img.src).then(r => r.text()).then(function(svgText) {
+      var div = document.createElement('div');
+      div.innerHTML = svgText;
+      var svg = div.querySelector('svg');
+      if (svg) {
+        var vb = svg.getAttribute('viewBox');
+        if (vb) {
+          var parts = vb.split(/\s+/);
+          var w = parseFloat(parts[2]), h = parseFloat(parts[3]);
+          var ratio = h / w;
+          var containerH = Math.max(250, Math.min(700, 900 * ratio));
+          svg.style.width = '100%';
+          svg.style.height = containerH + 'px';
+        } else {
+          svg.style.width = '100%';
+          svg.style.height = '400px';
+        }
+        svg.style.border = '1px solid var(--bs-border-color, #dee2e6)';
+        svg.style.borderRadius = '6px';
+        svg.style.cursor = 'grab';
+        svg.style.background = 'var(--bs-body-bg, #fff)';
+        img.parentNode.replaceChild(svg, img);
+        svgPanZoom(svg, {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true, minZoom: 0.5, maxZoom: 10});
+      }
+    });
+  });
+  // Mermaid post-processing: apply Palatino font + pan-zoom
+  function initMermaid() {
+    document.querySelectorAll('.cell-output-display svg').forEach(function(svg) {
+      if (svg.dataset.mInit) return;
+      svg.dataset.mInit = '1';
+      // Step 1: Apply Palatino to all text AFTER Mermaid layout
+      svg.querySelectorAll('.nodeLabel, .edgeLabel, .cluster-label span, text').forEach(function(el) {
+        el.style.fontFamily = '"Palatino Linotype", Palatino, Georgia, serif';
+      });
+      // Step 2: Ensure foreignObjects don't clip
+      svg.querySelectorAll('foreignObject').forEach(function(fo) {
+        fo.style.overflow = 'visible';
+      });
+      // Step 3: Size the container
+      var vb = svg.getAttribute('viewBox');
+      if (vb) {
+        var parts = vb.split(/[\s,]+/);
+        var w = parseFloat(parts[2]), h = parseFloat(parts[3]);
+        var ratio = h / w;
+        var containerH = Math.max(350, Math.min(800, 900 * ratio));
+        svg.style.width = '100%';
+        svg.style.height = containerH + 'px';
+      } else {
+        svg.style.width = '100%';
+        svg.style.height = '500px';
+      }
+      svg.style.border = '1px solid var(--bs-border-color, #dee2e6)';
+      svg.style.borderRadius = '6px';
+      svg.style.cursor = 'grab';
+      svg.style.background = 'var(--bs-body-bg, #fff)';
+      // Step 4: Enable pan-zoom
+      try {
+        svgPanZoom(svg, {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true, minZoom: 0.5, maxZoom: 10});
+      } catch(e) {}
+    });
+  }
+  setTimeout(initMermaid, 800);
+  setTimeout(initMermaid, 2000);
+  setTimeout(initMermaid, 4000);
+});
+</script>
+
+
+
+
+</body></html>

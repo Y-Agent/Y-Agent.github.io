@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Native Runtime, Voice, and Portability – Inside Claude Code</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./14-hidden-costs-context-manipulation.html" rel="next">
+<link href="./16-remote-runtime-bridge.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-f2aa3fcab4a3c0cbb1a885f128e95a4e.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-4486e80548b20dd029182ccec781b91c.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-f2aa3fcab4a3c0cbb1a885f128e95a4e.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-e429c51d478a3f7fe436edff7d8b5e18.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-89366f393ab88770656785fe4740de67.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-e429c51d478a3f7fe436edff7d8b5e18.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<meta name="mermaid-theme" content="neutral">
+<script src="site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Palatino+Linotype&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+
+
+<link rel="stylesheet" href="styles/custom.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Inside Claude Code</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="./index.html" aria-current="page"> 
+<span class="menu-text">Series Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./explorer-dist/index.html" target="_blank"> 
+<span class="menu-text">Code Explorer</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ZhuoranYang/claude_code_analysis"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./18-native-runtime-voice-portability.html">VIII. Native Runtime</a></li><li class="breadcrumb-item"><a href="./18-native-runtime-voice-portability.html">VIII.1 — Native Runtime, Voice &amp; Portability</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Inside Claude Code</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./explorer-dist/index.html" class="sidebar-item-text sidebar-link" target="_blank">
+ <span class="menu-text">Code Explorer</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false">
+ <span class="menu-text">I. Overview</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./00-birds-eye-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">I.1 — Bird’s Eye Architecture</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-end-to-end-workflow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">I.2 — End-to-End Workflow</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false">
+ <span class="menu-text">II. Agent Harness</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-agent-loop-query-engine.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.1 — Agent Loop &amp; Query Engine</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./15-agent-sdk-structured-io.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.2 — Agent SDK &amp; Structured I/O</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-multi-agent-orchestration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.3 — Multi-Agent Orchestration</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./19-plan-mode.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.4 — Plan Mode</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false">
+ <span class="menu-text">III. Context Engineering</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-prompt-assembly.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.1 — Prompt Assembly</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-context-compaction.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.2 — Context Compaction</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./17-memory-hierarchy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.3 — Memory Hierarchy</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./11-hooks-lifecycle.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.4 — Hooks &amp; Lifecycle</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false">
+ <span class="menu-text">IV. Tools</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-tool-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IV.1 — Tool System &amp; Registry</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-safety-sandbox.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IV.2 — Safety &amp; Sandbox</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false">
+ <span class="menu-text">V. Invocation</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-cli-commands-ui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">V.1 — CLI, Commands &amp; UI</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-auth-providers-flags.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">V.2 — Auth, Providers &amp; Flags</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false">
+ <span class="menu-text">VI. Extensions</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./10-model-context-protocol.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.1 — Model Context Protocol</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./12-skills-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.2 — Skills System</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./13-plugin-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.3 — Plugin Architecture</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="false">
+ <span class="menu-text">VII. Remote Runtime</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./16-remote-runtime-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VII.1 — Remote Runtime &amp; Bridge</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">VIII. Native Runtime</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./18-native-runtime-voice-portability.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">VIII.1 — Native Runtime, Voice &amp; Portability</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="false">
+ <span class="menu-text">IX. Transparency &amp; Trust</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./14-hidden-costs-context-manipulation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IX.1 — Transparency &amp; Trust</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#the-vendor-module-architecture-four-native-accelerators" id="toc-the-vendor-module-architecture-four-native-accelerators" class="nav-link active" data-scroll-target="#the-vendor-module-architecture-four-native-accelerators">The Vendor Module Architecture – Four Native Accelerators</a></li>
+  <li><a href="#cross-cutting-patterns-the-lazy-load-protocol" id="toc-cross-cutting-patterns-the-lazy-load-protocol" class="nav-link" data-scroll-target="#cross-cutting-patterns-the-lazy-load-protocol">Cross-Cutting Patterns – The Lazy Load Protocol</a>
+  <ul class="collapse">
+  <li><a href="#the-dual-load-path" id="toc-the-dual-load-path" class="nav-link" data-scroll-target="#the-dual-load-path">The Dual Load Path</a></li>
+  <li><a href="#lazy-loading-and-caching" id="toc-lazy-loading-and-caching" class="nav-link" data-scroll-target="#lazy-loading-and-caching">Lazy Loading and Caching</a></li>
+  <li><a href="#platform-detection-and-architecture-resolution" id="toc-platform-detection-and-architecture-resolution" class="nav-link" data-scroll-target="#platform-detection-and-architecture-resolution">Platform Detection and Architecture Resolution</a></li>
+  <li><a href="#graceful-degradation" id="toc-graceful-degradation" class="nav-link" data-scroll-target="#graceful-degradation">Graceful Degradation</a></li>
+  </ul></li>
+  <li><a href="#native-ts-pure-typescript-fallbacks" id="toc-native-ts-pure-typescript-fallbacks" class="nav-link" data-scroll-target="#native-ts-pure-typescript-fallbacks">native-ts – Pure TypeScript Fallbacks</a></li>
+  <li><a href="#voice-as-systems-case-study-from-microphone-to-model" id="toc-voice-as-systems-case-study-from-microphone-to-model" class="nav-link" data-scroll-target="#voice-as-systems-case-study-from-microphone-to-model">Voice as Systems Case Study – From Microphone to Model</a>
+  <ul class="collapse">
+  <li><a href="#the-fallback-chain" id="toc-the-fallback-chain" class="nav-link" data-scroll-target="#the-fallback-chain">The Fallback Chain</a></li>
+  <li><a href="#native-audio-the-preferred-path" id="toc-native-audio-the-preferred-path" class="nav-link" data-scroll-target="#native-audio-the-preferred-path">Native Audio: The Preferred Path</a></li>
+  <li><a href="#the-arecord-probe-beyond-path-checking" id="toc-the-arecord-probe-beyond-path-checking" class="nav-link" data-scroll-target="#the-arecord-probe-beyond-path-checking">The arecord Probe: Beyond PATH Checking</a></li>
+  <li><a href="#sox-as-last-resort" id="toc-sox-as-last-resort" class="nav-link" data-scroll-target="#sox-as-last-resort">SoX as Last Resort</a></li>
+  <li><a href="#permission-probing-on-macos" id="toc-permission-probing-on-macos" class="nav-link" data-scroll-target="#permission-probing-on-macos">Permission Probing on macOS</a></li>
+  </ul></li>
+  <li><a href="#startup-optimizations-paying-for-what-you-use" id="toc-startup-optimizations-paying-for-what-you-use" class="nav-link" data-scroll-target="#startup-optimizations-paying-for-what-you-use">Startup Optimizations – Paying for What You Use</a>
+  <ul class="collapse">
+  <li><a href="#deferred-prefetches" id="toc-deferred-prefetches" class="nav-link" data-scroll-target="#deferred-prefetches">Deferred Prefetches</a></li>
+  <li><a href="#prewarm-for-keyboard-modifiers" id="toc-prewarm-for-keyboard-modifiers" class="nav-link" data-scroll-target="#prewarm-for-keyboard-modifiers">Prewarm for Keyboard Modifiers</a></li>
+  <li><a href="#why-dlopen-is-not-preloaded-for-audio" id="toc-why-dlopen-is-not-preloaded-for-audio" class="nav-link" data-scroll-target="#why-dlopen-is-not-preloaded-for-audio">Why dlopen Is Not Preloaded for Audio</a></li>
+  <li><a href="#platform-specific-startup-work" id="toc-platform-specific-startup-work" class="nav-link" data-scroll-target="#platform-specific-startup-work">Platform-Specific Startup Work</a></li>
+  </ul></li>
+  <li><a href="#the-design-philosophy-typescript-as-control-plane" id="toc-the-design-philosophy-typescript-as-control-plane" class="nav-link" data-scroll-target="#the-design-philosophy-typescript-as-control-plane">The Design Philosophy – TypeScript as Control Plane</a></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">Summary</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./18-native-runtime-voice-portability.html">VIII. Native Runtime</a></li><li class="breadcrumb-item"><a href="./18-native-runtime-voice-portability.html">VIII.1 — Native Runtime, Voice &amp; Portability</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Native Runtime, Voice, and Portability</h1>
+<p class="subtitle lead">The Systems Engineering Layer Beneath the TypeScript Surface</p>
+  <div class="quarto-categories">
+    <div class="quarto-category">native</div>
+    <div class="quarto-category">voice</div>
+    <div class="quarto-category">portability</div>
+    <div class="quarto-category">runtime</div>
+  </div>
+  </div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="callout callout-style-default callout-note callout-titled" title="Reader Advisory">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Reader Advisory
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>This post covers the native runtime layer (vendor N-API modules, voice pipeline, platform detection, startup optimizations) rather than core agentic functionality. Readers focused on the agent loop, tool system, planning, or context management can safely skip this post without losing continuity.</p>
+</div>
+</div>
+<p>Claude Code is written in TypeScript, but TypeScript alone cannot capture audio from a microphone, detect which keyboard modifier a user is holding, or lay out a flexbox tree at 60 fps. Beneath the high-level agent loop sits a <span class="kw-sage">systems engineering</span> layer: four <span class="kw-slate">vendor N-API addons</span> compiled from Rust and Objective-C, three <span class="kw-slate">pure-TypeScript native rewrites</span> for fallback environments, and a <span class="kw-terra">voice pipeline</span> that must negotiate OS permissions, ALSA sound cards, and WSL audio bridging – all before a single word of speech reaches the model. The design philosophy is consistent: <strong>TypeScript as the control plane, native accelerators as the data plane</strong>, with <span class="kw-mauve">lazy loading</span> and <span class="kw-mauve">graceful degradation</span> ensuring that the absence of any native module never prevents the application from starting.</p>
+<p>This post maps the vendor module architecture, examines the cross-cutting patterns that unify them, traces voice mode as a systems engineering case study, and connects the startup optimizations that keep time-to-first-render low despite a growing native dependency surface.</p>
+<blockquote class="blockquote">
+<p><strong>This post covers:</strong></p>
+<ul>
+<li>The Four Vendor Modules – audio capture, image processing, keyboard modifiers, URL handling</li>
+<li>Cross-Cutting Patterns – lazy loading, dual load paths, platform/architecture detection, graceful degradation</li>
+<li>native-ts – pure-TypeScript fallbacks for performance-sensitive code</li>
+<li>Voice as Systems Case Study – native audio, arecord fallback, SoX fallback, permission probing</li>
+<li>Startup Optimizations – deferred prefetches, prewarm, lazy dlopen</li>
+</ul>
+</blockquote>
+<p><strong>Source files covered in this post:</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 28%">
+<col style="width: 42%">
+<col style="width: 28%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Purpose</th>
+<th>Size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>vendor/audio-capture.node</code></td>
+<td>N-API native audio module (cpal Rust backend)</td>
+<td>Native binary</td>
+</tr>
+<tr class="even">
+<td><code>vendor/image-processor.node</code></td>
+<td>N-API image processor (sharp-compatible)</td>
+<td>Native binary</td>
+</tr>
+<tr class="odd">
+<td><code>vendor/modifiers-napi.node</code></td>
+<td>N-API keyboard modifier detection (IOKit)</td>
+<td>Native binary</td>
+</tr>
+<tr class="even">
+<td><code>vendor/url-handler.node</code></td>
+<td>N-API URL handler (NSApplication)</td>
+<td>Native binary</td>
+</tr>
+<tr class="odd">
+<td><code>src/native-ts/color-diff/</code></td>
+<td>Pure TS syntax-highlighted diffing fallback</td>
+<td>~1,000 LOC</td>
+</tr>
+<tr class="even">
+<td><code>src/native-ts/file-index/</code></td>
+<td>Pure TS fuzzy file search fallback</td>
+<td>~370 LOC</td>
+</tr>
+<tr class="odd">
+<td><code>src/native-ts/yoga-layout/</code></td>
+<td>Pure TS Flexbox layout fallback</td>
+<td>~2,580 LOC</td>
+</tr>
+<tr class="even">
+<td><code>src/voice/voiceModeEnabled.ts</code></td>
+<td>Voice mode feature gating and platform checks</td>
+<td>~200 LOC</td>
+</tr>
+<tr class="odd">
+<td><code>src/services/voice.ts</code></td>
+<td>Voice mode orchestration</td>
+<td>~400 LOC</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<section id="the-vendor-module-architecture-four-native-accelerators" class="level2">
+<h2 class="anchored" data-anchor-id="the-vendor-module-architecture-four-native-accelerators">The Vendor Module Architecture – Four Native Accelerators</h2>
+<p><strong>Claude Code ships four <span class="kw-slate">N-API</span> native addons, each a thin TypeScript wrapper around a precompiled <code>.node</code> binary.</strong> These are not npm packages – they are compiled for specific <span class="kw-slate">platform/architecture</span> combinations (<code>arm64-darwin</code>, <code>x64-linux</code>, <code>x64-win32</code>) and loaded at runtime via <code>require()</code>. Each module follows the same structural template: a TypeScript type declaration for the native interface, a lazy-loading function with caching, and exported wrapper functions that silently return safe defaults when the native module is unavailable.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-vendor-module-map" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-vendor-module-map-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-vendor-module-map">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart TD
+  subgraph VENDOR["vendor/ -- N-API Native Addons"]
+    direction TB
+    subgraph CROSS["Cross-Platform (macOS, Linux, Windows)"]
+      direction LR
+      AUDIO["&lt;b&gt;audio-capture&lt;/b&gt;&lt;br&gt;151 LOC wrapper&lt;br&gt;cpal backend (Rust)&lt;br&gt;&lt;i&gt;Record / Playback / Mic auth&lt;/i&gt;"]
+      IMAGE["&lt;b&gt;image-processor&lt;/b&gt;&lt;br&gt;162 LOC wrapper&lt;br&gt;sharp-compatible API&lt;br&gt;&lt;i&gt;Resize / Format / Clipboard&lt;/i&gt;"]
+    end
+    subgraph MACOS["macOS Only"]
+      direction LR
+      MODS["&lt;b&gt;modifiers-napi&lt;/b&gt;&lt;br&gt;67 LOC wrapper&lt;br&gt;IOKit (Obj-C)&lt;br&gt;&lt;i&gt;Keyboard modifier detection&lt;/i&gt;"]
+      URL["&lt;b&gt;url-handler&lt;/b&gt;&lt;br&gt;58 LOC wrapper&lt;br&gt;NSApplication (Obj-C)&lt;br&gt;&lt;i&gt;Apple Event kAEGetURL&lt;/i&gt;"]
+    end
+  end
+  style AUDIO fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style IMAGE fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style MODS fill:#C2856E,color:#fff,stroke:#A06A54
+  style URL fill:#B39EB5,color:#fff,stroke:#8E7A93
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-vendor-module-map-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: The four vendor N-API modules organized by platform scope. Cross-platform modules (macOS, Linux, Windows): audio-capture (151 LOC wrapper, cpal Rust backend for recording/playback/mic authorization) and image-processor (162 LOC wrapper, sharp-compatible API for resize/format/clipboard). macOS-only modules: modifiers-napi (67 LOC wrapper, IOKit Objective-C backend for keyboard modifier detection) and url-handler (58 LOC wrapper, NSApplication for Apple Event kAEGetURL handling). All four follow an identical lazy-load, graceful-degradation protocol where failed loads return safe defaults instead of throwing.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> The outer box groups all four vendor N-API native addons, subdivided into two platform scopes. The top “Cross-Platform” row contains audio-capture (Rust/cpal backend for recording and playback) and image-processor (sharp-compatible API for image manipulation), both available on macOS, Linux, and Windows. The bottom “macOS Only” row contains modifiers-napi (IOKit keyboard modifier detection) and url-handler (NSApplication Apple Event handling). Each box lists its wrapper LOC, native backend, and primary function, showing the thin-wrapper-over-native-binary pattern shared by all four.</p>
+<p>The division is not arbitrary. The two cross-platform modules (<span class="kw-slate">audio-capture</span> and <span class="kw-slate">image-processor</span>) handle data-plane operations – high-throughput audio and image processing where JavaScript’s single-threaded runtime would introduce latency. The two macOS-only modules (<span class="kw-slate">modifiers-napi</span> and <span class="kw-slate">url-handler</span>) access Apple-specific system APIs (IOKit for keyboard state, NSApplication for Apple Events) that have no cross-platform equivalent.</p>
+<hr>
+</section>
+<section id="cross-cutting-patterns-the-lazy-load-protocol" class="level2">
+<h2 class="anchored" data-anchor-id="cross-cutting-patterns-the-lazy-load-protocol">Cross-Cutting Patterns – The Lazy Load Protocol</h2>
+<p><strong>Every vendor module follows an identical load discipline that can be summarized in four rules: cache the module, attempt loading only once, try the bundled path first, and never throw on failure.</strong></p>
+<section id="the-dual-load-path" class="level3">
+<h3 class="anchored" data-anchor-id="the-dual-load-path">The Dual Load Path</h3>
+<p>Each module has two ways to find its <code>.node</code> binary. The first is the <span class="kw-sage">bundled path</span>: an environment variable (e.g., <code>AUDIO_CAPTURE_NODE_PATH</code>, <code>MODIFIERS_NODE_PATH</code>, <code>URL_HANDLER_NODE_PATH</code>) is set at build time by <code>build-with-plugins.ts</code>. When present, the wrapper issues a direct <code>require()</code> against this path. Bun’s compiler rewrites this to an embedded filesystem reference (<code>/$bunfs/root/audio-capture.node</code>), which means the native binary is baked into the single-file executable. The comment in <code>audio-capture-src/index.ts</code> makes the constraint explicit:</p>
+<blockquote class="blockquote">
+<p><em>“MUST stay a direct require(env var) – bun cannot analyze require(variable) from a loop.”</em></p>
+</blockquote>
+<p>If the environment variable is absent (development mode, or a non-bundled build), the wrapper falls through to <strong>runtime fallbacks</strong>: it constructs platform-specific paths like <code>./vendor/audio-capture/${process.arch}-${process.platform}/audio-capture.node</code> and tries each in sequence. This dual-path design means the same source file works identically in production bundles and local development.</p>
+</section>
+<section id="lazy-loading-and-caching" class="level3">
+<h3 class="anchored" data-anchor-id="lazy-loading-and-caching">Lazy Loading and Caching</h3>
+<p>Every module defers <code>require()</code> until the first function call. The pattern uses two sentinel variables:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> cachedModule<span class="op">:</span> NativeModule <span class="op">|</span> <span class="dt">null</span> <span class="op">=</span> <span class="kw">null</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> loadAttempted <span class="op">=</span> <span class="kw">false</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">loadModule</span>()<span class="op">:</span> NativeModule <span class="op">|</span> <span class="dt">null</span> {</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (loadAttempted) <span class="cf">return</span> cachedModule</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  loadAttempted <span class="op">=</span> <span class="kw">true</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="co">// ... try require(), set cachedModule on success</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> cachedModule</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <span class="kw-terra">loadAttempted</span> flag ensures that a failed load is never retried. The <code>cachedModule</code> variable eliminates repeated <code>require()</code> calls after a successful load. This is not mere optimization – it is a correctness requirement. The <span class="kw-slate">audio-capture</span> module links against <code>CoreAudio.framework</code> and <code>AudioUnit.framework</code>; its <code>dlopen</code> is synchronous and blocks the event loop for 1–8 seconds on a cold <code>coreaudiod</code> (post-wake, post-boot). Loading eagerly at import time would freeze the startup path. Instead, the load happens on first voice keypress – “no preload, because there is no way to make dlopen non-blocking and a startup freeze is worse than a first-press delay.”</p>
+</section>
+<section id="platform-detection-and-architecture-resolution" class="level3">
+<h3 class="anchored" data-anchor-id="platform-detection-and-architecture-resolution">Platform Detection and Architecture Resolution</h3>
+<p>Platform gating happens at the top of every <code>loadModule()</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="bu">process</span><span class="op">.</span><span class="at">platform</span> <span class="op">!==</span> <span class="st">'darwin'</span>) <span class="cf">return</span> <span class="kw">null</span>  <span class="co">// macOS-only modules</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>For cross-platform modules, the architecture string is constructed dynamically: <code>`${process.arch}-${process.platform}`</code> yields values like <code>arm64-darwin</code>, <code>x64-linux</code>, or <code>x64-win32</code>, which map directly to subdirectories containing the precompiled binaries. This is the same convention used by <code>node-pre-gyp</code> and similar native module distributors, but handled inline rather than through a build tool.</p>
+</section>
+<section id="graceful-degradation" class="level3">
+<h3 class="anchored" data-anchor-id="graceful-degradation">Graceful Degradation</h3>
+<p>When <code>loadModule()</code> returns <code>null</code>, every exported function returns a safe default: <code>false</code> for boolean queries, empty arrays for list queries, <code>void</code> for side-effect operations. The caller never sees an exception. This is a deliberate design choice that pushes failure handling upward: the voice subsystem checks <code>isNativeAudioAvailable()</code> and falls back to subprocess-based recording; the image processor throws only when <code>toBuffer()</code> is called on a pipeline that failed to initialize. The philosophy is that <strong>the absence of a native module should degrade capability, not crash the process</strong>.</p>
+<hr>
+</section>
+</section>
+<section id="native-ts-pure-typescript-fallbacks" class="level2">
+<h2 class="anchored" data-anchor-id="native-ts-pure-typescript-fallbacks">native-ts – Pure TypeScript Fallbacks</h2>
+<p><strong>When the native binary is unavailable or unnecessary, Claude Code falls back to <span class="kw-sage">pure-TypeScript reimplementations</span> that match the native API surface exactly.</strong> The <code>src/native-ts/</code> directory contains three such ports:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 19%">
+<col style="width: 12%">
+<col style="width: 46%">
+<col style="width: 21%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Module</th>
+<th>LOC</th>
+<th>Native equivalent</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>color-diff/</code></td>
+<td>~1000</td>
+<td>Rust (syntect + similar crate)</td>
+<td>Syntax-highlighted word-level diffing</td>
+</tr>
+<tr class="even">
+<td><code>file-index/</code></td>
+<td>~370</td>
+<td>Rust (nucleo fuzzy matcher)</td>
+<td>Fuzzy file search with scoring</td>
+</tr>
+<tr class="odd">
+<td><code>yoga-layout/</code></td>
+<td>~2580</td>
+<td>C++ (Meta’s Yoga)</td>
+<td>Flexbox layout for the terminal UI</td>
+</tr>
+</tbody>
+</table>
+<p>Each port preserves the exact function signatures and return types of its native counterpart. The <code>color-diff</code> port explicitly documents its semantic differences: “Syntax highlighting uses highlight.js. Scope colors were measured from syntect’s output so most tokens match.” The <code>file-index</code> port reimplements nucleo’s scoring algorithm (match bonuses for word boundaries, camelCase transitions, and consecutive characters) in plain JavaScript, with the same <code>FileIndex.search(query, limit)</code> API.</p>
+<p>The <span class="kw-slate">yoga-layout</span> port is the largest at ~2,580 lines. It reimplements Meta’s C++ flexbox engine as a single-pass layout algorithm covering flex-direction, grow/shrink/basis, alignment, wrapping, and absolute positioning. The comments are explicit about scope: “covers the subset of features Ink actually uses” while noting unimplemented features (aspect-ratio, content-box sizing, RTL direction) that Ink never calls.</p>
+<p>These TypeScript ports serve a dual purpose. First, they provide a <strong>zero-native-dependency fallback</strong> for environments where compiling or distributing <code>.node</code> binaries is impractical (CI containers, unusual architectures, WASM runtimes). Second, they serve as <strong>reference implementations</strong> that make the native module’s behavior testable without building the Rust or C++ toolchain.</p>
+<hr>
+</section>
+<section id="voice-as-systems-case-study-from-microphone-to-model" class="level2">
+<h2 class="anchored" data-anchor-id="voice-as-systems-case-study-from-microphone-to-model">Voice as Systems Case Study – From Microphone to Model</h2>
+<p><strong>Voice mode is the most complex systems integration in Claude Code, requiring coordination across native audio capture, OS permission APIs, subprocess fallbacks, and WebSocket streaming – all negotiated at runtime based on what the host environment can provide.</strong></p>
+<p>The voice pipeline begins with a simple question: <em>can this machine record audio?</em> Answering it requires probing up to four layers of the system stack.</p>
+<section id="the-fallback-chain" class="level3">
+<h3 class="anchored" data-anchor-id="the-fallback-chain">The Fallback Chain</h3>
+<p>The recording backend is selected through a <span class="kw-mauve">priority chain</span> that degrades gracefully across platforms:</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-voice-fallback-chain" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-voice-fallback-chain-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-voice-fallback-chain">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart TD
+  NATIVE["&lt;b&gt;Native Audio (cpal)&lt;/b&gt;&lt;br&gt;&lt;i&gt;macOS / Linux / Windows&lt;/i&gt;"]
+  C1{"Module&lt;br&gt;loaded?"}
+  USE1["Record via N-API"]
+  ARECORD["&lt;b&gt;arecord (ALSA utils)&lt;/b&gt;&lt;br&gt;&lt;i&gt;Linux only&lt;/i&gt;"]
+  C2{"Probe&lt;br&gt;succeeds?"}
+  USE2["Spawn arecord"]
+  SOX["&lt;b&gt;SoX rec&lt;/b&gt;&lt;br&gt;&lt;i&gt;Linux / macOS fallback&lt;/i&gt;"]
+  C3{"rec in&lt;br&gt;PATH?"}
+  USE3["Spawn rec"]
+  FAIL["&lt;b&gt;Voice Unavailable&lt;/b&gt;&lt;br&gt;&lt;i&gt;Prompt install instructions&lt;/i&gt;"]
+
+  NATIVE --&gt; C1
+  C1 -- "yes" --&gt; USE1
+  C1 -- "no" --&gt; ARECORD
+  ARECORD --&gt; C2
+  C2 -- "yes" --&gt; USE2
+  C2 -- "no" --&gt; SOX
+  SOX --&gt; C3
+  C3 -- "yes" --&gt; USE3
+  C3 -- "no" --&gt; FAIL
+
+  style NATIVE fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style C1 fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style USE1 fill:#C2856E,color:#fff,stroke:#A06A54
+  style ARECORD fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style C2 fill:#C4A882,color:#fff,stroke:#A08562
+  style USE2 fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style SOX fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style C3 fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style USE3 fill:#C2856E,color:#fff,stroke:#A06A54
+  style FAIL fill:#B39EB5,color:#fff,stroke:#8E7A93
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-voice-fallback-chain-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: Voice recording backend selection through a four-step priority fallback chain. First choice: Native Audio (cpal via N-API, cross-platform). If the module fails to load, falls through to arecord (Linux ALSA utils only), which uses a 150ms live probe – not a static PATH check – to verify the device can actually open. If arecord fails, falls through to SoX rec (Linux/macOS fallback with built-in silence detection). If all three fail, voice mode is disabled with platform-specific install instructions. The ‘Voice Unavailable’ terminal node is highlighted with a terracotta border.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Follow the chain top to bottom through four fallback stages. The system first tries Native Audio (cpal via N-API); the diamond asks whether the module loaded successfully. If yes, it records via N-API. If no, it falls through to arecord (Linux ALSA), where a 150ms live probe – not a static PATH check – determines if the device can actually open. Failure there leads to SoX rec as a last resort. If all three backends fail, the flow terminates at “Voice Unavailable” with platform-specific install instructions. The chain ensures the best available backend is always selected at runtime.</p>
+</section>
+<section id="native-audio-the-preferred-path" class="level3">
+<h3 class="anchored" data-anchor-id="native-audio-the-preferred-path">Native Audio: The Preferred Path</h3>
+<p>The <span class="kw-slate">native audio module</span> wraps <span class="kw-slate">cpal</span> (a Rust cross-platform audio library) via N-API. It provides in-process microphone access without spawning child processes. The TypeScript wrapper in <code>voice.ts</code> loads it asynchronously:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">loadAudioNapi</span>()<span class="op">:</span> <span class="bu">Promise</span><span class="op">&lt;</span>AudioNapi<span class="op">&gt;</span> {</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  audioNapiPromise <span class="op">??=</span> (<span class="kw">async</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> mod <span class="op">=</span> <span class="cf">await</span> <span class="im">import</span>(<span class="st">'audio-capture-napi'</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    mod<span class="op">.</span><span class="fu">isNativeAudioAvailable</span>()  <span class="co">// trigger the deferred require</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> mod</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  })()</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> audioNapiPromise</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <code>isNativeAudioAvailable()</code> call is not a check – it is a trigger. The vendor wrapper defers <code>require()</code> until first function call, so this forces the <code>dlopen</code> to happen during the async load rather than during the first recording attempt.</p>
+<p>On <span class="kw-slate">Linux</span>, an additional gate applies: the native module uses ALSA internally, and if no ALSA sound cards are present (<code>/proc/asound/cards</code> is empty or reads “no soundcards”), the native path is skipped to prevent cpal from writing error messages to stderr. This check is memoized – “card presence doesn’t change mid-session.”</p>
+</section>
+<section id="the-arecord-probe-beyond-path-checking" class="level3">
+<h3 class="anchored" data-anchor-id="the-arecord-probe-beyond-path-checking">The arecord Probe: Beyond PATH Checking</h3>
+<p>A naive <code>hasCommand('arecord')</code> is insufficient. On <span class="kw-slate">WSL1</span> and headless Linux, the <code>arecord</code> binary exists in PATH but fails at <code>open()</code> because there is no ALSA card and no PulseAudio server. The voice service implements a <strong>live probe</strong>: it spawns <code>arecord</code> with the actual recording arguments and races a 150ms timer. If the process is still alive after 150ms, it opened the device successfully; if it exits early, the stderr output explains why. This probe result is memoized for the session.</p>
+<p>The probe distinguishes three Linux audio environments:</p>
+<ul>
+<li><strong>Native Linux with ALSA cards</strong>: native module works, arecord works</li>
+<li><strong>WSL2 with WSLg (Windows 11)</strong>: native module fails (no <code>/proc/asound/cards</code>), but arecord succeeds via PulseAudio RDP pipes</li>
+<li><strong>WSL1 / WSL2 without WSLg (Windows 10)</strong>: both fail, voice is unavailable</li>
+</ul>
+</section>
+<section id="sox-as-last-resort" class="level3">
+<h3 class="anchored" data-anchor-id="sox-as-last-resort">SoX as Last Resort</h3>
+<p>When neither native audio nor arecord is available, the voice service tries <span class="kw-slate">SoX</span>’s <code>rec</code> command. SoX recording includes built-in silence detection (useful for auto-stop mode), controlled by parameters like <code>SILENCE_DURATION_SECS = '2.0'</code> and <code>SILENCE_THRESHOLD = '3%'</code>. The <code>--buffer 1024</code> flag is critical: “Without this, SoX may buffer several seconds of audio before writing anything to stdout when piped.”</p>
+</section>
+<section id="permission-probing-on-macos" class="level3">
+<h3 class="anchored" data-anchor-id="permission-probing-on-macos">Permission Probing on macOS</h3>
+<p>On macOS, microphone access requires <span class="kw-terra">TCC (Transparency, Consent, and Control)</span> authorization. The native module exposes <code>microphoneAuthorizationStatus()</code> which returns the TCC state: 0 (notDetermined), 1 (restricted), 2 (denied), 3 (authorized). But the code does not trust this API alone: “We trust the probe result over the TCC status API, which can be unreliable for ad-hoc signed or cross-architecture binaries (e.g., x64-on-arm64).” Instead, <code>requestMicrophonePermission()</code> actually starts and immediately stops a recording, triggering the system permission dialog on first use.</p>
+<hr>
+</section>
+</section>
+<section id="startup-optimizations-paying-for-what-you-use" class="level2">
+<h2 class="anchored" data-anchor-id="startup-optimizations-paying-for-what-you-use">Startup Optimizations – Paying for What You Use</h2>
+<p><strong>Claude Code’s startup path is engineered to defer every native module load and every network call until after first render.</strong> The principle is straightforward: the user should see the REPL prompt before any native binary is <code>dlopen</code>’d, before any OAuth token is fetched, and before any MCP server is probed.</p>
+<section id="deferred-prefetches" class="level3">
+<h3 class="anchored" data-anchor-id="deferred-prefetches">Deferred Prefetches</h3>
+<p>The <span class="kw-terra">startDeferredPrefetches()</span> function in <code>main.tsx</code> runs after first render and orchestrates background work: user context initialization, system context building, AWS/GCP credential prefetching, MCP URL discovery, analytics gate initialization, and <span class="kw-mauve">model capability refresh</span>. In bare mode (<code>--bare</code>, used for scripted <code>-p</code> calls), all prefetches are skipped entirely: “These are cache-warms for the REPL’s first-turn responsiveness. Scripted -p calls don’t have a ‘user is typing’ window to hide this work in – it is pure overhead on the critical path.”</p>
+</section>
+<section id="prewarm-for-keyboard-modifiers" class="level3">
+<h3 class="anchored" data-anchor-id="prewarm-for-keyboard-modifiers">Prewarm for Keyboard Modifiers</h3>
+<p>The <span class="kw-slate">modifiers-napi</span> module exports a <code>prewarm()</code> function that simply calls <code>loadModule()</code> to populate the cache. This is called early in the startup sequence so that the first modifier key detection (e.g., checking if Option is held for escape sequences) does not incur the <code>dlopen</code> latency of ~1ms. The prewarm pattern is lightweight enough to run on the critical path.</p>
+</section>
+<section id="why-dlopen-is-not-preloaded-for-audio" class="level3">
+<h3 class="anchored" data-anchor-id="why-dlopen-is-not-preloaded-for-audio">Why dlopen Is Not Preloaded for Audio</h3>
+<p>Audio is different. The <code>audio-capture.node</code> binary links against CoreAudio.framework, and its <span class="kw-terra">dlopen is synchronous</span>, blocking the event loop for <span class="kw-slate">1–8 seconds</span> on a cold coreaudiod. The voice service comment is explicit: “Load happens on first voice keypress – no preload, because there’s no way to make dlopen non-blocking and a startup freeze is worse than a first-press delay.” This is a conscious trade-off: keyboard modifiers are needed at every keypress, so the ~1ms prewarm is justified; audio is needed only when voice mode is activated, so the 1–8s cost is deferred to that moment.</p>
+</section>
+<section id="platform-specific-startup-work" class="level3">
+<h3 class="anchored" data-anchor-id="platform-specific-startup-work">Platform-Specific Startup Work</h3>
+<p>Claude Code also performs platform-specific startup operations that are not tied to native modules but affect perceived startup speed:</p>
+<ul>
+<li><strong>macOS</strong>: Keychain reads for OAuth tokens are memoized; the first call spawns the <code>security</code> binary (~20–50ms), subsequent calls are cache hits. The memoize clears on token refresh (~once/hour).</li>
+<li><strong>Linux/WSL</strong>: The platform detection function reads <code>/proc/version</code> to distinguish native Linux from WSL1/WSL2, and caches the result via <code>memoize()</code>.</li>
+<li><strong>All platforms</strong>: The event loop stall detector (in Anthropic builds) is dynamically imported after first render to avoid blocking the startup path.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="the-design-philosophy-typescript-as-control-plane" class="level2">
+<h2 class="anchored" data-anchor-id="the-design-philosophy-typescript-as-control-plane">The Design Philosophy – TypeScript as Control Plane</h2>
+<p><strong>The native module architecture embodies a clear separation: TypeScript owns orchestration, control flow, and error handling; native code owns computation, system calls, and data throughput.</strong></p>
+<p>This separation manifests in several ways:</p>
+<ol type="1">
+<li><p><strong>All branching logic lives in TypeScript.</strong> The fallback chain (native -&gt; arecord -&gt; SoX -&gt; unavailable) is entirely TypeScript. The native module does not decide whether to fall back; it simply reports availability.</p></li>
+<li><p><strong>Native modules are stateless services.</strong> They expose function calls (<code>startRecording</code>, <code>processImage</code>, <code>getModifiers</code>), not lifecycle objects. State management (caching, memoization, retry logic) belongs to the TypeScript wrapper.</p></li>
+<li><p><strong>Type safety extends to the FFI boundary.</strong> Each vendor wrapper declares a TypeScript type for the native module’s interface (<code>AudioCaptureNapi</code>, <code>NativeModule</code>, <code>ModifiersNapi</code>, <code>UrlHandlerNapi</code>). The <code>as NativeModule</code> cast after <code>require()</code> is the only type-unsafe boundary in the chain.</p></li>
+<li><p><strong>Failure modes are enumerated, not exceptional.</strong> The microphone authorization status returns a numeric enum (0–3), not an exception. The URL handler returns <code>string | null</code>, not a thrown error. The image processor wraps operations in a fluent builder that only throws when <code>toBuffer()</code> is called – and even then, only if the native module failed to load.</p></li>
+</ol>
+<p>This philosophy explains why Claude Code can run on machines without any native modules at all. The TypeScript layer does not assume native support; it probes, adapts, and degrades. The native modules are accelerators, not requirements. The application is a TypeScript program that happens to call into native code when native code is available – not a native application with a TypeScript frontend.</p>
+<hr>
+</section>
+<section id="summary" class="level2">
+<h2 class="anchored" data-anchor-id="summary">Summary</h2>
+<p>The native runtime layer reveals a recurring systems engineering discipline: <strong>never block startup, never crash on absence, and always provide a TypeScript fallback path</strong>. Four vendor modules handle audio, image processing, keyboard state, and URL events. Three pure-TypeScript ports in <code>native-ts/</code> provide API-compatible alternatives for color diffing, file indexing, and layout. The voice pipeline negotiates native audio, ALSA arecord, and SoX rec through live probing rather than static capability checks. And the startup path defers every native <code>dlopen</code> until the moment the functionality is actually needed, paying the cost only when the user exercises the capability. The result is an application that feels native on macOS, works on headless Linux, and degrades gracefully everywhere in between.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./16-remote-runtime-bridge.html" class="pagination-link" aria-label="VII.1 — Remote Runtime &amp; Bridge">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">VII.1 — Remote Runtime &amp; Bridge</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./14-hidden-costs-context-manipulation.html" class="pagination-link" aria-label="IX.1 — Transparency &amp; Trust">
+        <span class="nav-page-text">IX.1 — Transparency &amp; Trust</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.quarto-figure img[src$=".svg"]:not(.nozoom)').forEach(function(img) {
+    fetch(img.src).then(r => r.text()).then(function(svgText) {
+      var div = document.createElement('div');
+      div.innerHTML = svgText;
+      var svg = div.querySelector('svg');
+      if (svg) {
+        var vb = svg.getAttribute('viewBox');
+        if (vb) {
+          var parts = vb.split(/\s+/);
+          var w = parseFloat(parts[2]), h = parseFloat(parts[3]);
+          var ratio = h / w;
+          var containerH = Math.max(250, Math.min(700, 900 * ratio));
+          svg.style.width = '100%';
+          svg.style.height = containerH + 'px';
+        } else {
+          svg.style.width = '100%';
+          svg.style.height = '400px';
+        }
+        svg.style.border = '1px solid var(--bs-border-color, #dee2e6)';
+        svg.style.borderRadius = '6px';
+        svg.style.cursor = 'grab';
+        svg.style.background = 'var(--bs-body-bg, #fff)';
+        img.parentNode.replaceChild(svg, img);
+        svgPanZoom(svg, {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true, minZoom: 0.5, maxZoom: 10});
+      }
+    });
+  });
+  // Mermaid post-processing: apply Palatino font + pan-zoom
+  function initMermaid() {
+    document.querySelectorAll('.cell-output-display svg').forEach(function(svg) {
+      if (svg.dataset.mInit) return;
+      svg.dataset.mInit = '1';
+      // Step 1: Apply Palatino to all text AFTER Mermaid layout
+      svg.querySelectorAll('.nodeLabel, .edgeLabel, .cluster-label span, text').forEach(function(el) {
+        el.style.fontFamily = '"Palatino Linotype", Palatino, Georgia, serif';
+      });
+      // Step 2: Ensure foreignObjects don't clip
+      svg.querySelectorAll('foreignObject').forEach(function(fo) {
+        fo.style.overflow = 'visible';
+      });
+      // Step 3: Size the container
+      var vb = svg.getAttribute('viewBox');
+      if (vb) {
+        var parts = vb.split(/[\s,]+/);
+        var w = parseFloat(parts[2]), h = parseFloat(parts[3]);
+        var ratio = h / w;
+        var containerH = Math.max(350, Math.min(800, 900 * ratio));
+        svg.style.width = '100%';
+        svg.style.height = containerH + 'px';
+      } else {
+        svg.style.width = '100%';
+        svg.style.height = '500px';
+      }
+      svg.style.border = '1px solid var(--bs-border-color, #dee2e6)';
+      svg.style.borderRadius = '6px';
+      svg.style.cursor = 'grab';
+      svg.style.background = 'var(--bs-body-bg, #fff)';
+      // Step 4: Enable pan-zoom
+      try {
+        svgPanZoom(svg, {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true, minZoom: 0.5, maxZoom: 10});
+      } catch(e) {}
+    });
+  }
+  setTimeout(initMermaid, 800);
+  setTimeout(initMermaid, 2000);
+  setTimeout(initMermaid, 4000);
+});
+</script>
+
+
+
+
+</body></html>

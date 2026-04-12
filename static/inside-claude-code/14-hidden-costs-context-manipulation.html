@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Transparency &amp; Trust – Inside Claude Code</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./18-native-runtime-voice-portability.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-f2aa3fcab4a3c0cbb1a885f128e95a4e.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-4486e80548b20dd029182ccec781b91c.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-f2aa3fcab4a3c0cbb1a885f128e95a4e.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-e429c51d478a3f7fe436edff7d8b5e18.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-89366f393ab88770656785fe4740de67.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-e429c51d478a3f7fe436edff7d8b5e18.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<meta name="mermaid-theme" content="neutral">
+<script src="site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Palatino+Linotype&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+
+
+<link rel="stylesheet" href="styles/custom.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Inside Claude Code</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="./index.html" aria-current="page"> 
+<span class="menu-text">Series Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./explorer-dist/index.html" target="_blank"> 
+<span class="menu-text">Code Explorer</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ZhuoranYang/claude_code_analysis"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./14-hidden-costs-context-manipulation.html">IX. Transparency &amp; Trust</a></li><li class="breadcrumb-item"><a href="./14-hidden-costs-context-manipulation.html">IX.1 — Transparency &amp; Trust</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Inside Claude Code</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./explorer-dist/index.html" class="sidebar-item-text sidebar-link" target="_blank">
+ <span class="menu-text">Code Explorer</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false">
+ <span class="menu-text">I. Overview</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./00-birds-eye-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">I.1 — Bird’s Eye Architecture</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-end-to-end-workflow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">I.2 — End-to-End Workflow</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false">
+ <span class="menu-text">II. Agent Harness</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-agent-loop-query-engine.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.1 — Agent Loop &amp; Query Engine</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./15-agent-sdk-structured-io.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.2 — Agent SDK &amp; Structured I/O</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-multi-agent-orchestration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.3 — Multi-Agent Orchestration</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./19-plan-mode.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">II.4 — Plan Mode</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false">
+ <span class="menu-text">III. Context Engineering</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-prompt-assembly.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.1 — Prompt Assembly</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-context-compaction.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.2 — Context Compaction</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./17-memory-hierarchy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.3 — Memory Hierarchy</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./11-hooks-lifecycle.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">III.4 — Hooks &amp; Lifecycle</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false">
+ <span class="menu-text">IV. Tools</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-tool-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IV.1 — Tool System &amp; Registry</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-safety-sandbox.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">IV.2 — Safety &amp; Sandbox</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false">
+ <span class="menu-text">V. Invocation</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-cli-commands-ui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">V.1 — CLI, Commands &amp; UI</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-auth-providers-flags.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">V.2 — Auth, Providers &amp; Flags</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false">
+ <span class="menu-text">VI. Extensions</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./10-model-context-protocol.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.1 — Model Context Protocol</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./12-skills-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.2 — Skills System</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./13-plugin-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VI.3 — Plugin Architecture</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="false">
+ <span class="menu-text">VII. Remote Runtime</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./16-remote-runtime-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VII.1 — Remote Runtime &amp; Bridge</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="false">
+ <span class="menu-text">VIII. Native Runtime</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./18-native-runtime-voice-portability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VIII.1 — Native Runtime, Voice &amp; Portability</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">IX. Transparency &amp; Trust</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./14-hidden-costs-context-manipulation.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">IX.1 — Transparency &amp; Trust</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction-the-invisible-tax" id="toc-introduction-the-invisible-tax" class="nav-link active" data-scroll-target="#introduction-the-invisible-tax">Introduction: The Invisible Tax</a></li>
+  <li><a href="#the-system-prompt-1525-kb-you-never-see" id="toc-the-system-prompt-1525-kb-you-never-see" class="nav-link" data-scroll-target="#the-system-prompt-1525-kb-you-never-see">The System Prompt: 15–25 KB You Never See</a></li>
+  <li><a href="#system-reminders-50-invisible-injections" id="toc-system-reminders-50-invisible-injections" class="nav-link" data-scroll-target="#system-reminders-50-invisible-injections">System Reminders: 50 Invisible Injections</a></li>
+  <li><a href="#remote-control-757-feature-flags-and-ab-tests" id="toc-remote-control-757-feature-flags-and-ab-tests" class="nav-link" data-scroll-target="#remote-control-757-feature-flags-and-ab-tests">Remote Control: 757 Feature Flags and A/B Tests</a></li>
+  <li><a href="#telemetry-757-events-to-six-services" id="toc-telemetry-757-events-to-six-services" class="nav-link" data-scroll-target="#telemetry-757-events-to-six-services">Telemetry: 757 Events to Six Services</a></li>
+  <li><a href="#auto-compact-silent-history-rewriting" id="toc-auto-compact-silent-history-rewriting" class="nav-link" data-scroll-target="#auto-compact-silent-history-rewriting">Auto-Compact: Silent History Rewriting</a></li>
+  <li><a href="#other-hidden-behaviors" id="toc-other-hidden-behaviors" class="nav-link" data-scroll-target="#other-hidden-behaviors">Other Hidden Behaviors</a></li>
+  <li><a href="#the-privacy-controls-that-exist" id="toc-the-privacy-controls-that-exist" class="nav-link" data-scroll-target="#the-privacy-controls-that-exist">The Privacy Controls That Exist</a></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">Summary</a></li>
+  <li><a href="#appendix-the-enterprise-remote-control-plane" id="toc-appendix-the-enterprise-remote-control-plane" class="nav-link" data-scroll-target="#appendix-the-enterprise-remote-control-plane">Appendix: The Enterprise Remote Control Plane</a>
+  <ul class="collapse">
+  <li><a href="#remote-managed-settings" id="toc-remote-managed-settings" class="nav-link" data-scroll-target="#remote-managed-settings">Remote Managed Settings</a></li>
+  <li><a href="#policy-limits" id="toc-policy-limits" class="nav-link" data-scroll-target="#policy-limits">Policy Limits</a></li>
+  <li><a href="#settings-sync" id="toc-settings-sync" class="nav-link" data-scroll-target="#settings-sync">Settings Sync</a></li>
+  <li><a href="#eligibility-matrix" id="toc-eligibility-matrix" class="nav-link" data-scroll-target="#eligibility-matrix">Eligibility Matrix</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./14-hidden-costs-context-manipulation.html">IX. Transparency &amp; Trust</a></li><li class="breadcrumb-item"><a href="./14-hidden-costs-context-manipulation.html">IX.1 — Transparency &amp; Trust</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Transparency &amp; Trust</h1>
+<p class="subtitle lead">Invisible tokens, remote feature flags, and opt-out telemetry</p>
+  <div class="quarto-categories">
+    <div class="quarto-category">privacy</div>
+    <div class="quarto-category">telemetry</div>
+    <div class="quarto-category">transparency</div>
+    <div class="quarto-category">trust</div>
+  </div>
+  </div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="introduction-the-invisible-tax" class="level2">
+<h2 class="anchored" data-anchor-id="introduction-the-invisible-tax">Introduction: The Invisible Tax</h2>
+<p>Every time you press Enter in Claude Code, you pay for tokens you never typed. Before the model reads your message, a middleware pipeline has already injected <span class="kw-slate">4,000–6,000 tokens</span> of system prompt, appended <code>&lt;system-reminder&gt;</code> XML tags to your conversation, loaded CLAUDE.md files you may not know exist, and fetched <span class="kw-terra">feature flags</span> from a remote CDN that can silently change the agent’s behavior. You see none of this. You pay for all of it.</p>
+<p>This post documents the mechanisms by which Anthropic manipulates the context window behind the scenes – not as a conspiracy theory, but as an engineering analysis. Most of these mechanisms exist for legitimate reasons (safety, quality, cost optimization). But the cumulative effect is that <strong>users pay for a significant volume of invisible tokens, and Anthropic retains remote control over agent behavior through feature flags, telemetry, and auto-updating</strong>. Understanding these mechanisms is prerequisite to making informed decisions about cost, privacy, and trust.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-invisible-tax" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-invisible-tax-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-invisible-tax">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart TD
+  subgraph VIS["&lt;b&gt;Visible to User&lt;/b&gt;"]
+    V1["Your message"]
+    V2["Conversation history"]
+  end
+  subgraph HID["&lt;b&gt;Invisible to User&lt;/b&gt;"]
+    H1["System prompt (4-6K tokens)"]
+    H2["Tool descriptions (73 fragments)"]
+    H3["CLAUDE.md files (varies)"]
+    H4["System reminders (50 types)"]
+    H5["MEMORY.md (200 lines)"]
+    H6["MCP instructions (volatile)"]
+  end
+  API["&lt;b&gt;Actual API Call&lt;/b&gt;&lt;br&gt;(all of the above)"]
+
+  V1 --&gt; API
+  V2 --&gt; API
+  H1 --&gt; API
+  H2 --&gt; API
+  H3 --&gt; API
+  H4 --&gt; API
+  H5 --&gt; API
+  H6 --&gt; API
+
+  style V1 fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style V2 fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style H1 fill:#C2856E,color:#fff,stroke:#A06A54
+  style H2 fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style H3 fill:#C4A882,color:#fff,stroke:#A08562
+  style H4 fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style H5 fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style H6 fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style API fill:#C2856E,color:#fff,stroke:#A06A54
+  style VIS fill:#9CAF8822,stroke:#7A8D68
+  style HID fill:#C2856E22,stroke:#A06A54
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-invisible-tax-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: The invisible token tax: what the user sees versus what the API actually receives. The visible portion (green) consists only of the user’s message and conversation history. The hidden portion (terracotta) includes the system prompt (4-6K tokens), 73 tool description fragments, CLAUDE.md files, 50 system reminder types, MEMORY.md (up to 200 lines), and volatile MCP instructions. All six hidden components are concatenated into every API call, inflating the actual request far beyond what the user typed.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Start with the two boxes on the left: the green “Visible to User” group contains only your typed message and conversation history. The terracotta “Invisible to User” group shows six additional components – system prompt, tool descriptions, CLAUDE.md files, system reminders, MEMORY.md, and MCP instructions – that are silently concatenated. All eight boxes feed into the single “Actual API Call” node at the bottom, illustrating that the request sent to the API is far larger than what the user typed.</p>
+<p><strong>Source files covered in this post:</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 28%">
+<col style="width: 42%">
+<col style="width: 28%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Purpose</th>
+<th>Size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>src/constants/prompts.ts</code></td>
+<td>403 prompt string templates (~728 KB)</td>
+<td>~18,000 LOC</td>
+</tr>
+<tr class="even">
+<td><code>src/services/analytics/growthbook.ts</code></td>
+<td>GrowthBook feature flag client (757 flag names)</td>
+<td>~300 LOC</td>
+</tr>
+<tr class="odd">
+<td><code>src/services/analytics/</code></td>
+<td>Telemetry pipeline (Datadog, event logging, sinks)</td>
+<td>9 files</td>
+</tr>
+<tr class="even">
+<td><code>src/memdir/</code></td>
+<td>Auto-memory system (extraction, consolidation, scanning)</td>
+<td>8 files</td>
+</tr>
+<tr class="odd">
+<td><code>src/services/autoDream/</code></td>
+<td>Cross-session memory consolidation agent</td>
+<td>4 files</td>
+</tr>
+<tr class="even">
+<td><code>src/utils/autoUpdater.ts</code></td>
+<td>Binary auto-update mechanism</td>
+<td>~300 LOC</td>
+</tr>
+<tr class="odd">
+<td><code>src/services/remoteManagedSettings/</code></td>
+<td>Remote enterprise settings overrides</td>
+<td>5 files, ~1,000 LOC</td>
+</tr>
+<tr class="even">
+<td><code>src/services/policyLimits/</code></td>
+<td>Organization-level feature restrictions</td>
+<td>2 files, ~700 LOC</td>
+</tr>
+<tr class="odd">
+<td><code>src/services/settingsSync/</code></td>
+<td>Cross-environment settings replication</td>
+<td>2 files, ~600 LOC</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="the-system-prompt-1525-kb-you-never-see" class="level2">
+<h2 class="anchored" data-anchor-id="the-system-prompt-1525-kb-you-never-see">The System Prompt: 15–25 KB You Never See</h2>
+<p>The main agent’s system prompt, assembled by the <code>DX()</code> function, concatenates <span class="kw-slate">17 sections</span> into a single prompt of approximately <span class="kw-slate">15–25 KB</span> depending on configuration. At roughly 4 characters per token, this is <span class="kw-slate">4,000–6,000 tokens injected on every API call</span>.</p>
+<p>The full extraction from v2.1.88 yielded <span class="kw-slate">403 prompt strings</span> totaling <span class="kw-slate">728 KB</span> across 18,000 lines. Of these, approximately 171 are active prompts (~321 KB), 143 are SDK reference data (~343 KB loaded on-demand), and 84 are assembly glue (~46 KB).</p>
+<p>What is in those 17 sections?</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 23%">
+<col style="width: 15%">
+<col style="width: 23%">
+<col style="width: 36%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Section</th>
+<th>Type</th>
+<th>Content</th>
+<th>Token Impact</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>S1: Identity</td>
+<td>Static</td>
+<td>“You are Claude Code, Anthropic’s official CLI”</td>
+<td>~200 tokens</td>
+</tr>
+<tr class="even">
+<td>S2: Tool Policy</td>
+<td>Static</td>
+<td>10 rules (use Read not cat, Edit not sed, etc.)</td>
+<td>~400 tokens</td>
+</tr>
+<tr class="odd">
+<td>S3: Anti-Patterns</td>
+<td>Static</td>
+<td>6 explicit anti-patterns + 40 “NEVER” rules</td>
+<td>~600 tokens</td>
+</tr>
+<tr class="even">
+<td>S4: Reversibility</td>
+<td>Static</td>
+<td>Blast-radius framework for destructive operations</td>
+<td>~300 tokens</td>
+</tr>
+<tr class="odd">
+<td>S5: Tool Rules</td>
+<td>Static</td>
+<td>Per-tool guidance, subagent delegation, skills</td>
+<td>~800 tokens</td>
+</tr>
+<tr class="even">
+<td>S6: Efficiency</td>
+<td>Static</td>
+<td>Output optimization rules</td>
+<td>~200 tokens</td>
+</tr>
+<tr class="odd">
+<td>S7: Tone</td>
+<td>Static</td>
+<td>No emojis, file:line references, concise</td>
+<td>~150 tokens</td>
+</tr>
+<tr class="even">
+<td>S8: Cache Control</td>
+<td>Static</td>
+<td>Prompt cache optimization (feature-flagged)</td>
+<td>~100 tokens</td>
+</tr>
+<tr class="odd">
+<td>D1: Memory</td>
+<td>Dynamic</td>
+<td>MEMORY.md (first 200 lines) + topic files</td>
+<td>0–2,000 tokens</td>
+</tr>
+<tr class="even">
+<td>D2: Environment</td>
+<td>Dynamic</td>
+<td>CWD, git status, platform, shell, OS, model</td>
+<td>~300 tokens</td>
+</tr>
+<tr class="odd">
+<td>D3: Language</td>
+<td>Dynamic</td>
+<td>User language preference</td>
+<td>~50 tokens</td>
+</tr>
+<tr class="even">
+<td>D4: Output Style</td>
+<td>Dynamic</td>
+<td>Custom output configuration</td>
+<td>~50 tokens</td>
+</tr>
+<tr class="odd">
+<td>D5: MCP</td>
+<td>Dynamic</td>
+<td>MCP server instructions (now migrated to reminders)</td>
+<td>0–5,000 tokens</td>
+</tr>
+<tr class="even">
+<td>D6: Scratchpad</td>
+<td>Dynamic</td>
+<td>Temp directory pointer</td>
+<td>~50 tokens</td>
+</tr>
+<tr class="odd">
+<td>D7: Fork Config</td>
+<td>Dynamic</td>
+<td>A/B flags (<code>frc</code>)</td>
+<td>~100 tokens</td>
+</tr>
+<tr class="even">
+<td>D8: Summarize</td>
+<td>Dynamic</td>
+<td>Tool result hints</td>
+<td>~100 tokens</td>
+</tr>
+<tr class="odd">
+<td>D9: Brief Mode</td>
+<td>Dynamic</td>
+<td>Terse mode flag</td>
+<td>~50 tokens</td>
+</tr>
+</tbody>
+</table>
+<p>The static sections (S1–S8) total approximately 2,750 tokens. With prompt caching, these are processed once and served at a 90% cost reduction on subsequent turns. The dynamic sections add 700–7,700 tokens depending on configuration.</p>
+<p>The D5: MCP section was historically the most significant cache cost driver — and the reason is specific. Regular tool <em>responses</em> (the output of Bash, Read, Grep, etc.) live in the conversation message stream, which comes <em>after</em> the cached prefix. A Bash command returning different output every turn has zero effect on the system prompt cache. But MCP server <em>instructions</em> were placed inside the system prompt itself — part of the cached prefix. Every other system prompt section was stable: identity text is compiled into the binary, built-in tool schemas are static, CLAUDE.md changes only on user edits, and the date uses month-level granularity. The MCP section was the only system prompt section whose bytes depended on the runtime state of external processes — servers that can crash, restart, or be added mid-session. A change to D5 invalidated the entire prefix from that point forward.</p>
+<p>Anthropic has since mitigated this by moving MCP instructions into <a href="./03-prompt-assembly.html">system reminder attachments</a> (<code>mcp_instructions_delta</code>) rather than rebuilding the system prompt — so D5 may now be empty or stable. However, <strong>MCP tool schemas</strong> still enter the tool definition array, and each new MCP server adds tool descriptions that can change the tool block. The placement of MCP-related content at the end of both the system prompt and the tool array minimizes the blast radius of these changes.</p>
+<div class="callout callout-style-default callout-warning callout-titled" title="Cost Impact">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Cost Impact
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>In a 50-turn session with no MCP servers, prompt caching saves ~675,000 tokens. With MCP servers connected, the tool schema block grows (each MCP tool adds ~200–500 tokens of schema), and MCP server connect/disconnect events trigger <code>mcp_instructions_delta</code> reminders that add tokens to the conversation stream. The difference can be 1.5–3x higher input token cost depending on the number and chattiness of connected MCP servers.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="system-reminders-50-invisible-injections" class="level2">
+<h2 class="anchored" data-anchor-id="system-reminders-50-invisible-injections">System Reminders: 50 Invisible Injections</h2>
+<p>Beyond the system prompt, Claude Code injects <span class="kw-slate">50 distinct system-reminder fragments</span> into conversation messages as XML tags. These are appended to user and assistant messages without the user seeing them:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode xml code-with-copy"><code class="sourceCode xml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">system-reminder</span>&gt;</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>Plan mode step 3 of 7: implementing the auth module</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>&lt;/<span class="kw">system-reminder</span>&gt;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The injection function is minimal: <code>function vv(text) { return '&lt;system-reminder&gt;\n${text}\n&lt;/system-reminder&gt;' }</code>. But the cumulative effect is significant – reminders are injected into <em>existing</em> messages, meaning they inflate the conversation history on every subsequent API call.</p>
+<p>The 50 reminder types cluster into ten categories (see the <a href="./04-context-compaction.html">full inventory in Post 4</a>):</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 22%">
+<col style="width: 56%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Category</th>
+<th>Reminders</th>
+<th>Token Impact Per Injection</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Plan mode</strong></td>
+<td>3 variants (active, step, replanning)</td>
+<td>~100–300 tokens</td>
+</tr>
+<tr class="even">
+<td><strong>File changes</strong></td>
+<td>Modified files, git status</td>
+<td>~50–200 tokens</td>
+</tr>
+<tr class="odd">
+<td><strong>Token budget</strong></td>
+<td>Usage warning, USD budget</td>
+<td>~50–100 tokens</td>
+</tr>
+<tr class="even">
+<td><strong>Hook results</strong></td>
+<td>Success, blocking error, stopped, context</td>
+<td>~50–500 tokens</td>
+</tr>
+<tr class="odd">
+<td><strong>Memory</strong></td>
+<td>MEMORY.md contents, recalled facts</td>
+<td>~100–2,000 tokens</td>
+</tr>
+<tr class="even">
+<td><strong>IDE context</strong></td>
+<td>Open file, cursor position, diagnostics</td>
+<td>~100–500 tokens</td>
+</tr>
+<tr class="odd">
+<td><strong>Team coordination</strong></td>
+<td>Teammate messages, shutdown, task status</td>
+<td>~100–500 tokens</td>
+</tr>
+</tbody>
+</table>
+<p>In a typical 20-turn session with plan mode active, system reminders add an estimated <span class="kw-slate">2,000–5,000 cumulative tokens</span> to the conversation history. Unlike the system prompt (which is cached), reminders are scattered throughout messages and cannot be <span class="kw-sage">cached separately</span>. They are invisible to the user but visible on the API bill.</p>
+<hr>
+</section>
+<section id="remote-control-757-feature-flags-and-ab-tests" class="level2">
+<h2 class="anchored" data-anchor-id="remote-control-757-feature-flags-and-ab-tests">Remote Control: 757 Feature Flags and A/B Tests</h2>
+<p>A <span class="kw-sage">feature flag</span> (also called a feature toggle) is a runtime boolean or configuration value fetched from a remote server that enables or disables functionality without deploying new code. The technique is standard in web services – Netflix, GitHub, and Google use feature flags to roll out features gradually, run A/B experiments, and kill misbehaving code instantly. What is unusual here is that the same mechanism is applied to a <em>local CLI tool</em> running on the user’s machine: Anthropic’s servers can change how your locally-installed Claude Code behaves, without shipping an update.</p>
+<p>Claude Code fetches feature flags from <span class="kw-terra">GrowthBook</span> (<code>cdn.growthbook.io</code>) on startup. The report identifies <span class="kw-slate">757 distinct tengu_* event and flag names</span>. These flags control:</p>
+<ul>
+<li><strong>Agent behavior</strong>: <code>tengu_system_prompt_global_cache</code> (caching strategy), <code>tengu_tight_weave</code> (subagent response format), <code>tengu_ultrathink</code> (extended thinking)</li>
+<li><strong>Feature gating</strong>: <code>tengu_experimental_agent_teams</code> (teammate multi-agent), <code>tengu_structured_output_enabled</code> (structured output)</li>
+<li><strong>Safety overrides</strong>: <code>tengu_disable_bypass_permissions_mode</code> (can remotely disable YOLO mode)</li>
+<li><strong>Compaction strategy</strong>: Feature flags can silently switch between three different compaction analysis prompts</li>
+<li><strong>Plan mode</strong>: <code>tengu_plan_mode_interview_phase</code> changes how plan mode works</li>
+</ul>
+<p>Many flags use <span class="kw-mauve">obscured codenames</span> – <code>tengu_marble_anvil</code>, <code>tengu_pewter_ledger</code>, <code>tengu_coral_fern</code>, <code>tengu_cobalt_lantern</code> – that the analysis identifies as likely <span class="kw-mauve">A/B tests</span> or unreleased features. The <code>frc</code> (feature-related context) section of the system prompt is explicitly labeled as “A/B flags” in the implementation.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-remote-control" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-remote-control-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-remote-control">%%{init: {'theme': 'neutral', 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'padding': 20, 'nodeSpacing': 30, 'rankSpacing': 40}, 'themeVariables': {'primaryColor': '#8B9DAF', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#6E7F91', 'secondaryColor': '#9CAF88', 'secondaryTextColor': '#ffffff', 'secondaryBorderColor': '#7A8D68', 'tertiaryColor': '#C2856E', 'tertiaryTextColor': '#ffffff', 'tertiaryBorderColor': '#A06A54', 'lineColor': '#B5A99A', 'textColor': '#4A4A4A', 'mainBkg': '#8B9DAF', 'nodeBorder': '#6E7F91', 'clusterBkg': 'rgba(139,157,175,0.12)', 'clusterBorder': '#B5A99A', 'edgeLabelBackground': 'transparent'}}}%%
+flowchart LR
+  GB["&lt;b&gt;GrowthBook CDN&lt;/b&gt;&lt;br&gt;&lt;i&gt;cdn.growthbook.io&lt;/i&gt;"]
+  F1["Prompt content"]
+  F2["Compaction strategy"]
+  F3["Feature gating"]
+  F4["Safety overrides"]
+  F5["A/B experiments"]
+  AGENT["&lt;b&gt;Your Claude Code&lt;br&gt;Agent&lt;/b&gt;"]
+
+  GB --&gt; F1
+  GB --&gt; F2
+  GB --&gt; F3
+  GB --&gt; F4
+  GB --&gt; F5
+  F1 --&gt; AGENT
+  F2 --&gt; AGENT
+  F3 --&gt; AGENT
+  F4 --&gt; AGENT
+  F5 --&gt; AGENT
+
+  style GB fill:#8B9DAF,color:#fff,stroke:#6E7F91
+  style F1 fill:#9CAF88,color:#fff,stroke:#7A8D68
+  style F2 fill:#C2856E,color:#fff,stroke:#A06A54
+  style F3 fill:#B39EB5,color:#fff,stroke:#8E7A93
+  style F4 fill:#C4A882,color:#fff,stroke:#A08562
+  style F5 fill:#8E9B7A,color:#fff,stroke:#6E7B5A
+  style AGENT fill:#8B9DAF,color:#fff,stroke:#6E7F91
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-remote-control-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: Remote control surface: 757 feature flags fetched from the GrowthBook CDN (cdn.growthbook.io) on startup. Five categories of remote modification are shown: prompt content, compaction strategy, feature gating, safety overrides (including remote disable of YOLO mode), and A/B experiments (including obscured codenames like tengu_marble_anvil). All five flow into the local agent instance, allowing Anthropic to modify agent behavior without shipping a new version and without user notification.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>How to read this diagram.</strong> Follow the flow left to right: the GrowthBook CDN on the left distributes 757 feature flags that fan out into five categories – prompt content, compaction strategy, feature gating, safety overrides, and A/B experiments. All five converge on the “Your Claude Code Agent” node on the right, showing that a single remote source can modify agent behavior across multiple dimensions without shipping a new version.</p>
+<p>The implications are significant:</p>
+<ol type="1">
+<li><strong>Anthropic can change your agent’s behavior without shipping a new version.</strong> A flag flip on <code>cdn.growthbook.io</code> takes effect the next time Claude Code starts.</li>
+<li><strong>Users may be in A/B tests without knowing it.</strong> The obscured codenames suggest experimental treatments. Two users running the same version of Claude Code may get different behavior.</li>
+<li><strong>Safety settings can be overridden remotely.</strong> The <code>tengu_disable_bypass_permissions_mode</code> flag means Anthropic can remotely disable YOLO mode – a safety feature, but also a demonstration of remote control over user-configured behavior.</li>
+</ol>
+<hr>
+</section>
+<section id="telemetry-757-events-to-six-services" class="level2">
+<h2 class="anchored" data-anchor-id="telemetry-757-events-to-six-services">Telemetry: 757 Events to Six Services</h2>
+<p>Claude Code reports telemetry to <span class="kw-slate">six separate services</span>:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 47%">
+<col style="width: 27%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Service</th>
+<th>What It Collects</th>
+<th>Protocol</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Segment</strong></td>
+<td>757 event types: tool calls, API calls, permissions, UI interactions, errors</td>
+<td>HTTPS</td>
+</tr>
+<tr class="even">
+<td><strong>Datadog</strong></td>
+<td>Operational logs, performance metrics</td>
+<td>HTTPS</td>
+</tr>
+<tr class="odd">
+<td><strong>Anthropic Metrics</strong></td>
+<td>Usage metrics (<code>api.anthropic.com/api/claude_code/metrics</code>)</td>
+<td>HTTPS</td>
+</tr>
+<tr class="even">
+<td><strong>Anthropic Feedback</strong></td>
+<td>User feedback (<code>api.anthropic.com/api/claude_cli_feedback</code>)</td>
+<td>HTTPS</td>
+</tr>
+<tr class="odd">
+<td><strong>Session Sharing</strong></td>
+<td>Full conversation transcripts (<code>api.anthropic.com/api/claude_code_shared_session_transcripts</code>)</td>
+<td>HTTPS</td>
+</tr>
+<tr class="even">
+<td><strong>OpenTelemetry</strong></td>
+<td>Optional distributed tracing</td>
+<td>OTLP</td>
+</tr>
+</tbody>
+</table>
+<p>The 757 <code>tengu_*</code> events track <em>everything</em>: every tool call (name, duration, success/failure), every API call (model, tokens, cost, latency), every permission decision, session lifecycle events, UI interactions (mode cycling, copy, paste, keyboard shortcuts), and all errors.</p>
+<p>Telemetry does not inflate the conversation context – these are out-of-band HTTP calls. But they consume bandwidth, add startup latency (GrowthBook fetch), and transmit detailed usage patterns. The <code>CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1</code> environment variable (referenced 14 times in the codebase) disables non-essential telemetry, but discovering this requires reading documentation or source code.</p>
+<hr>
+</section>
+<section id="auto-compact-silent-history-rewriting" class="level2">
+<h2 class="anchored" data-anchor-id="auto-compact-silent-history-rewriting">Auto-Compact: Silent History Rewriting</h2>
+<p>When the conversation approaches the context window limit, Claude Code triggers <span class="kw-terra">auto-compaction</span> – a process that silently rewrites the conversation history. The compaction system:</p>
+<ol type="1">
+<li>Takes the entire message history.</li>
+<li>Strips trailing incomplete tool_use blocks.</li>
+<li>Sends all messages plus a summary prompt to a <strong>cheaper model (Haiku)</strong> for summarization.</li>
+<li><strong>Replaces the entire conversation history</strong> with a single user message containing the summary.</li>
+</ol>
+<p>The API call uses a special header: <code>x-stainless-helper: compaction</code>. After compaction, the original conversation is gone from the active context. A <code>system-reminder-compact-file-reference</code> is injected pointing to the raw transcript file.</p>
+<p>Users receive a <code>tengu_post_compact_survey_event</code> feedback request after compaction, but <strong>the rewrite itself happens without approval</strong>. The model that summarizes your conversation is Haiku – the cheapest model – meaning nuances, specific code snippets, and detailed reasoning may be lost in the compression.</p>
+<p>Three different compaction strategies exist, controlled by feature flags: full-conversation analysis, minimal analysis (feature-flag-controlled), and recent-messages-only. The active strategy can change based on GrowthBook flags without user notification.</p>
+<hr>
+</section>
+<section id="other-hidden-behaviors" class="level2">
+<h2 class="anchored" data-anchor-id="other-hidden-behaviors">Other Hidden Behaviors</h2>
+<p>Several additional mechanisms operate behind the scenes:</p>
+<p><span class="kw-terra">Auto-updating</span>. Claude Code automatically downloads and replaces its own binary from <code>storage.googleapis.com/claude-code-dist-*</code> without user initiation. The <code>autoUpdates</code> setting defaults to <code>true</code>. This means the tool you ran yesterday may not be the tool you run today.</p>
+<p><span class="kw-terra">Auto-memory writes</span>. Claude Code automatically writes to <code>MEMORY.md</code> when it discovers patterns or user preferences. Each memory entry increases the system prompt size for all future sessions. Disableable via <code>CLAUDE_CODE_DISABLE_AUTO_MEMORY=1</code>, but on by default.</p>
+<p><span class="kw-mauve">Dream memory consolidation</span>. The <code>dream-memory-consolidation</code> agent reads past session transcripts to consolidate cross-session learning. Past conversation content is reprocessed – meaning old sessions influence new ones in ways the user may not expect.</p>
+<p>Environment variable scanning. Claude Code reads <span class="kw-slate">447 environment variables</span> from the user’s shell. Some of these (AWS credentials, API keys, database URLs) could contain sensitive information that enters the process context.</p>
+<p><strong>SDK reference injection.</strong> When the <code>claude-api</code> skill triggers (detecting <code>anthropic</code> imports in code), it loads language-specific SDK reference data – up to <strong>110 KB for the Python SDK alone</strong> – as prompt fragments. This is injected silently and can dramatically increase input token cost for that turn.</p>
+<hr>
+</section>
+<section id="the-privacy-controls-that-exist" class="level2">
+<h2 class="anchored" data-anchor-id="the-privacy-controls-that-exist">The Privacy Controls That Exist</h2>
+<p>To be fair, Claude Code does provide opt-out mechanisms:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 34%">
+<col style="width: 65%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Control</th>
+<th>What It Disables</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1</code></td>
+<td>GrowthBook flags, Segment telemetry, auto-updates</td>
+</tr>
+<tr class="even">
+<td><code>DISABLE_TELEMETRY=1</code></td>
+<td>Segment analytics events</td>
+</tr>
+<tr class="odd">
+<td><code>CLAUDE_CODE_DISABLE_AUTO_MEMORY=1</code></td>
+<td>Automatic memory writes</td>
+</tr>
+<tr class="even">
+<td><code>/privacy-settings</code> slash command</td>
+<td>View and toggle data sharing preferences</td>
+</tr>
+<tr class="odd">
+<td><code>autoUpdates: false</code> in settings</td>
+<td>Disables auto-binary replacement</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>/privacy-settings</code> command provides a UI for viewing and updating data sharing and telemetry controls. But the <strong>defaults are all opt-in</strong> – telemetry, auto-updates, memory writes, and GrowthBook flag fetching are all active unless explicitly disabled.</p>
+<hr>
+</section>
+<section id="summary" class="level2">
+<h2 class="anchored" data-anchor-id="summary">Summary</h2>
+<p>Most of these mechanisms exist for defensible reasons:</p>
+<ul>
+<li><strong>System prompts</strong> define safety behavior and prevent the model from generating harmful output.</li>
+<li><strong>System reminders</strong> counteract instruction decay, keeping the model aligned across long sessions.</li>
+<li><strong>Feature flags</strong> enable continuous deployment without breaking changes.</li>
+<li><strong>Telemetry</strong> helps Anthropic improve the product.</li>
+<li><strong>Auto-compaction</strong> prevents sessions from crashing when the context window fills.</li>
+</ul>
+<p>The concern is not that these mechanisms exist – it is that they operate <span class="kw-sage">without informed consent</span>. Users do not see the system prompt, are not told about A/B tests, cannot easily audit which feature flags are active, and may not realize that their conversation history is being silently rewritten by a cheaper model during compaction.</p>
+<p>The privacy controls exist (<code>CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC</code>, <code>DISABLE_TELEMETRY</code>, <code>/privacy-settings</code>), but they are opt-out rather than opt-in, and discovering them requires reading documentation or source code. A more transparent approach would surface the hidden token overhead in the UI (how many tokens are system prompt vs.&nbsp;user content), make feature flag assignments visible, and require explicit consent before rewriting conversation history.</p>
+<div class="callout callout-style-default callout-important callout-titled" title="Key Takeaways">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Key Takeaways
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ol type="1">
+<li><p><strong>Every API call carries 4,000–6,000 tokens of invisible system prompt.</strong> Prompt caching reduces the cost by 90%, but the tokens are still there.</p></li>
+<li><p><strong>50 system reminders inject context into your messages</strong> without appearing in the conversation UI. They accumulate across turns and cannot be cached.</p></li>
+<li><p><strong>757 feature flags</strong> fetched from GrowthBook allow Anthropic to change agent behavior remotely, including disabling user-configured safety settings and switching A/B test treatments.</p></li>
+<li><p><strong>Auto-compaction silently rewrites your conversation</strong> using a cheaper model. The original history is only preserved in local transcript files.</p></li>
+<li><p><strong>The privacy controls are opt-out, not opt-in.</strong> Telemetry, auto-updates, memory writes, and flag fetching are all active by default.</p></li>
+<li><p><strong>MCP servers remain a significant cost driver</strong>, though mitigated. Instructions have moved to system reminders (preserving the prompt cache), but each connected server still adds tool schema tokens to every turn, and connect/disconnect events inject delta reminders into the conversation stream.</p></li>
+</ol>
+</div>
+</div>
+<hr>
+</section>
+<section id="appendix-the-enterprise-remote-control-plane" class="level2">
+<h2 class="anchored" data-anchor-id="appendix-the-enterprise-remote-control-plane">Appendix: The Enterprise Remote Control Plane</h2>
+<p>Beyond GrowthBook feature flags, Claude Code implements a three-subsystem enterprise control plane that allows organizations to centrally manage agent behavior across their deployments. These subsystems are decoupled by design but share common patterns: eligibility checks, ETag-based HTTP caching, file persistence, hourly background polling, and fail-open resilience.</p>
+<section id="remote-managed-settings" class="level3">
+<h3 class="anchored" data-anchor-id="remote-managed-settings">Remote Managed Settings</h3>
+<p><strong>What it does.</strong> Any setting from <code>~/.claude/settings.json</code> can be <span class="kw-terra">remotely overridden</span> by enterprise admins. Settings are fetched from <code>/api/claude_code/settings</code> on startup and applied with highest priority — above user, project, and local settings. Changes trigger hot-reload of environment variables and feature gates without restart.</p>
+<p><strong>Control flow.</strong> On startup, <code>loadRemoteManagedSettings()</code> checks eligibility (API key users always eligible; OAuth requires Enterprise/Team subscription; 3P providers excluded), loads cached settings from <code>~/.claude/remote-settings.json</code>, fetches from the API with ETag validation and up to 5 retries, then starts hourly background polling for mid-session changes.</p>
+<p><strong>Security check.</strong> When settings contain potentially dangerous overrides (e.g., redirecting <code>ANTHROPIC_BASE_URL</code>), a blocking UI dialog (<code>ManagedSettingsSecurityDialog</code>) requires explicit user approval before applying. Rejection triggers graceful shutdown.</p>
+</section>
+<section id="policy-limits" class="level3">
+<h3 class="anchored" data-anchor-id="policy-limits">Policy Limits</h3>
+<p><strong>What it does.</strong> Organization-level <span class="kw-terra">feature restrictions</span> via a policy matrix. Unlike settings (which configure behavior), policies enable or disable entire features. Three known policies:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 44%">
+<col style="width: 55%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Policy</th>
+<th>Controls</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>allow_remote_sessions</code></td>
+<td>Remote session spawning, teleport, bridge initialization</td>
+</tr>
+<tr class="even">
+<td><code>allow_remote_control</code></td>
+<td>Bridge mode REPL initialization</td>
+</tr>
+<tr class="odd">
+<td><code>allow_product_feedback</code></td>
+<td>Feedback surveys, <code>/feedback</code> command</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Fail-closed for HIPAA.</strong> Most policies fail open (unknown policy = allowed). But <code>allow_product_feedback</code> is in a special <code>ESSENTIAL_TRAFFIC_DENY_ON_MISS</code> set: if the policy cache is unavailable <em>and</em> essential-traffic-only mode is active, the feature is <span class="kw-terra">denied by default</span> to prevent accidental data exfiltration in healthcare/compliance environments.</p>
+</section>
+<section id="settings-sync" class="level3">
+<h3 class="anchored" data-anchor-id="settings-sync">Settings Sync</h3>
+<p><strong>What it does.</strong> Cross-environment settings replication between the interactive CLI and the Cloud Control Room (CCR). The interactive CLI uploads local settings in the background; CCR downloads them before plugin installation. Four file types are synced: user <code>settings.json</code>, user <code>CLAUDE.md</code>, and project-scoped variants of each.</p>
+<p><strong>Eligibility.</strong> OAuth only (API key users cannot sync). Files are capped at 500 KB. Project isolation uses a hash of the git remote URL.</p>
+</section>
+<section id="eligibility-matrix" class="level3">
+<h3 class="anchored" data-anchor-id="eligibility-matrix">Eligibility Matrix</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>User Type</th>
+<th style="text-align: center;">Remote Settings</th>
+<th style="text-align: center;">Policy Limits</th>
+<th style="text-align: center;">Settings Sync</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>API key (Console)</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">No</td>
+</tr>
+<tr class="even">
+<td>OAuth Enterprise/Team</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+</tr>
+<tr class="odd">
+<td>OAuth Paid/Plus</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+</tr>
+<tr class="even">
+<td>3P Provider (Bedrock/Vertex/Foundry)</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">No</td>
+</tr>
+<tr class="odd">
+<td>Custom <code>ANTHROPIC_BASE_URL</code></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">No</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Source files:</strong> <code>src/services/remoteManagedSettings/</code> (7 files, ~1,000 LOC), <code>src/services/policyLimits/</code> (2 files, ~700 LOC), <code>src/services/settingsSync/</code> (2 files, ~600 LOC).</p>
+<hr>
+<p><em>For the prompt assembly pipeline that generates these hidden fragments, see <a href="./03-prompt-assembly.html">Part III.1: Prompt Assembly Pipeline</a>. For the compaction system that rewrites conversation history, see <a href="./04-context-compaction.html">Part III.2: Context Compaction</a>. For the hook system that intercepts notifications, see <a href="./11-hooks-lifecycle.html">Part III.4: Hooks &amp; Lifecycle Events</a>.</em></p>
+<p><em>All analysis based on source extracted from the v2.1.88 source map. Numbers are estimates based on static analysis; actual token counts vary by session configuration.</em></p>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./18-native-runtime-voice-portability.html" class="pagination-link" aria-label="VIII.1 — Native Runtime, Voice &amp; Portability">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">VIII.1 — Native Runtime, Voice &amp; Portability</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+  </div>
+</nav>
+</div> <!-- /content -->
+<script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.quarto-figure img[src$=".svg"]:not(.nozoom)').forEach(function(img) {
+    fetch(img.src).then(r => r.text()).then(function(svgText) {
+      var div = document.createElement('div');
+      div.innerHTML = svgText;
+      var svg = div.querySelector('svg');
+      if (svg) {
+        var vb = svg.getAttribute('viewBox');
+        if (vb) {
+          var parts = vb.split(/\s+/);
+          var w = parseFloat(parts[2]), h = parseFloat(parts[3]);
+          var ratio = h / w;
+          var containerH = Math.max(250, Math.min(700, 900 * ratio));
+          svg.style.width = '100%';
+          svg.style.height = containerH + 'px';
+        } else {
+          svg.style.width = '100%';
+          svg.style.height = '400px';
+        }
+        svg.style.border = '1px solid var(--bs-border-color, #dee2e6)';
+        svg.style.borderRadius = '6px';
+        svg.style.cursor = 'grab';
+        svg.style.background = 'var(--bs-body-bg, #fff)';
+        img.parentNode.replaceChild(svg, img);
+        svgPanZoom(svg, {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true, minZoom: 0.5, maxZoom: 10});
+      }
+    });
+  });
+  // Mermaid post-processing: apply Palatino font + pan-zoom
+  function initMermaid() {
+    document.querySelectorAll('.cell-output-display svg').forEach(function(svg) {
+      if (svg.dataset.mInit) return;
+      svg.dataset.mInit = '1';
+      // Step 1: Apply Palatino to all text AFTER Mermaid layout
+      svg.querySelectorAll('.nodeLabel, .edgeLabel, .cluster-label span, text').forEach(function(el) {
+        el.style.fontFamily = '"Palatino Linotype", Palatino, Georgia, serif';
+      });
+      // Step 2: Ensure foreignObjects don't clip
+      svg.querySelectorAll('foreignObject').forEach(function(fo) {
+        fo.style.overflow = 'visible';
+      });
+      // Step 3: Size the container
+      var vb = svg.getAttribute('viewBox');
+      if (vb) {
+        var parts = vb.split(/[\s,]+/);
+        var w = parseFloat(parts[2]), h = parseFloat(parts[3]);
+        var ratio = h / w;
+        var containerH = Math.max(350, Math.min(800, 900 * ratio));
+        svg.style.width = '100%';
+        svg.style.height = containerH + 'px';
+      } else {
+        svg.style.width = '100%';
+        svg.style.height = '500px';
+      }
+      svg.style.border = '1px solid var(--bs-border-color, #dee2e6)';
+      svg.style.borderRadius = '6px';
+      svg.style.cursor = 'grab';
+      svg.style.background = 'var(--bs-body-bg, #fff)';
+      // Step 4: Enable pan-zoom
+      try {
+        svgPanZoom(svg, {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true, minZoom: 0.5, maxZoom: 10});
+      } catch(e) {}
+    });
+  }
+  setTimeout(initMermaid, 800);
+  setTimeout(initMermaid, 2000);
+  setTimeout(initMermaid, 4000);
+});
+</script>
+
+
+
+
+</body></html>

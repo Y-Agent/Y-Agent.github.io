@@ -1,0 +1,709 @@
+[
+  {
+    "name": "add-dir",
+    "type": "directory",
+    "category": "navigation",
+    "fileCount": 3,
+    "description": "Adds an additional working directory to the current session's scope, expanding which files and directories Claude can access beyond the initial project root."
+  },
+  {
+    "name": "advisor.ts",
+    "type": "file",
+    "category": "other",
+    "fileCount": 1,
+    "description": null
+  },
+  {
+    "name": "agents",
+    "type": "directory",
+    "category": "agent",
+    "fileCount": 2,
+    "description": "Interactive UI for managing agent configurations -- viewing, creating, and editing the agent definitions that AgentTool uses when spawning sub-agents."
+  },
+  {
+    "name": "ant-trace",
+    "type": "directory",
+    "category": "debug",
+    "fileCount": 0,
+    "description": "Internal-only (Anthropic) command for generating trace data from the current session, used for debugging and performance analysis. Stubbed out in external builds."
+  },
+  {
+    "name": "autofix-pr",
+    "type": "directory",
+    "category": "integration",
+    "fileCount": 0,
+    "description": "Internal-only command that automatically fixes issues found in a pull request by running Claude against PR review comments. Stubbed out in external builds."
+  },
+  {
+    "name": "backfill-sessions",
+    "type": "directory",
+    "category": "session",
+    "fileCount": 0,
+    "description": "Internal-only command that retroactively processes and indexes historical session data. Stubbed out in external builds."
+  },
+  {
+    "name": "branch",
+    "type": "directory",
+    "category": "vcs",
+    "fileCount": 2,
+    "description": "Creates or switches to a git worktree branch for isolated experimentation, integrating with the worktree system to provide branch-level session isolation."
+  },
+  {
+    "name": "break-cache",
+    "type": "directory",
+    "category": "experimental",
+    "fileCount": 0,
+    "description": "Developer debugging command that invalidates prompt caches by injecting a unique string into the system prompt, forcing a fresh API request without cache hits."
+  },
+  {
+    "name": "bridge",
+    "type": "directory",
+    "category": "system",
+    "fileCount": 2,
+    "description": "Shows the status of and manages the WebSocket bridge connection used for remote control from mobile, web, and IDE surfaces."
+  },
+  {
+    "name": "bridge-kick.ts",
+    "type": "file",
+    "category": "system",
+    "fileCount": 1,
+    "description": null
+  },
+  {
+    "name": "brief.ts",
+    "type": "file",
+    "category": "agent",
+    "fileCount": 1,
+    "description": null
+  },
+  {
+    "name": "btw",
+    "type": "directory",
+    "category": "experimental",
+    "fileCount": 2,
+    "description": "A side-question command that lets users ask a quick tangential question without disrupting the main conversation flow, running it through a separate lightweight query."
+  },
+  {
+    "name": "bughunter",
+    "type": "directory",
+    "category": "integration",
+    "fileCount": 0,
+    "description": "Internal-only command for systematic bug hunting in the codebase. Stubbed out in external builds."
+  },
+  {
+    "name": "chrome",
+    "type": "directory",
+    "category": "integration",
+    "fileCount": 2,
+    "description": "Manages the Chrome extension integration, offering setup, permissions configuration, and connection status for the Claude-in-Chrome experience."
+  },
+  {
+    "name": "clear",
+    "type": "directory",
+    "category": "session",
+    "fileCount": 4,
+    "description": "Clears the current conversation history and optionally purges various caches (session, file state, MCP connections) to start fresh."
+  },
+  {
+    "name": "color",
+    "type": "directory",
+    "category": "config",
+    "fileCount": 2,
+    "description": "Changes the terminal color output settings, toggling between color modes for accessibility or preference."
+  },
+  {
+    "name": "commit-push-pr.ts",
+    "type": "file",
+    "category": "vcs",
+    "fileCount": 1,
+    "description": null
+  },
+  {
+    "name": "commit.ts",
+    "type": "file",
+    "category": "vcs",
+    "fileCount": 1,
+    "description": null
+  },
+  {
+    "name": "compact",
+    "type": "directory",
+    "category": "session",
+    "fileCount": 2,
+    "description": "Triggers manual context compaction, summarizing the conversation so far to free up token budget while preserving key information for continued work."
+  },
+  {
+    "name": "config",
+    "type": "directory",
+    "category": "config",
+    "fileCount": 2,
+    "description": "Opens an interactive settings editor for viewing and modifying Claude Code configuration at project or global scope, with aliases for /settings."
+  },
+  {
+    "name": "context",
+    "type": "directory",
+    "category": "navigation",
+    "fileCount": 3,
+    "description": "Displays the current context window contents including system prompt, CLAUDE.md files, conversation messages, and token usage breakdown, useful for understanding what the model sees."
+  },
+  {
+    "name": "copy",
+    "type": "directory",
+    "category": "navigation",
+    "fileCount": 2,
+    "description": "Copies the last assistant response or a specified conversation segment to the system clipboard for easy sharing."
+  },
+  {
+    "name": "cost",
+    "type": "directory",
+    "category": "debug",
+    "fileCount": 2,
+    "description": "Displays a detailed breakdown of API token usage and estimated costs for the current session, including per-model and cache statistics."
+  },
+  {
+    "name": "createMovedToPluginCommand.ts",
+    "type": "file",
+    "category": "other",
+    "fileCount": 1,
+    "description": null
+  },
+  {
+    "name": "ctx_viz",
+    "type": "directory",
+    "category": "navigation",
+    "fileCount": 0,
+    "description": "Internal-only context visualization command for debugging prompt composition. Stubbed out in external builds."
+  },
+  {
+    "name": "debug-tool-call",
+    "type": "directory",
+    "category": "debug",
+    "fileCount": 0,
+    "description": "Internal-only debugging command for inspecting tool call payloads and execution details. Stubbed out in external builds."
+  },
+  {
+    "name": "desktop",
+    "type": "directory",
+    "category": "system",
+    "fileCount": 2,
+    "description": "Hands off the current session to the Claude Desktop application, enabling continuation of the conversation in a richer GUI environment."
+  },
+  {
+    "name": "diff",
+    "type": "directory",
+    "category": "vcs",
+    "fileCount": 2,
+    "description": "Shows a diff view of all file changes made during the current conversation, rendered as a scrollable dialog with syntax highlighting."
+  },
+  {
+    "name": "doctor",
+    "type": "directory",
+    "category": "debug",
+    "fileCount": 2,
+    "description": "Runs diagnostic checks on the Claude Code installation, verifying API connectivity, authentication status, tool availability, and configuration validity."
+  },
+  {
+    "name": "effort",
+    "type": "directory",
+    "category": "config",
+    "fileCount": 2,
+    "description": "Adjusts the reasoning effort level for subsequent model responses, controlling the depth of thinking the model applies to each turn."
+  },
+  {
+    "name": "env",
+    "type": "directory",
+    "category": "config",
+    "fileCount": 0,
+    "description": "Internal-only command for inspecting environment variables and runtime configuration. Stubbed out in external builds."
+  },
+  {
+    "name": "exit",
+    "type": "directory",
+    "category": "session",
+    "fileCount": 2,
+    "description": "Gracefully exits the Claude Code session, running cleanup handlers, saving session state, and displaying the cost summary."
+  },
+  {
+    "name": "export",
+    "type": "directory",
+    "category": "session",
+    "fileCount": 2,
+    "description": "Exports the current conversation to a file in various formats (plain text, markdown, JSON), providing a portable record of the session."
+  },
+  {
+    "name": "extra-usage",
+    "type": "directory",
+    "category": "debug",
+    "fileCount": 4,
+    "description": "Manages overage billing settings for Claude.ai subscribers, allowing users to enable or configure pay-per-use beyond their plan's included limits."
+  },
+  {
+    "name": "fast",
+    "type": "directory",
+    "category": "config",
+    "fileCount": 2,
+    "description": "Toggles fast mode which routes queries to a smaller, faster model (like Haiku) for quick interactions where full Opus-level reasoning isn't needed."
+  },
+  {
+    "name": "feedback",
+    "type": "directory",
+    "category": "system",
+    "fileCount": 2,
+    "description": "Submits user feedback about Claude Code directly to the development team, collecting structured reports with optional session context."
+  },
+  {
+    "name": "files",
+    "type": "directory",
+    "category": "navigation",
+    "fileCount": 2,
+    "description": "Lists all files that have been read or modified during the current session, providing an audit trail of the model's filesystem interactions."
+  },
+  {
+    "name": "good-claude",
+    "type": "directory",
+    "category": "agent",
+    "fileCount": 0,
+    "description": "Internal-only positive feedback command used by Anthropic employees to flag exemplary model behavior for training data. Stubbed out in external builds."
+  },
+  {
+    "name": "heapdump",
+    "type": "directory",
+    "category": "debug",
+    "fileCount": 2,
+    "description": "Developer debugging command that dumps the JavaScript heap to disk for memory analysis and leak investigation."
+  },
+  {
+    "name": "help",
+    "type": "directory",
+    "category": "system",
+    "fileCount": 2,
+    "description": "Displays the full list of available slash commands with descriptions, organized by category, and shows keyboard shortcuts."
+  },
+  {
+    "name": "hooks",
+    "type": "directory",
+    "category": "plugins",
+    "fileCount": 2,
+    "description": "Interactive viewer for the configured lifecycle hooks, showing which events have registered hooks and their current status."
+  },
+  {
+    "name": "ide",
+    "type": "directory",
+    "category": "integration",
+    "fileCount": 2,
+    "description": "Manages IDE integration settings and displays the connection status for supported editors (VS Code, JetBrains), enabling bidirectional communication between Claude Code and the IDE."
+  },
+  {
+    "name": "init-verifiers.ts",
+    "type": "file",
+    "category": "other",
+    "fileCount": 1,
+    "description": null
+  },
+  {
+    "name": "init.ts",
+    "type": "file",
+    "category": "system",
+    "fileCount": 1,
+    "description": "Generates a CLAUDE.md file by analyzing the project's codebase structure, build system, and conventions, creating a context document for future Claude sessions."
+  },
+  {
+    "name": "insights.ts",
+    "type": "file",
+    "category": "other",
+    "fileCount": 1,
+    "description": null
+  },
+  {
+    "name": "install-github-app",
+    "type": "directory",
+    "category": "plugins",
+    "fileCount": 14,
+    "description": "Multi-step wizard for installing the Claude GitHub App on a repository, configuring API keys, checking existing secrets, and creating the GitHub Actions integration."
+  },
+  {
+    "name": "install-slack-app",
+    "type": "directory",
+    "category": "plugins",
+    "fileCount": 2,
+    "description": "Installs the Claude Slack App integration, connecting Claude Code capabilities to a Slack workspace."
+  },
+  {
+    "name": "install.tsx",
+    "type": "file",
+    "category": "system",
+    "fileCount": 1,
+    "description": "Handles native binary installation and upgrade of Claude Code, replacing npm-based installations with the native installer, configuring shell integration, and verifying the installed version."
+  },
+  {
+    "name": "issue",
+    "type": "directory",
+    "category": "vcs",
+    "fileCount": 0,
+    "description": "Internal-only command for creating GitHub issues from within a session. Stubbed out in external builds."
+  },
+  {
+    "name": "keybindings",
+    "type": "directory",
+    "category": "config",
+    "fileCount": 2,
+    "description": "Editor for viewing and customizing keyboard shortcut mappings, with validation against reserved shortcuts and persistence to ~/.claude/keybindings.json."
+  },
+  {
+    "name": "login",
+    "type": "directory",
+    "category": "system",
+    "fileCount": 2,
+    "description": "Initiates the OAuth authentication flow for Claude.ai or API key entry, handling the PKCE flow, device code grant, and credential storage."
+  },
+  {
+    "name": "logout",
+    "type": "directory",
+    "category": "system",
+    "fileCount": 2,
+    "description": "Clears stored authentication credentials and OAuth tokens, signing the user out of their current identity."
+  },
+  {
+    "name": "mcp",
+    "type": "directory",
+    "category": "plugins",
+    "fileCount": 4,
+    "description": "Manages Model Context Protocol server connections, providing sub-commands for adding, removing, configuring, and monitoring MCP servers attached to the session."
+  },
+  {
+    "name": "memory",
+    "type": "directory",
+    "category": "agent",
+    "fileCount": 2,
+    "description": "Views and edits the persistent memory files (CLAUDE.md and memory directory entries) that carry context across sessions."
+  },
+  {
+    "name": "mobile",
+    "type": "directory",
+    "category": "integration",
+    "fileCount": 2,
+    "description": "Displays a QR code and URL for connecting to the current session from a mobile device through the remote bridge."
+  },
+  {
+    "name": "mock-limits",
+    "type": "directory",
+    "category": "config",
+    "fileCount": 0,
+    "description": "Internal-only testing command for simulating rate limit scenarios with mock API response headers. Stubbed out in external builds."
+  },
+  {
+    "name": "model",
+    "type": "directory",
+    "category": "config",
+    "fileCount": 2,
+    "description": "Switches the active model for subsequent queries, with validation of available models and display of the current selection."
+  },
+  {
+    "name": "oauth-refresh",
+    "type": "directory",
+    "category": "system",
+    "fileCount": 0,
+    "description": "Internal-only command for manually refreshing OAuth tokens. Stubbed out in external builds."
+  },
+  {
+    "name": "onboarding",
+    "type": "directory",
+    "category": "system",
+    "fileCount": 0,
+    "description": "Internal-only command for replaying the onboarding experience. Stubbed out in external builds."
+  },
+  {
+    "name": "output-style",
+    "type": "directory",
+    "category": "config",
+    "fileCount": 2,
+    "description": "Deprecated command (now in /config) that previously let users change Claude's response formatting style."
+  },
+  {
+    "name": "passes",
+    "type": "directory",
+    "category": "debug",
+    "fileCount": 2,
+    "description": "Manages Claude Code passes and referral rewards for Claude.ai subscribers, showing eligibility status and referral links."
+  },
+  {
+    "name": "perf-issue",
+    "type": "directory",
+    "category": "debug",
+    "fileCount": 0,
+    "description": "Internal-only command for reporting performance issues with diagnostic data. Stubbed out in external builds."
+  },
+  {
+    "name": "permissions",
+    "type": "directory",
+    "category": "config",
+    "fileCount": 2,
+    "description": "Interactive manager for tool permission rules, allowing users to view, add, and remove allow/deny rules that control which tools the model can use without asking."
+  },
+  {
+    "name": "plan",
+    "type": "directory",
+    "category": "agent",
+    "fileCount": 2,
+    "description": "Enters plan mode or displays the current session plan, where the model outlines its approach in a structured plan file before executing changes."
+  },
+  {
+    "name": "plugin",
+    "type": "directory",
+    "category": "plugins",
+    "fileCount": 17,
+    "description": "Full-featured plugin management interface with marketplace browsing, installation, trust verification, settings configuration, and update management."
+  },
+  {
+    "name": "pr_comments",
+    "type": "directory",
+    "category": "vcs",
+    "fileCount": 1,
+    "description": "Fetches and displays comments from a GitHub pull request, now implemented as a plugin redirect via the createMovedToPluginCommand pattern."
+  },
+  {
+    "name": "privacy-settings",
+    "type": "directory",
+    "category": "config",
+    "fileCount": 2,
+    "description": "Views and updates privacy settings for consumer subscribers, controlling data retention and telemetry preferences."
+  },
+  {
+    "name": "rate-limit-options",
+    "type": "directory",
+    "category": "config",
+    "fileCount": 2,
+    "description": "Shows available options when a rate limit is reached for Claude.ai subscribers, including upgrade paths and wait time estimates."
+  },
+  {
+    "name": "release-notes",
+    "type": "directory",
+    "category": "system",
+    "fileCount": 2,
+    "description": "Displays the release notes for the current and recent versions of Claude Code, highlighting new features and changes."
+  },
+  {
+    "name": "reload-plugins",
+    "type": "directory",
+    "category": "plugins",
+    "fileCount": 2,
+    "description": "Hot-reloads plugin configurations and applies pending changes to the running session without requiring a restart."
+  },
+  {
+    "name": "remote-env",
+    "type": "directory",
+    "category": "system",
+    "fileCount": 2,
+    "description": "Configures the default remote environment settings for teleported sessions, controlling which cloud environment is used for Claude Code on the web."
+  },
+  {
+    "name": "remote-setup",
+    "type": "directory",
+    "category": "system",
+    "fileCount": 3,
+    "description": "Multi-step wizard for setting up Claude Code on the web, including GitHub account connection and remote session configuration."
+  },
+  {
+    "name": "rename",
+    "type": "directory",
+    "category": "system",
+    "fileCount": 3,
+    "description": "Renames the current conversation session, either with a user-provided name or by auto-generating one from the conversation content."
+  },
+  {
+    "name": "reset-limits",
+    "type": "directory",
+    "category": "config",
+    "fileCount": 0,
+    "description": "Internal-only command for resetting rate limit counters during testing. Stubbed out in external builds."
+  },
+  {
+    "name": "resume",
+    "type": "directory",
+    "category": "session",
+    "fileCount": 2,
+    "description": "Presents a picker for browsing and resuming previous conversation sessions, with search, session metadata display, and continuation from where you left off."
+  },
+  {
+    "name": "review",
+    "type": "directory",
+    "category": "vcs",
+    "fileCount": 4,
+    "description": "Runs an AI-powered code review of a GitHub PR, analyzing the diff for quality issues, risks, and improvement suggestions. Supports both local and web-based (ultrareview) modes."
+  },
+  {
+    "name": "review.ts",
+    "type": "file",
+    "category": "vcs",
+    "fileCount": 1,
+    "description": "Runs an AI-powered code review of a GitHub PR, analyzing the diff for quality issues, risks, and improvement suggestions. Supports both local and web-based (ultrareview) modes."
+  },
+  {
+    "name": "rewind",
+    "type": "directory",
+    "category": "session",
+    "fileCount": 2,
+    "description": "Restores files and/or conversation state to a previous checkpoint, using file history snapshots to undo changes made during the session."
+  },
+  {
+    "name": "sandbox-toggle",
+    "type": "directory",
+    "category": "config",
+    "fileCount": 2,
+    "description": "Toggles the filesystem sandbox on or off and configures auto-allow-bash-if-sandboxed behavior, giving users control over the security boundary."
+  },
+  {
+    "name": "security-review.ts",
+    "type": "file",
+    "category": "other",
+    "fileCount": 1,
+    "description": null
+  },
+  {
+    "name": "session",
+    "type": "directory",
+    "category": "session",
+    "fileCount": 2,
+    "description": "Displays the current remote session URL and QR code when running in remote mode, enabling easy connection from other devices."
+  },
+  {
+    "name": "share",
+    "type": "directory",
+    "category": "session",
+    "fileCount": 0,
+    "description": "Internal-only command for sharing session transcripts. Stubbed out in external builds."
+  },
+  {
+    "name": "skills",
+    "type": "directory",
+    "category": "plugins",
+    "fileCount": 2,
+    "description": "Lists all available skills (from SKILL.md files and plugins) with their descriptions, showing what specialized capabilities can be invoked."
+  },
+  {
+    "name": "stats",
+    "type": "directory",
+    "category": "debug",
+    "fileCount": 2,
+    "description": "Shows personal Claude Code usage statistics and activity metrics, including session counts, token usage history, and usage patterns."
+  },
+  {
+    "name": "status",
+    "type": "directory",
+    "category": "system",
+    "fileCount": 2,
+    "description": "Displays comprehensive system status including version, active model, account type, API connectivity, MCP server health, and tool availability."
+  },
+  {
+    "name": "statusline.tsx",
+    "type": "file",
+    "category": "config",
+    "fileCount": 1,
+    "description": null
+  },
+  {
+    "name": "stickers",
+    "type": "directory",
+    "category": "debug",
+    "fileCount": 2,
+    "description": "A fun Easter egg command that lets users order physical Claude Code stickers."
+  },
+  {
+    "name": "summary",
+    "type": "directory",
+    "category": "session",
+    "fileCount": 0,
+    "description": "Internal-only command for generating session summaries. Stubbed out in external builds."
+  },
+  {
+    "name": "tag",
+    "type": "directory",
+    "category": "vcs",
+    "fileCount": 2,
+    "description": "Internal-only (Anthropic) command for adding searchable tags to sessions, enabling organization and retrieval of sessions by topic or project."
+  },
+  {
+    "name": "tasks",
+    "type": "directory",
+    "category": "agent",
+    "fileCount": 2,
+    "description": "Lists and manages background tasks (sub-agents, shell processes, dreams) with status display, output viewing, and task termination controls."
+  },
+  {
+    "name": "teleport",
+    "type": "directory",
+    "category": "system",
+    "fileCount": 0,
+    "description": "Internal-only command for teleporting a session to a remote cloud environment. Stubbed out in external builds."
+  },
+  {
+    "name": "terminalSetup",
+    "type": "directory",
+    "category": "other",
+    "fileCount": 2,
+    "description": "Guides users through terminal configuration for optimal Claude Code experience, detecting terminal capabilities (CSI u, Kitty protocol) and suggesting settings."
+  },
+  {
+    "name": "theme",
+    "type": "directory",
+    "category": "config",
+    "fileCount": 2,
+    "description": "Interactive theme picker for switching between visual themes that control colors, borders, and styling across the entire terminal UI."
+  },
+  {
+    "name": "thinkback",
+    "type": "directory",
+    "category": "agent",
+    "fileCount": 2,
+    "description": "A year-in-review experience that generates a personalized retrospective of your Claude Code usage, including statistics, highlights, and animated playback."
+  },
+  {
+    "name": "thinkback-play",
+    "type": "directory",
+    "category": "agent",
+    "fileCount": 2,
+    "description": "Hidden companion to /think-back that plays the generated retrospective animation after the thinkback skill finishes producing it."
+  },
+  {
+    "name": "ultraplan.tsx",
+    "type": "file",
+    "category": "agent",
+    "fileCount": 1,
+    "description": "Launches an ultra-planning session that runs on Claude Code on the web (CCR), spawning a remote multi-agent exploration with a 30-minute timeout for deep architectural planning."
+  },
+  {
+    "name": "upgrade",
+    "type": "directory",
+    "category": "system",
+    "fileCount": 2,
+    "description": "Presents Claude.ai subscribers with upgrade options for higher-tier plans that offer increased rate limits and more access to Opus."
+  },
+  {
+    "name": "usage",
+    "type": "directory",
+    "category": "debug",
+    "fileCount": 2,
+    "description": "Shows current plan usage limits and consumption for Claude.ai subscribers, including remaining quota and reset timing."
+  },
+  {
+    "name": "version.ts",
+    "type": "file",
+    "category": "system",
+    "fileCount": 1,
+    "description": "Prints the current Claude Code version and build timestamp."
+  },
+  {
+    "name": "vim",
+    "type": "directory",
+    "category": "config",
+    "fileCount": 2,
+    "description": "Toggles between Vim and normal editing modes in the REPL input, persisting the preference across sessions."
+  },
+  {
+    "name": "voice",
+    "type": "directory",
+    "category": "integration",
+    "fileCount": 2,
+    "description": "Toggles voice input mode on or off, enabling push-to-talk audio transcription through the voice service."
+  }
+]

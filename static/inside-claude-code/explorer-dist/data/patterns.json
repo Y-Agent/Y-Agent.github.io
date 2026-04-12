@@ -1,0 +1,310 @@
+{
+  "patterns": [
+    {
+      "id": "async-generator-pipeline",
+      "name": "AsyncGenerator Pipeline",
+      "category": "Architecture",
+      "description": "Every major pipeline in Claude Code uses async function* generators. This enables streaming output, backpressure between producer and consumer, and cooperative cancellation. Each yield point serves as a cancellation boundary where the runtime can abort execution cleanly.",
+      "whereUsed": ["sending-message", "watching-tool-run", "context-compaction", "prompt-assembly"],
+      "whyChosen": "Async generators provide natural backpressure and cancellation semantics that callbacks and event emitters cannot. They compose linearly, making complex pipelines readable as sequential code while remaining fully non-blocking.",
+      "keyModules": ["cli/agent/mainLoop.ts", "cli/agent/processResponse.ts"]
+    },
+    {
+      "id": "react-loop",
+      "name": "ReAct Loop",
+      "category": "Architecture",
+      "description": "The core intelligence of Claude Code follows the Reason-Act-Observe agent loop. The model reasons about what to do, selects and invokes a tool (Act), then observes the result before deciding the next step. This loop continues until the task is complete or the user interrupts.",
+      "whereUsed": ["sending-message", "watching-tool-run", "tool-selection", "sub-agent-spawning"],
+      "whyChosen": "ReAct is the dominant agentic pattern because it grounds the LLM in real observations rather than hallucinated chains-of-thought. It naturally handles error recovery and multi-step tasks without requiring a full plan upfront.",
+      "keyModules": ["cli/agent/mainLoop.ts", "cli/agent/agent.ts"]
+    },
+    {
+      "id": "strategy-pattern",
+      "name": "Strategy Pattern",
+      "category": "Architecture",
+      "description": "Tool dispatch uses the strategy pattern: each tool type (Bash, Read, Write, Edit, Grep, Glob, etc.) implements a common ToolUseHandler interface. AllBaseTools() builds the full registry of available strategies, and the runtime selects the correct handler by tool name.",
+      "whereUsed": ["tool-selection", "watching-tool-run", "setting-up-mcp"],
+      "whyChosen": "The strategy pattern allows adding new tools without modifying the dispatch logic. Each tool is independently testable and can define its own permission requirements, parameter validation, and execution semantics.",
+      "keyModules": ["cli/tools/tool.ts", "cli/tools/allTools.ts"]
+    },
+    {
+      "id": "command-pattern",
+      "name": "Command Pattern",
+      "category": "Architecture",
+      "description": "Claude Code supports 101 slash commands, each registered as a command object in a lazy-loaded registry. Commands declare their name, description, argument schema, and execute function. The registry resolves commands by prefix matching and handles ambiguity.",
+      "whereUsed": ["slash-commands", "plan-mode", "permission-mode-cycling"],
+      "whyChosen": "The command pattern decouples invocation from implementation, enabling lazy loading, prefix matching, help generation, and dynamic registration of commands from MCP servers or skills without modifying the core parser.",
+      "keyModules": ["cli/commands/registry.ts", "cli/commands/command.ts"]
+    },
+    {
+      "id": "layered-configuration",
+      "name": "Layered Configuration",
+      "category": "Architecture",
+      "description": "Settings follow a strict cascade: CLI arguments override MDM (enterprise policy), which overrides user config, which overrides environment variables, which override built-in defaults. Each layer can be inspected independently for debugging.",
+      "whereUsed": ["launching-claude", "changing-settings", "remote-control"],
+      "whyChosen": "Layered configuration satisfies both enterprise policy enforcement (MDM cannot be overridden by users) and developer convenience (CLI args for quick one-off changes). The cascade is predictable and inspectable.",
+      "keyModules": ["cli/config/config.ts", "cli/config/mdm.ts"]
+    },
+    {
+      "id": "hierarchical-discovery",
+      "name": "Hierarchical Discovery",
+      "category": "Architecture",
+      "description": "CLAUDE.md instruction files are discovered from four scopes: global (~/.claude/CLAUDE.md), user (~/.claude/CLAUDE.md), project root, and local (cwd-relative). Files at each level are merged, with more specific scopes taking precedence for conflicting directives.",
+      "whereUsed": ["writing-claude-md", "prompt-assembly", "launching-claude"],
+      "whyChosen": "Hierarchical discovery mirrors how dotfiles work in Unix (global bashrc, local bashrc). It lets organizations set global policies, projects set conventions, and individual directories add context-specific instructions.",
+      "keyModules": ["cli/config/claudeMd.ts", "cli/config/discovery.ts"]
+    },
+    {
+      "id": "readers-writers-lock",
+      "name": "Readers-Writers Lock",
+      "category": "Concurrency",
+      "description": "Tool execution uses a readers-writers locking model: read-only tools like Grep, Glob, and Read can execute in parallel since they don't mutate state. Write tools (Edit, Write, Bash) require exclusive access to prevent conflicting filesystem modifications.",
+      "whereUsed": ["watching-tool-run", "tool-selection", "sub-agent-spawning"],
+      "whyChosen": "A full mutex would serialize all tool calls, wasting time when multiple reads could proceed safely. The readers-writers model maximizes parallelism for the common case (multiple reads) while guaranteeing correctness for writes.",
+      "keyModules": ["cli/tools/toolExecution.ts", "cli/tools/permissions.ts"]
+    },
+    {
+      "id": "polling-based-inbox",
+      "name": "Polling-Based Inbox",
+      "category": "Concurrency",
+      "description": "Sub-agent monitoring uses a polling-based inbox model. The parent agent checks the sub-agent's output at 1-second intervals, reading incremental results from a shared file. This avoids complex IPC while keeping the parent responsive to user interrupts.",
+      "whereUsed": ["sub-agent-spawning", "subagent-monitoring"],
+      "whyChosen": "Polling is simpler and more debuggable than bidirectional IPC channels. The 1-second interval balances responsiveness with overhead, and the file-based inbox survives process crashes without losing partial results.",
+      "keyModules": ["cli/agent/subAgent.ts", "cli/agent/inbox.ts"]
+    },
+    {
+      "id": "promise-all-concurrency",
+      "name": "Promise.all Concurrency",
+      "category": "Concurrency",
+      "description": "Independent async operations are grouped with Promise.all for parallel execution. This pattern appears in file discovery, multi-tool read operations, and initialization routines where tasks have no data dependencies between them.",
+      "whereUsed": ["launching-claude", "prompt-assembly", "tool-selection"],
+      "whyChosen": "Promise.all is the idiomatic JavaScript mechanism for structured concurrency. It provides automatic error propagation and ensures all parallel branches complete (or fail) before proceeding, avoiding orphaned async work.",
+      "keyModules": ["cli/agent/mainLoop.ts", "cli/tools/toolExecution.ts"]
+    },
+    {
+      "id": "sse-streaming",
+      "name": "SSE Streaming",
+      "category": "Data Flow",
+      "description": "Claude Code uses Server-Sent Events (SSE) for token-by-token response streaming from the Anthropic API. The SSE stream is parsed incrementally, with each event triggering UI updates. This enables real-time display of model output as it is generated.",
+      "whereUsed": ["sending-message", "watching-tool-run", "context-compaction"],
+      "whyChosen": "SSE is the standard protocol for server-to-client streaming over HTTP. It handles reconnection natively, works through proxies, and is simpler than WebSockets for the unidirectional streaming use case.",
+      "keyModules": ["cli/api/stream.ts", "cli/api/anthropicClient.ts"]
+    },
+    {
+      "id": "ndjson-persistence",
+      "name": "NDJSON Persistence",
+      "category": "Data Flow",
+      "description": "Session transcripts are stored as newline-delimited JSON (NDJSON), where each line is a self-contained JSON object representing one message or event. This format supports append-only writes and efficient streaming reads without loading the entire file.",
+      "whereUsed": ["resuming-session", "exiting-cleanup", "telemetry-data-collection"],
+      "whyChosen": "NDJSON is append-friendly (no need to parse and rewrite the whole file), corruption-resistant (a truncated file loses only the last entry), and streamable (each line can be parsed independently). It outperforms SQLite for write-heavy append logs.",
+      "keyModules": ["cli/session/storage.ts", "cli/session/transcript.ts"]
+    },
+    {
+      "id": "dual-write-telemetry",
+      "name": "Dual-Write Telemetry",
+      "category": "Data Flow",
+      "description": "Telemetry events are sent to two independent backends: a whitelisted subset goes to Datadog for operational monitoring, while all events go to a first-party analytics service. This dual-write ensures complete data capture while respecting privacy boundaries.",
+      "whereUsed": ["telemetry-data-collection", "sending-message", "exiting-cleanup"],
+      "whyChosen": "Dual-write separates operational observability (latency, errors) from product analytics (feature usage). The Datadog whitelist prevents accidental PII leakage to third parties while the first-party backend captures the full event stream.",
+      "keyModules": ["cli/telemetry/telemetry.ts", "cli/telemetry/datadog.ts"]
+    },
+    {
+      "id": "batch-and-flush",
+      "name": "Batch-and-Flush",
+      "category": "Data Flow",
+      "description": "Analytics events are accumulated in an in-memory buffer and flushed in batches either periodically (on a timer) or on process shutdown. This amortizes network overhead and ensures events are not lost during normal operation or graceful exit.",
+      "whereUsed": ["telemetry-data-collection", "exiting-cleanup"],
+      "whyChosen": "Sending each event individually would create excessive network traffic and latency. Batch-and-flush reduces API calls by orders of magnitude while the shutdown flush guarantees delivery of the final batch before the process exits.",
+      "keyModules": ["cli/telemetry/batcher.ts", "cli/telemetry/telemetry.ts"]
+    },
+    {
+      "id": "state-stashing",
+      "name": "State Stashing (prePlanMode)",
+      "category": "State Management",
+      "description": "When entering plan mode, Claude Code takes a full snapshot of the current conversation state (messages, tool results, pending actions). On exit, the snapshot is restored, ensuring plan-mode exploration does not corrupt the main conversation context.",
+      "whereUsed": ["plan-mode", "sending-message"],
+      "whyChosen": "State stashing provides clean isolation between plan-mode exploration and normal execution. The alternative of branching the conversation would require complex merge logic; snapshot-and-restore is simpler and guarantees no state leakage.",
+      "keyModules": ["cli/agent/planMode.ts", "cli/agent/stateSnapshot.ts"]
+    },
+    {
+      "id": "mode-based-dispatch",
+      "name": "Mode-Based Dispatch",
+      "category": "State Management",
+      "description": "The permission mode (ask, auto, deny) drives tool approval behavior through dispatch. In ask mode, the user is prompted; in auto mode, the ML classifier decides; in deny mode, tools are blocked. The mode is checked at every tool invocation boundary.",
+      "whereUsed": ["permission-decision", "permission-mode-cycling", "auto-permission-classifier"],
+      "whyChosen": "Mode-based dispatch centralizes permission logic instead of scattering it across individual tools. Each mode's behavior is well-defined and testable, and the mode can be changed at runtime without restarting the session.",
+      "keyModules": ["cli/tools/permissions.ts", "cli/tools/permissionMode.ts"]
+    },
+    {
+      "id": "session-scoped-state",
+      "name": "Session-Scoped State",
+      "category": "State Management",
+      "description": "All mutable state (messages, tool results, configuration overrides, file watches) is scoped to a conversation session. Sessions can be persisted to disk and resumed later, carrying forward the full context of the prior interaction.",
+      "whereUsed": ["resuming-session", "launching-claude", "exiting-cleanup"],
+      "whyChosen": "Session scoping prevents state leakage between independent conversations and enables resume. Scoping to a session rather than global state means multiple Claude Code instances can run simultaneously without interference.",
+      "keyModules": ["cli/session/session.ts", "cli/session/storage.ts"]
+    },
+    {
+      "id": "tri-state-cycling",
+      "name": "Tri-State Cycling",
+      "category": "State Management",
+      "description": "Permission modes cycle through three states in a fixed order: ask -> auto -> deny -> ask, toggled by pressing Shift+Tab. The current mode is displayed in the UI chrome and takes effect immediately for the next tool invocation.",
+      "whereUsed": ["permission-mode-cycling", "keyboard-shortcuts"],
+      "whyChosen": "A fixed cycle order is discoverable and predictable. Three states cover the full spectrum of user intent (cautious, trusting, restrictive) without the complexity of per-tool permission granularity during active use.",
+      "keyModules": ["cli/tools/permissionMode.ts", "cli/ui/modeIndicator.tsx"]
+    },
+    {
+      "id": "ml-based-classification",
+      "name": "ML-Based Classification",
+      "category": "Security",
+      "description": "The auto-permission classifier uses the full session transcript as context and makes a side Claude API call to classify whether a pending tool invocation should be allowed or denied. This provides intelligent, context-aware permission decisions without user interruption.",
+      "whereUsed": ["auto-permission-classifier", "permission-decision", "watching-tool-run"],
+      "whyChosen": "Rule-based classification cannot capture the nuance of whether a Bash command is safe in context. An ML classifier can reason about intent (e.g., 'rm' in a test cleanup is safe; 'rm' on user data is not) using the full conversation history.",
+      "keyModules": ["cli/tools/autoPermission.ts", "cli/tools/classifier.ts"]
+    },
+    {
+      "id": "permission-cascade",
+      "name": "Permission Cascade",
+      "category": "Security",
+      "description": "Permission decisions follow a cascade: explicit deny rules are checked first, then explicit allow rules, and finally the ask/auto/deny mode for unmatched cases. Users can save rules persistently so repeated tool patterns don't require re-approval.",
+      "whereUsed": ["permission-decision", "changing-settings", "watching-tool-run"],
+      "whyChosen": "The deny-first cascade follows the principle of least privilege. Persistent rules reduce friction for known-safe operations while ensuring dangerous operations always trigger review, even if similar-looking operations were previously allowed.",
+      "keyModules": ["cli/tools/permissions.ts", "cli/tools/permissionRules.ts"]
+    },
+    {
+      "id": "trust-on-first-use",
+      "name": "Trust-on-First-Use",
+      "category": "Security",
+      "description": "When Claude Code runs in a new workspace for the first time, it presents a trust dialog explaining what access it will have. The user must explicitly grant trust before any tools can execute. Trust is recorded per-workspace and persists across sessions.",
+      "whereUsed": ["launching-claude", "permission-decision"],
+      "whyChosen": "TOFU balances security with usability: the user makes one deliberate trust decision rather than being prompted for every action. This mirrors VS Code's workspace trust model, which users already understand.",
+      "keyModules": ["cli/security/workspaceTrust.ts", "cli/ui/trustDialog.tsx"]
+    },
+    {
+      "id": "pkce-oauth",
+      "name": "PKCE OAuth 2.0",
+      "category": "Security",
+      "description": "Authentication uses OAuth 2.0 with PKCE (Proof Key for Code Exchange). Claude Code launches a local HTTP callback server, generates a code challenge, opens the browser for login, and receives the authorization code via the local server. Tokens are stored securely in the system keychain.",
+      "whereUsed": ["authentication", "launching-claude"],
+      "whyChosen": "PKCE is the recommended OAuth flow for native/CLI applications because it prevents authorization code interception attacks without requiring a client secret. The local callback server avoids manual copy-paste of authorization codes.",
+      "keyModules": ["cli/auth/oauth.ts", "cli/auth/callbackServer.ts", "cli/auth/tokenStore.ts"]
+    },
+    {
+      "id": "remote-circuit-breaker",
+      "name": "Remote Circuit Breaker",
+      "category": "Security",
+      "description": "GrowthBook feature flags can remotely disable auto-permission mode, specific tool types, or entire features across all Claude Code installations. This provides an emergency kill switch if a security vulnerability or abuse pattern is discovered in the field.",
+      "whereUsed": ["remote-control", "auto-permission-classifier", "permission-decision"],
+      "whyChosen": "A remote circuit breaker enables rapid response to security incidents without requiring users to update their CLI. It follows the same pattern used by browser vendors for remotely disabling compromised extensions.",
+      "keyModules": ["cli/config/growthbook.ts", "cli/config/featureFlags.ts"]
+    },
+    {
+      "id": "platform-specific-mdm",
+      "name": "Platform-Specific MDM",
+      "category": "Security",
+      "description": "Enterprise policy enforcement uses platform-native MDM (Mobile Device Management) mechanisms: macOS Configuration Profiles and Windows Registry. IT administrators can enforce permission modes, disable features, and set API endpoints without touching the Claude Code configuration files.",
+      "whereUsed": ["launching-claude", "changing-settings", "remote-control"],
+      "whyChosen": "Platform-native MDM integrates with existing enterprise management workflows (Jamf, Intune, Group Policy). IT teams can manage Claude Code alongside other applications using their standard tooling rather than learning a custom policy format.",
+      "keyModules": ["cli/config/mdm.ts", "cli/config/platformPolicy.ts"]
+    },
+    {
+      "id": "static-dynamic-prompt-splitting",
+      "name": "Static/Dynamic Prompt Splitting",
+      "category": "Performance",
+      "description": "The system prompt is split at a DYNAMIC_BOUNDARY marker into a static portion (tool descriptions, base instructions) and a dynamic portion (CLAUDE.md content, session state). The static portion is cached across requests at the global/org scope, while the dynamic portion is cached at the session scope.",
+      "whereUsed": ["prompt-assembly", "sending-message", "context-token-consumption"],
+      "whyChosen": "Anthropic's prompt caching charges less for cache hits. By placing stable content before the boundary, the majority of the system prompt is cached across all requests. This reduces both latency and cost significantly for long sessions.",
+      "keyModules": ["cli/prompts/systemPrompt.ts", "cli/prompts/dynamicBoundary.ts"]
+    },
+    {
+      "id": "deferred-tool-loading",
+      "name": "Deferred Tool Loading",
+      "category": "Performance",
+      "description": "Tool schemas are loaded lazily: only tool names and brief descriptions are held in memory initially. Full parameter schemas and execution code are loaded on first use. This reduces startup time and memory footprint, especially when MCP servers register many tools.",
+      "whereUsed": ["launching-claude", "tool-selection", "setting-up-mcp"],
+      "whyChosen": "Claude Code can have 100+ tools registered (built-in plus MCP). Loading all schemas eagerly would slow startup and waste memory for tools that may never be invoked in a given session. Deferred loading follows the just-in-time principle.",
+      "keyModules": ["cli/tools/toolRegistry.ts", "cli/tools/deferredSchema.ts"]
+    },
+    {
+      "id": "virtual-scrolling",
+      "name": "Virtual Scrolling",
+      "category": "Performance",
+      "description": "The message list uses virtual scrolling: only the messages visible in the terminal viewport are rendered to the screen. This ensures consistent performance even for sessions with thousands of messages, where rendering the full list would cause visible lag.",
+      "whereUsed": ["sending-message", "watching-tool-run", "resuming-session"],
+      "whyChosen": "Terminal rendering is expensive for large outputs. Virtual scrolling keeps render time constant regardless of conversation length. The alternative of paginating would break the continuous scroll UX that users expect.",
+      "keyModules": ["cli/ui/messageList.tsx", "cli/ui/virtualScroll.ts"]
+    },
+    {
+      "id": "summary-based-compaction",
+      "name": "Summary-Based Compaction",
+      "category": "Performance",
+      "description": "When the conversation approaches the context window limit, Claude Code triggers compaction: a separate Claude API call summarizes the conversation so far, preserving key facts, file paths, and decisions. The summary replaces the full history, freeing context space for new messages.",
+      "whereUsed": ["context-compaction", "context-token-consumption", "sending-message"],
+      "whyChosen": "Truncation would lose critical early-conversation context. Summary-based compaction preserves the semantic content while dramatically reducing token count. Using a separate API call ensures the summary is high quality and doesn't interfere with the main task.",
+      "keyModules": ["cli/agent/compaction.ts", "cli/agent/summarizer.ts"]
+    },
+    {
+      "id": "react-ink-terminal",
+      "name": "React/Ink Terminal Rendering",
+      "category": "UI",
+      "description": "Claude Code's terminal UI is built with React components rendered to the terminal via the Ink library. This brings React's declarative component model, hooks, and reconciliation to terminal output, enabling complex interactive UIs with the same mental model as web development.",
+      "whereUsed": ["sending-message", "watching-tool-run", "permission-decision", "keyboard-shortcuts"],
+      "whyChosen": "Ink provides a battle-tested rendering pipeline for terminal UIs. Using React components means the team can leverage existing React expertise and the rich ecosystem of patterns (hooks, context, composition) rather than building a custom terminal rendering engine.",
+      "keyModules": ["cli/ui/App.tsx", "cli/ui/components/MessageView.tsx"]
+    },
+    {
+      "id": "vim-emulation",
+      "name": "Vim Emulation",
+      "category": "UI",
+      "description": "The text input component implements a vim-like state machine with INSERT and NORMAL modes. In NORMAL mode, navigation keys (h/j/k/l, w/b) move the cursor and commands (dd, yy, p) manipulate text. ESC transitions to NORMAL mode, i/a/o return to INSERT mode.",
+      "whereUsed": ["keyboard-shortcuts", "sending-message"],
+      "whyChosen": "Claude Code's target audience (developers) frequently use vim keybindings. Providing native vim emulation in the input field reduces friction for these users and aligns with the terminal-native philosophy of the product.",
+      "keyModules": ["cli/ui/input/vimMode.ts", "cli/ui/input/TextInput.tsx"]
+    },
+    {
+      "id": "card-based-ui",
+      "name": "Card-Based UI",
+      "category": "UI",
+      "description": "Tool calls are rendered as expanding cards that show the tool name and arguments in a collapsed header, then expand to show streaming output as the tool executes. Completed cards can be collapsed again to reduce visual clutter in long sessions.",
+      "whereUsed": ["watching-tool-run", "sending-message", "sub-agent-spawning"],
+      "whyChosen": "Cards provide progressive disclosure: users see what tool was called at a glance, and can drill into details on demand. The expanding/collapsing behavior keeps the conversation readable even when tools produce verbose output.",
+      "keyModules": ["cli/ui/components/ToolCard.tsx", "cli/ui/components/ToolOutput.tsx"]
+    },
+    {
+      "id": "bidirectional-ide-sync",
+      "name": "Bidirectional IDE Sync",
+      "category": "Integration",
+      "description": "Claude Code communicates with VS Code and JetBrains IDEs via a local IPC bridge. File edits made by Claude Code are reflected in the IDE in real time, and the IDE can send selected code or diagnostics to Claude Code. The bridge uses a lightweight socket protocol.",
+      "whereUsed": ["ide-integration", "watching-tool-run"],
+      "whyChosen": "Bidirectional sync lets developers keep their IDE open alongside Claude Code without manual file refreshes. The IPC bridge is more reliable than file-watching for instant updates and supports structured data exchange beyond simple file changes.",
+      "keyModules": ["cli/ide/bridge.ts", "cli/ide/vscodeAdapter.ts"]
+    },
+    {
+      "id": "dynamic-mcp-registration",
+      "name": "Dynamic MCP Registration",
+      "category": "Integration",
+      "description": "MCP (Model Context Protocol) servers are discovered from configuration and their tools are registered into Claude Code's tool registry at runtime. When an MCP server is added or removed, the tool list updates dynamically without restarting the session.",
+      "whereUsed": ["setting-up-mcp", "tool-selection", "launching-claude"],
+      "whyChosen": "Dynamic registration means users can extend Claude Code's capabilities by simply pointing it at an MCP server. The runtime discovery avoids hardcoding integrations and follows the open/closed principle for extensibility.",
+      "keyModules": ["cli/mcp/mcpClient.ts", "cli/mcp/toolAdapter.ts"]
+    },
+    {
+      "id": "server-side-feature-evaluation",
+      "name": "Server-Side Feature Evaluation",
+      "category": "Integration",
+      "description": "GrowthBook feature flags are evaluated server-side with the results cached locally. The cache refreshes on an hourly interval. This enables gradual rollouts, A/B testing, and remote configuration changes without requiring CLI updates or restarts.",
+      "whereUsed": ["remote-control", "launching-claude", "auto-permission-classifier"],
+      "whyChosen": "Server-side evaluation ensures consistent flag values across a user's session and avoids bundling the full flag rule set into the client. Hourly refresh balances freshness with network efficiency for a CLI tool that may run for hours.",
+      "keyModules": ["cli/config/growthbook.ts", "cli/config/featureFlagCache.ts"]
+    },
+    {
+      "id": "lifecycle-hooks",
+      "name": "Lifecycle Hooks",
+      "category": "Integration",
+      "description": "The hookRunner system executes user-defined shell commands on tool lifecycle events (before/after tool execution, on permission check, on session start/end). Hooks enable custom workflows like auto-formatting after file writes or logging tool usage to external systems.",
+      "whereUsed": ["watching-tool-run", "launching-claude", "exiting-cleanup"],
+      "whyChosen": "Lifecycle hooks provide extensibility without modifying Claude Code's core. Users can integrate with their existing toolchains (linters, formatters, notification systems) using simple shell commands rather than writing plugins in a specific API.",
+      "keyModules": ["cli/hooks/hookRunner.ts", "cli/hooks/hookConfig.ts"]
+    }
+  ]
+}

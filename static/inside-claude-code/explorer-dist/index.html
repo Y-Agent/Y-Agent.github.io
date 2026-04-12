@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claude Code Explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+  <script type="module" crossorigin src="./assets/index-D9a3LXHd.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-B7YGfu9P.css">
+</head>
+<body>
+  <!-- ================================================================
+       Mode: Code Explorer (default)
+       ================================================================ -->
+  <div id="explorer-view" class="explorer-layout">
+    <!-- Left panel: file tree -->
+    <aside id="explorer-tree" class="explorer-tree-panel"></aside>
+
+    <!-- Right panel: detail -->
+    <div class="explorer-detail-panel">
+      <div class="explorer-top-bar">
+        <span class="app-title">Claude Code Explorer</span>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="mode-switcher">
+            <button class="mode-btn active" data-mode="explorer">Code Explorer</button>
+            <button class="mode-btn" data-mode="workflows">Workflows</button>
+          </div>
+          <button id="theme-toggle" class="theme-toggle" title="Toggle theme" aria-label="Toggle dark mode">
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="5"/>
+              <line x1="12" y1="1" x2="12" y2="3"/>
+              <line x1="12" y1="21" x2="12" y2="23"/>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+              <line x1="1" y1="12" x2="3" y2="12"/>
+              <line x1="21" y1="12" x2="23" y2="12"/>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <nav id="explorer-breadcrumbs" class="explorer-breadcrumb-bar"></nav>
+      <div id="explorer-detail"></div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       Mode: Workflows (hidden by default)
+       ================================================================ -->
+  <div id="workflow-view" style="display:none;">
+    <div id="app">
+      <aside id="workflow-nav"></aside>
+      <main id="canvas-container">
+        <div id="top-bar">
+          <h1 class="app-title">Claude Code Workflows</h1>
+          <div class="top-bar-actions">
+            <div class="mode-switcher">
+              <button class="mode-btn" data-mode="explorer">Code Explorer</button>
+              <button class="mode-btn active" data-mode="workflows">Workflows</button>
+            </div>
+            <button class="theme-toggle-wf" title="Toggle theme" aria-label="Toggle dark mode">
+              <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"/>
+                <line x1="12" y1="1" x2="12" y2="3"/>
+                <line x1="12" y1="21" x2="12" y2="23"/>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                <line x1="1" y1="12" x2="3" y2="12"/>
+                <line x1="21" y1="12" x2="23" y2="12"/>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+              </svg>
+              <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div id="flow-canvas"></div>
+        <div id="step-controls-bar"></div>
+      </main>
+      <aside id="detail-panel"></aside>
+    </div>
+  </div>
+
+  <!-- Mobile hamburger toggle -->
+  <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Open navigation">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <line x1="3" y1="6" x2="21" y2="6"/>
+      <line x1="3" y1="12" x2="21" y2="12"/>
+      <line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
+
+  <div id="tooltip" class="tooltip"></div>
+
+</body>
+</html>
