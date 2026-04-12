@@ -1,0 +1,136 @@
+# Skill: Deploy a Pre-Built HTML Site as a Blog Entry
+
+Use this when the user has a pre-built HTML site (Quarto, custom HTML/JS, etc.) and wants it to appear as a blog card on Y-Agent.github.io.
+
+## Inputs
+
+Ask the user for:
+- **Title** — the post title
+- **Authors** — comma-separated names
+- **Tags** — topic tags
+- **Cover image** — path to a cover image for the blog card
+- **Site directory** — path to the built HTML site (e.g., a Quarto `_site/` directory)
+
+## Steps
+
+### 1. Switch to source branch
+
+```bash
+cd /Users/zhuoran_cisco/Documents/code/Y-Agent.github.io
+git checkout source
+git pull origin source
+```
+
+### 2. Create the post slug
+
+Derive a kebab-case slug from the title, e.g., "Inside Claude Code" → `inside-claude-code`.
+
+### 3. Copy the HTML site to static/
+
+```bash
+cp -r <site-directory> static/<slug>
+```
+
+Files in `static/` are served as-is. `static/<slug>/index.html` becomes `https://Y-Agent.github.io/<slug>/index.html`.
+
+### 4. Copy the cover image
+
+```bash
+mkdir -p static/images/<slug>/
+cp <cover-image> static/images/<slug>/cover.png
+```
+
+### 5. Create the redirect stub
+
+Write `content/posts/<slug>.md`:
+
+```yaml
+---
+title: "<title>"
+date: <today YYYY-MM-DD>
+author: "<authors>"
+cover: "/images/<slug>/cover.png"
+categories:
+  - "Research Blog"
+tags:
+  - "<tag1>"
+  - "<tag2>"
+draft: false
+readingTime: <estimate>
+---
+```
+
+Then add the redirect script and fallback content:
+
+```html
+<script>
+  window.location.href = "/<slug>/index.html";
+</script>
+
+<noscript>
+  <meta http-equiv="refresh" content="0;url=/<slug>/index.html">
+  <p>Please click <a href="/<slug>/index.html">here</a> to view the post.</p>
+</noscript>
+```
+
+Then add metadata (authors, links) and a brief overview below the redirect. This content is used by search indexing and RSS even though users are redirected immediately.
+
+### 6. Commit and push
+
+```bash
+git add content/posts/<slug>.md static/images/<slug>/ static/<slug>/
+git commit -m "Add blog: <title>"
+git push origin source
+```
+
+### 7. Verify deployment
+
+```bash
+gh run list --repo Y-Agent/Y-Agent.github.io --limit 1
+```
+
+Confirm success. The blog card appears at `https://Y-Agent.github.io/` and clicking it redirects to `/<slug>/index.html`.
+
+## Example: Quarto Site
+
+For a Quarto-generated blog series:
+
+```bash
+# 1. Build the Quarto site
+cd /path/to/quarto-project
+quarto render
+
+# 2. Copy _site to the blog repo
+cp -r _site /Users/zhuoran_cisco/Documents/code/Y-Agent.github.io/static/<slug>
+
+# 3. Copy cover image
+mkdir -p /Users/zhuoran_cisco/Documents/code/Y-Agent.github.io/static/images/<slug>
+cp cover.png /Users/zhuoran_cisco/Documents/code/Y-Agent.github.io/static/images/<slug>/cover.png
+
+# 4. Create the redirect stub (see step 5 above)
+# 5. Commit and push to source
+```
+
+## Updating an Existing HTML Site
+
+To update the content of a previously deployed HTML site:
+
+```bash
+cd /Users/zhuoran_cisco/Documents/code/Y-Agent.github.io
+git checkout source && git pull origin source
+
+# Remove old version and copy new build
+rm -rf static/<slug>
+cp -r /path/to/new/_site static/<slug>
+
+git add static/<slug>/
+git commit -m "Update blog: <title>"
+git push origin source
+```
+
+## Size Considerations
+
+Pre-built HTML sites can be large. Keep total repo size reasonable:
+- Optimize images before copying (use WebP or compressed PNG)
+- Avoid including unnecessary build artifacts
+- The `inside-claude-code` site is ~24 MB as a reference point
