@@ -1045,7 +1045,7 @@ Note
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p><strong>Rollout status:</strong> T4 Dream Consolidation is fully implemented in v2.1.88 but in progressive rollout. It is gated by a server-side GrowthBook flag (<code>tengu_onyx_plover</code>) that defaults to off. Users can opt in via the <code>autoDreamEnabled</code> setting in settings.json.</p>
+<p><strong>Rollout status:</strong> T4 Dream Consolidation is fully implemented in v2.1.88 and available via the <code>/dream</code> slash command. Auto-dream (the automatic background trigger) is gated by a server-side GrowthBook flag (<code>tengu_onyx_plover</code>) that defaults to off. Users can opt in via the <code>autoDreamEnabled</code> setting in settings.json.</p>
 </div>
 </div>
 <section id="triple-gate" class="level3">
@@ -1091,7 +1091,7 @@ Note
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p><strong>Rollout status:</strong> T5 Team Memory Sync is fully implemented in v2.1.88 but in progressive rollout. It is double-gated: a compile-time <code>feature('TEAMMEM')</code> flag (enabled in this build) and a server-side GrowthBook flag (<code>tengu_herring_clock</code>) that defaults to off. It also requires OAuth authentication and a GitHub remote, limiting it to Pro/Team/Enterprise users. The codebase contains production bug fixes (e.g., a device that emitted 167K push events over 2.5 days), confirming it has been active for early access users.</p>
+<p><strong>Rollout status:</strong> T5 Team Memory Sync is fully implemented in v2.1.88 but not yet publicly announced or documented. It is double-gated: a compile-time <code>feature('TEAMMEM')</code> flag (enabled in this build) and a server-side GrowthBook flag (<code>tengu_herring_clock</code>) that defaults to off. It requires OAuth authentication and a GitHub remote. Production bug fixes in the code (e.g., a device that emitted 167K push events over 2.5 days) suggest it has been active for internal or early access testing.</p>
 </div>
 </div>
 <section id="sync-semantics" class="level3">
