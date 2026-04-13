@@ -821,22 +821,22 @@ Figure&nbsp;1: The context window budget (W = 200K tokens) partitioned across fo
 <tbody>
 <tr class="odd">
 <td>0–60%</td>
-<td><code>none</code></td>
+<td><code>normal</code></td>
 <td>Normal operation</td>
 </tr>
 <tr class="even">
 <td>60–75%</td>
-<td><code>low</code></td>
+<td><code>shortened outputs</code></td>
 <td>Shorter tool outputs</td>
 </tr>
 <tr class="odd">
 <td>75–90%</td>
-<td><code>medium</code></td>
+<td><code>aggressive summarization</code></td>
 <td>More aggressive summarization</td>
 </tr>
 <tr class="even">
 <td>90%+</td>
-<td><code>high</code></td>
+<td><code>auto-compact trigger</code></td>
 <td>Trigger auto-compact</td>
 </tr>
 </tbody>
@@ -899,7 +899,10 @@ Conversation degrades gracefully, not catastrophically</code></pre>
 </section>
 <section id="tier-4-auto-compact-the-full-summarizer" class="level3">
 <h3 class="anchored" data-anchor-id="tier-4-auto-compact-the-full-summarizer">Tier 4: Auto Compact – The Full Summarizer</h3>
-<p>This is the tier most users encounter. When tokens reach <code>effectiveContextWindow - 13K</code>, Auto Compact launches a <strong>compaction sub-agent</strong> – Claude summarizes the older portion of the conversation. The sub-agent produces a structured summary:</p>
+<p>This is the tier most users encounter. When tokens reach <code>effectiveContextWindow - 13K</code>, Auto Compact launches a <strong>compaction sub-agent</strong> via <code>runForkedAgent()</code>, which forks from the parent agent. The fork shares the parent’s model and prompt cache prefix; there is no fixed model tier, because the sub-agent uses whatever model the parent uses. This design means the long system prompt and conversation prefix are a cache hit rather than a redundant cost. The sub-agent summarizes the older portion of the conversation into a structured summary.</p>
+<p><strong>The 9-section compaction prompt.</strong> The sub-agent’s instructions come from <code>BASE_COMPACT_PROMPT</code> in <code>src/services/compact/prompt.ts</code>, a structured template that covers nine sections: (i) primary request and intent, (ii) key technical concepts, (iii) files and code sections with relevant snippets, (iv) errors and fixes encountered, (v) problem-solving approaches, (vi) all user messages verbatim, (vii) pending tasks, (viii) current work in progress, and (ix) an optional next step. This structure ensures the summary preserves not just what was discussed but why, capturing both the technical state and the user’s intent.</p>
+<p><strong>The two-block output format.</strong> The sub-agent’s output follows a two-block structure. First, an <code>&lt;analysis&gt;</code> scratchpad block where the sub-agent reasons through the conversation chronologically, identifying what matters and what can be discarded. Second, a <code>&lt;summary&gt;</code> block containing the actual structured summary. At injection time, the runtime’s <code>formatCompactSummary()</code> function strips the <code>&lt;analysis&gt;</code> block before inserting the summary into context. This is a deliberate design: the scratchpad gives the sub-agent space to reason carefully about what to preserve, but the drafting work does not consume the token budget it just freed. Only the distilled <code>&lt;summary&gt;</code> enters the conversation history.</p>
+<p>The resulting summary follows a consistent format:</p>
 <pre class="text"><code>This session is being continued from a previous conversation
 that ran out of context.
 

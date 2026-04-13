@@ -612,7 +612,10 @@ window.Quarto = {
    
   <ul>
   <li><a href="#why-multi-agent" id="toc-why-multi-agent" class="nav-link active" data-scroll-target="#why-multi-agent">Why Multi-Agent?</a></li>
-  <li><a href="#the-fork-analogy" id="toc-the-fork-analogy" class="nav-link" data-scroll-target="#the-fork-analogy">The fork() Analogy</a></li>
+  <li><a href="#the-fork-analogy" id="toc-the-fork-analogy" class="nav-link" data-scroll-target="#the-fork-analogy">The fork() Analogy</a>
+  <ul class="collapse">
+  <li><a href="#two-spawn-paths-fork-vs.-fresh-agent" id="toc-two-spawn-paths-fork-vs.-fresh-agent" class="nav-link" data-scroll-target="#two-spawn-paths-fork-vs.-fresh-agent">Two Spawn Paths – Fork vs.&nbsp;Fresh Agent</a></li>
+  </ul></li>
   <li><a href="#five-agent-types-a-cost-capability-spectrum" id="toc-five-agent-types-a-cost-capability-spectrum" class="nav-link" data-scroll-target="#five-agent-types-a-cost-capability-spectrum">Five Agent Types – A Cost-Capability Spectrum</a>
   <ul class="collapse">
   <li><a href="#explore" id="toc-explore" class="nav-link" data-scroll-target="#explore">Explore</a></li>
@@ -778,6 +781,18 @@ Figure&nbsp;1: The four pillars of multi-agent orchestration covered in this pos
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Every field is a lever the orchestrating agent pulls. The <code>model</code> field enables per-agent cost optimization: an Explore agent doing simple searches runs on <code>haiku</code> (cheapest), while a Subagent implementing complex logic uses <code>opus</code> (most capable). The <code>run_in_background</code> flag determines whether the parent blocks (synchronous delegation) or continues working (asynchronous execution). And <code>name</code> makes the agent addressable for follow-up messages via <code>SendMessage</code>, enabling multi-turn collaboration.</p>
 <p>The crucial detail is what happens when <code>subagent_type</code> is omitted. When the <code>FORK_SUBAGENT</code> feature flag is active, omitting the type triggers implicit forking – the child inherits the parent’s full conversation context and system prompt. When the flag is off, the system defaults to the <code>general-purpose</code> agent type. This single conditional branch is the difference between two entirely different spawning strategies: fresh-start delegation versus context-inheriting forking.</p>
+<section id="two-spawn-paths-fork-vs.-fresh-agent" class="level3">
+<h3 class="anchored" data-anchor-id="two-spawn-paths-fork-vs.-fresh-agent">Two Spawn Paths – Fork vs.&nbsp;Fresh Agent</h3>
+<p>The codebase implements two distinct spawn paths, and the context each child receives differs dramatically between them.</p>
+<p><strong>Path A: Fork.</strong> Triggered when the model calls the Agent tool <em>without</em> specifying a <code>subagent_type</code>. The child receives the parent’s <strong>full conversation history</strong>, the <strong>identical system prompt</strong>, and the parent’s <strong>exact tool pool</strong> (byte-identical, for prompt cache sharing). The function <code>buildForkedMessages()</code> constructs exactly two messages to append after the parent’s conversation:</p>
+<ol type="1">
+<li>A clone of the parent’s last assistant message (all <code>tool_use</code> blocks, thinking blocks, text blocks).</li>
+<li>A single user message containing placeholder <code>tool_result</code> blocks (identical text across all forks, again for cache sharing) plus the child’s specific task directive. The directive enforces 10 non-negotiable rules: do not re-delegate, do not converse, do not editorialize, use tools directly, stay in scope, keep the report under 500 words, begin with “Scope:”, report structured facts, then stop.</li>
+</ol>
+<p>Because the system prompt, tools, and conversation prefix are byte-identical between parent and all fork children, the LLM API’s prompt cache treats all but the first child as a cache hit. Only the final directive message differs per child.</p>
+<p><strong>Path B: Fresh agent.</strong> Triggered when the model <em>specifies</em> a <code>subagent_type</code> (Explore, Plan, subagent, teammate, or custom). The child starts with <strong>zero conversation context</strong>. It receives only a single user message containing the task prompt. It gets its own system prompt assembled from the agent type definition, its own freshly assembled tool pool, and a fresh file state cache. It has no knowledge of what the parent discussed, what files were read, or what decisions were made.</p>
+<p>All five named agent types use Path B. The fork path (Path A) is a separate mechanism that fires only when the type is omitted.</p>
+<p>This is the fundamental context trade-off: fork children see everything the parent knows (expensive, high-context) while typed agents see only the task description (cheap, focused). The fork path is for tasks that require the parent’s accumulated understanding. The typed agent path is for tasks where a clean slate and a specialized role are more valuable than shared history.</p>
 <div class="callout callout-style-default callout-important callout-titled" title="Key Insight">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -792,6 +807,7 @@ Figure&nbsp;1: The four pillars of multi-agent orchestration covered in this pos
 </div>
 </div>
 <hr>
+</section>
 </section>
 <section id="five-agent-types-a-cost-capability-spectrum" class="level2">
 <h2 class="anchored" data-anchor-id="five-agent-types-a-cost-capability-spectrum">Five Agent Types – A Cost-Capability Spectrum</h2>
@@ -828,16 +844,18 @@ Figure&nbsp;2: Five agent types arranged along a cost-capability spectrum. Explo
 <p><strong>How to read this diagram.</strong> Read left to right along the cost-capability spectrum. Explore (leftmost) is the cheapest and most constrained agent type – read-only, Haiku model, fire-and-forget. Each step rightward adds capability and cost, culminating in Teammate (rightmost), which has full tools, persistence, and peer messaging. The arrows represent increasing investment: choose the leftmost type that satisfies your task’s requirements.</p>
 <section id="explore" class="level3">
 <h3 class="anchored" data-anchor-id="explore">Explore</h3>
-<p>Explore agents are the cheapest option. Their system prompt opens with a line you cannot miss:</p>
+<p>Explore agents are the cheapest option. Their system prompt opens with a bold block you cannot miss:</p>
 <blockquote class="blockquote">
-<p><em>“CRITICAL: READ-ONLY MODE.”</em></p>
+<p><em>“=== CRITICAL: READ-ONLY MODE ===”</em></p>
 </blockquote>
-<p>Tools are restricted at the registry level to <code>Read</code>, <code>Glob</code>, <code>Grep</code>, <code>WebFetch</code>, and a <code>Bash</code> that rejects any write command. Even if the model attempts to call <code>Write</code>, the call is rejected before execution. The model is set to <code>haiku</code> – the cheapest available – because search does not require frontier reasoning.</p>
-<p>An important cost optimization: Explore agents have <code>omitClaudeMd: true</code>, which strips the CLAUDE.md instruction hierarchy from their context. The code comment notes this <em>“saves <span class="kw-slate">~5-15 Gtok/week across 34M+ Explore spawns</span>.”</em> That is an extraordinary number – 34 million Explore agents per week – and explains why shaving even a few hundred tokens per spawn matters at fleet scale. Explore agents are fire-and-forget: spawn, search, return findings, terminate.</p>
+<p>This is not a polite suggestion. The prompt includes a prominent <strong>READ-ONLY MODE</strong> block that explicitly prohibits all file writes, creates, deletes, moves, and redirects. Tools are restricted at the registry level to <code>Read</code>, <code>Glob</code>, <code>Grep</code>, <code>WebFetch</code>, and a <code>Bash</code> that rejects any write command. Even if the model attempts to call <code>Write</code>, the call is rejected before execution. The model is set to <code>haiku</code> – the cheapest available – because search does not require frontier reasoning.</p>
+<p>An important cost optimization: Explore agents have <code>omitClaudeMd: true</code>, which strips the CLAUDE.md instruction hierarchy from their context. Critically, git status is also omitted – another token-saving measure that compounds at scale. The code comment notes this <em>“saves <span class="kw-slate">~5-15 Gtok/week across 34M+ Explore spawns</span>.”</em> That is an extraordinary number – 34 million Explore agents per week – and explains why shaving even a few hundred tokens per spawn matters at fleet scale. Explore agents are fire-and-forget: spawn, search, return findings, terminate.</p>
 </section>
 <section id="plan" class="level3">
 <h3 class="anchored" data-anchor-id="plan">Plan</h3>
-<p>Plan agents share Explore’s read-only tool restriction but serve a fundamentally different purpose: they produce structured implementation plans. The <span class="kw-sage">separation of planning from execution</span> is deliberate. Planning requires broad context (reading many files to understand architecture) but minimal capability (no writing). Execution requires deep capability but narrower context (working on one file at a time). Splitting these avoids the context window pressure of doing both in one agent. Plan agents also carry <code>omitClaudeMd: true</code> – they can read CLAUDE.md directly if needed, but carrying it in every spawn’s context is wasted tokens.</p>
+<p>Plan agents share Explore’s read-only tool restriction but serve a fundamentally different purpose: they produce structured implementation plans. The <span class="kw-sage">separation of planning from execution</span> is deliberate. Planning requires broad context (reading many files to understand architecture) but minimal capability (no writing). Execution requires deep capability but narrower context (working on one file at a time). Splitting these avoids the context window pressure of doing both in one agent.</p>
+<p>The Plan agent’s prompt enforces a structured four-phase reasoning process with named stages: (i) <strong>Understand Requirements</strong>, (ii) <strong>Explore Thoroughly</strong>, (iii) <strong>Design Solution</strong>, and (iv) <strong>Detail the Plan</strong>. The required output includes a <strong>“Critical Files for Implementation”</strong> section listing 3 to 5 files that are central to the planned changes. This structured output ensures that plans are actionable rather than abstract.</p>
+<p>Plan agents also carry <code>omitClaudeMd: true</code> and omit git status, matching the same cost optimizations as Explore – they can read CLAUDE.md directly if needed, but carrying it in every spawn’s context is wasted tokens.</p>
 </section>
 <section id="custom" class="level3">
 <h3 class="anchored" data-anchor-id="custom">Custom</h3>
@@ -845,10 +863,11 @@ Figure&nbsp;2: Five agent types arranged along a cost-capability spectrum. Explo
 </section>
 <section id="subagent" class="level3">
 <h3 class="anchored" data-anchor-id="subagent">Subagent</h3>
-<p>Subagents get full tool access (<code>tools: ['*']</code>) and operate fire-and-forget. The parent spawns a subagent with a self-contained task (“Implement the <code>UserService</code> class”), it executes, and returns. Its system prompt is spare:</p>
+<p>Subagents (also referred to as the “general-purpose” type) get full tool access (<code>tools: ['*']</code>) and operate fire-and-forget. The parent spawns a subagent with a self-contained task (“Implement the <code>UserService</code> class”), it executes, and returns. Its system prompt is spare:</p>
 <blockquote class="blockquote">
 <p><em>“Complete the task fully – don’t gold-plate, but don’t leave it half-done.”</em></p>
 </blockquote>
+<p>Unlike Explore and Plan, the general-purpose subagent <strong>includes the full CLAUDE.md instruction hierarchy and git status</strong> in its context. This is a deliberate trade-off: subagents perform write operations and need project conventions, coding standards, and repository state to produce correct output. The additional prompt cost is justified because subagents are spawned far less frequently than Explore agents, and their tasks require the richer context.</p>
 <p>Subagents are appropriate when the task is well-defined and needs full capability but no follow-up interaction.</p>
 </section>
 <section id="teammate" class="level3">
@@ -943,7 +962,7 @@ Figure&nbsp;3: Subagent prompt assembly via the dQ6() function. Three parts comp
 </tbody>
 </table>
 <p>The Explore and Plan prompts share a critical optimization: <code>omitClaudeMd: true</code>. This strips the CLAUDE.md instruction hierarchy – which can be 5–15 KB of project-specific instructions – from the sub-agent’s context. The code comment notes this saves <em>“~5–15 Gtok/week across 34M+ Explore spawns.”</em> The sub-agent can always <code>Read</code> the CLAUDE.md file directly if needed, but carrying it in every spawn’s system prompt is wasted tokens at fleet scale.</p>
-<p><strong>Part II.1: Thread Notes.</strong> A set of behavioral constraints shared across all sub-agent types: use absolute paths, never use emojis, do not use a colon before tool calls, report concisely. These are the “house rules” that prevent sub-agents from producing output that confuses the parent.</p>
+<p><strong>Part II.1: Thread Notes.</strong> A set of behavioral constraints shared across all sub-agent types. All agent types share four specific thread notes appended to their prompt: (1) use absolute file paths (because the child’s working directory resets between Bash calls), (2) no emojis, (3) no colons before tool calls, and (4) include code snippets only when the exact text is load-bearing (e.g., a bug found, a function signature requested). These are the “house rules” that prevent sub-agents from producing output that confuses the parent.</p>
 <p><strong>Part III.1: Environment Info.</strong> Runtime context injected into every sub-agent: current working directory, git status snapshot, platform (darwin/linux), shell type, OS version, model ID, and knowledge cutoff date. This ensures every sub-agent knows where it is and what it is running on without needing to discover this information via tool calls.</p>
 <p>The Teammate type deserves special attention. Its Part I.2 includes the <em>entire</em> main agent prompt (<code>DX()</code>) – all 17 sections, all behavioral rules – plus custom agent instructions and synchronized team memory. This is why Teammates are the most expensive type: their prompt alone costs as much as the main agent’s. The justification is that Teammates are persistent and long-running; they amortize this startup cost over many interactions, unlike fire-and-forget types that pay it once and terminate.</p>
 <div class="callout callout-style-default callout-important callout-titled" title="Key Insight">
@@ -1224,7 +1243,9 @@ Figure&nbsp;6: Cache-aware forking exploits LLM prompt caching. All fork childre
 </section>
 <section id="when-to-spawn-the-agent-selection-decision" class="level2">
 <h2 class="anchored" data-anchor-id="when-to-spawn-the-agent-selection-decision">When to Spawn – The Agent Selection Decision</h2>
-<p>Not every task needs multi-agent coordination. The overhead of spawning, managing, and synthesizing across agents is only justified when the task exceeds what a single context window can handle – or when the intermediate output is not worth keeping in the parent’s context. The fork prompt captures this decision criterion directly:</p>
+<p>Not every task needs multi-agent coordination. The overhead of spawning, managing, and synthesizing across agents is only justified when the task exceeds what a single context window can handle – or when the intermediate output is not worth keeping in the parent’s context.</p>
+<p>A critical architectural point: the spawning decision is <strong>entirely model-driven</strong>. There is no programmatic heuristic that forces sub-agent creation. The model sees the Agent tool in its tool menu, listed alongside Read, Bash, Edit, and every other tool, and decides autonomously whether to invoke it. The Agent tool’s description includes guidance on when delegation is appropriate, examples of effective sub-agent prompts, and descriptions of the available agent types. From the model’s perspective, spawning a sub-agent is an ordinary tool call that returns a text result. The system imposes no rule like “if task complexity exceeds threshold X, spawn a child.” The model reads the context, evaluates its own capacity, and makes the call.</p>
+<p>The fork prompt captures this decision criterion directly:</p>
 <blockquote class="blockquote">
 <p><em>“Fork yourself when the intermediate tool output isn’t worth keeping in your context. The criterion is qualitative – ‘will I need this output again’ – not task size.”</em></p>
 </blockquote>

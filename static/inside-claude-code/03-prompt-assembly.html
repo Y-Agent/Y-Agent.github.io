@@ -629,7 +629,13 @@ window.Quarto = {
   <li><a href="#mcp-and-cache-invalidation" id="toc-mcp-and-cache-invalidation" class="nav-link" data-scroll-target="#mcp-and-cache-invalidation">MCP and Cache Invalidation</a></li>
   <li><a href="#quantifying-the-token-cost" id="toc-quantifying-the-token-cost" class="nav-link" data-scroll-target="#quantifying-the-token-cost">Quantifying the Token Cost</a></li>
   </ul></li>
-  <li><a href="#system-reminders-mid-conversation-injection" id="toc-system-reminders-mid-conversation-injection" class="nav-link" data-scroll-target="#system-reminders-mid-conversation-injection">System Reminders: Mid-Conversation Injection</a></li>
+  <li><a href="#system-reminders-mid-conversation-injection" id="toc-system-reminders-mid-conversation-injection" class="nav-link" data-scroll-target="#system-reminders-mid-conversation-injection">System Reminders: Mid-Conversation Injection</a>
+  <ul class="collapse">
+  <li><a href="#event-driven-trigger-taxonomy" id="toc-event-driven-trigger-taxonomy" class="nav-link" data-scroll-target="#event-driven-trigger-taxonomy">Event-Driven Trigger Taxonomy</a></li>
+  <li><a href="#a-worked-example-the-edited_text_file-reminder" id="toc-a-worked-example-the-edited_text_file-reminder" class="nav-link" data-scroll-target="#a-worked-example-the-edited_text_file-reminder">A Worked Example: The <code>edited_text_file</code> Reminder</a></li>
+  <li><a href="#the-aop-analogy" id="toc-the-aop-analogy" class="nav-link" data-scroll-target="#the-aop-analogy">The AOP Analogy</a></li>
+  <li><a href="#the-hooks-to-reminder-pipeline" id="toc-the-hooks-to-reminder-pipeline" class="nav-link" data-scroll-target="#the-hooks-to-reminder-pipeline">The Hooks-to-Reminder Pipeline</a></li>
+  </ul></li>
   <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">Summary</a></li>
   </ul>
 </nav>
@@ -950,6 +956,13 @@ Figure&nbsp;3: The eight fragment categories with approximate counts, converging
 <p><strong>Scratchpad</strong> (D6) provides working memory within a session — notes the model writes to itself that persist across compaction boundaries.</p>
 <p><strong>Brief mode</strong> (D9) modifies output style when the user activates terse mode, reducing the model’s response verbosity.</p>
 <p>The agent-specific fragments are equally important. Sub-agents receive dramatically smaller prompts — approximately <span class="kw-slate">3 KB</span> compared to the main agent’s <span class="kw-slate">20 KB</span>. The <span class="kw-terra">Explore sub-agent</span> gets a prompt that starts with <em>“You are a file search specialist”</em> and operates in read-only mode with only <code>Read</code>, <code>Glob</code>, <code>Grep</code>, and <code>LSP</code>. The <span class="kw-terra">Plan sub-agent</span> is a <em>“software architect”</em> with the same restricted tools but a different output format. This <span class="kw-slate">7x size difference</span> is a direct cost optimization: sub-agents are spawned frequently, and each spawn incurs the full system prompt cost. See <a href="./07-multi-agent-orchestration.html">Part II.3: Multi-Agent Orchestration</a> for the sub-agent architecture.</p>
+<p>Each sub-agent’s prompt is assembled from a <span class="kw-sage">3-part structure</span> that determines its final size and content:</p>
+<ol type="1">
+<li><p><strong>Part I: Agent-specific prompt.</strong> This is the role definition and behavioral contract. The general-purpose sub-agent receives approximately <span class="kw-slate">600 characters</span> of instructions (“You are an agent for Claude Code” plus guidelines on thoroughness and scope). The verification agent, which must validate complex constraints, receives up to <span class="kw-slate">4,500 characters</span>. The Explore and Plan agents fall in between, with structured output format requirements that add to their prompt length.</p></li>
+<li><p><strong>Part II: Thread notes and environment info.</strong> All sub-agent types share a common block of behavioral constraints (use absolute paths, no emojis, report concisely) plus runtime context: the current working directory, platform, shell type, and model ID. These prevent sub-agents from producing output that confuses the parent and ensure each child knows where it is without needing to discover this via tool calls.</p></li>
+<li><p><strong>Part III: Context injection.</strong> This is the variable-cost component. CLAUDE.md files and git status are included for the general-purpose Subagent and Teammate types, but explicitly omitted for Explore and Plan. The omission is a deliberate cost optimization: at <span class="kw-slate">34 million Explore spawns per week</span>, even a few hundred tokens of CLAUDE.md content per spawn compounds to billions of tokens saved at fleet scale.</p></li>
+</ol>
+<p>The total assembled prompt ranges from approximately <span class="kw-slate">100 lines</span> for Explore (no CLAUDE.md, no git status, minimal role definition) to approximately <span class="kw-slate">500 lines</span> for Teammate (full main-agent prompt plus team memory plus CLAUDE.md hierarchy).</p>
 <hr>
 </section>
 <section id="budget-management-the-knapsack-constraint" class="level2">
@@ -1403,6 +1416,27 @@ Figure&nbsp;7: System reminders injected into a conversation timeline. The syste
 </div>
 </div>
 <p><strong>How to read this diagram.</strong> Time flows downward through the conversation timeline. The System Prompt (cached, 5-min TTL) sits at the top and remains untouched throughout. User and Assistant messages alternate below it. The terracotta-colored reminder nodes are injected between user messages and assistant responses – notice how Turn 5 gets one reminder (plan mode status) while Turn 6 gets two (file changes and token usage). The key takeaway: reminders ride inside conversation messages rather than modifying the system prompt, preserving the cache while counteracting instruction decay deeper in the conversation.</p>
+<section id="event-driven-trigger-taxonomy" class="level3">
+<h3 class="anchored" data-anchor-id="event-driven-trigger-taxonomy">Event-Driven Trigger Taxonomy</h3>
+<p>The 50+ reminder types are not fired at random. Each one is triggered by a specific runtime event, and these events fall into four categories that together define the reminder lifecycle:</p>
+<ol type="1">
+<li><p><strong>After a tool result.</strong> When a tool finishes executing, the runtime evaluates what changed and injects the appropriate reminders on the next turn. Examples include current git status (injected after Bash commands that modify the repository), token budget remaining (updated after every API round-trip), and recently changed files (injected after Edit or Write calls modify the working tree).</p></li>
+<li><p><strong>After a permission decision.</strong> When the permission system allows or denies a tool call, the outcome and rationale are captured as a reminder. This ensures the model knows what it was permitted to do and why, preventing it from re-requesting a denied action or from being unaware that a sensitive operation was silently approved.</p></li>
+<li><p><strong>After compaction.</strong> When the compaction cascade summarizes older turns (see <a href="./04-context-compaction.html">Part III.2: Context Compaction</a>), a reminder is injected describing what was summarized and what information may have been lost. This is critical because the model cannot detect that its own history was compressed. Without the reminder, it might reference details that no longer exist in the context.</p></li>
+<li><p><strong>Periodic reinforcement.</strong> Some reminders fire on a schedule rather than in response to a specific event. Safety constraints, coding style rules, and output format directives are re-injected periodically to counteract instruction decay. These are the reminders most analogous to the “aspect advice” described below: cross-cutting behavioral rules that must remain salient regardless of what the conversation is about.</p></li>
+</ol>
+</section>
+<section id="a-worked-example-the-edited_text_file-reminder" class="level3">
+<h3 class="anchored" data-anchor-id="a-worked-example-the-edited_text_file-reminder">A Worked Example: The <code>edited_text_file</code> Reminder</h3>
+<p>To make the mechanism concrete, consider one of the most practically important reminder types: <code>edited_text_file</code>, implemented in <code>src/utils/messages.ts</code> at line 3538, via the <code>normalizeAttachmentForAPI()</code> function.</p>
+<p>The scenario is straightforward. The user opens <code>src/auth.ts</code> in their IDE and changes a function signature while the agent is working. The agent does not know this happened. On its next turn, it might overwrite the user’s change, or make edits that conflict with the new signature. A file watcher detects the external modification. The runtime wraps a notification in a <code>&lt;system-reminder&gt;</code> XML tag and injects it into the next user-turn message. The exact message template from the source code reads:</p>
+<blockquote class="blockquote">
+<p>“Note: {filename} was modified, either by the user or by a linter. This change was intentional, so make sure to take it into account as you proceed (ie. don’t revert it unless the user asks you to). Don’t tell the user this, since they are already aware. Here are the relevant changes (shown with line numbers): {snippet}”</p>
+</blockquote>
+<p>Here, <code>{filename}</code> is the path to the modified file (e.g., <code>src/auth.ts</code>) and <code>{snippet}</code> is a line-numbered diff of the changes. Without this reminder, the model would have a stale view of the file and might silently overwrite the user’s work. The reminder gives the model environmental awareness at zero tool-call cost. The phrasing is carefully chosen: “don’t tell the user this, since they are already aware” prevents the model from narrating the change back to the user, which would be both annoying and a waste of output tokens.</p>
+</section>
+<section id="the-aop-analogy" class="level3">
+<h3 class="anchored" data-anchor-id="the-aop-analogy">The AOP Analogy</h3>
 <p>This is <strong>aspect-oriented programming (AOP)</strong> applied to LLM conversations. In traditional AOP (Spring Framework, AspectJ), cross-cutting concerns like logging, security, and transactions are injected at join points without modifying the core business logic. System reminders do the same thing: cross-cutting concerns (token state, plan progress, file changes) are injected at conversation join points without modifying the system prompt.</p>
 <table class="caption-top table">
 <colgroup>
@@ -1439,8 +1473,14 @@ Figure&nbsp;7: System reminders injected into a conversation timeline. The syste
 </tbody>
 </table>
 <p>The 50 reminders cover ten categories: <strong>plan and mode</strong> (plan steps, auto mode, re-entry), <strong>file and IDE state</strong> (modified files, opened files, selected lines), <strong>hook results</strong> (success, blocking errors, additional context), <strong>resource budget</strong> (token usage, USD budget, task status), <strong>memory and context</strong> (CLAUDE.md, recalled memories, compaction, date changes), <strong>skills and commands</strong> (invoked skills, skill listing, queued commands), <strong>task management</strong> (todo/task reminders, plan verification), <strong>tool and agent changes</strong> (deferred tools, agent listings, MCP instructions), <strong>behavioral</strong> (output style, diagnostics, reasoning effort), and <strong>team coordination</strong> (team context, teammate messages). See the <a href="./04-context-compaction.html">full inventory in Post 4</a>.</p>
+</section>
+<section id="the-hooks-to-reminder-pipeline" class="level3">
+<h3 class="anchored" data-anchor-id="the-hooks-to-reminder-pipeline">The Hooks-to-Reminder Pipeline</h3>
+<p>The reminder system is not limited to the 50+ built-in types. The <span class="kw-sage">hooks system</span> extends it into a user-programmable injection mechanism. Users can attach arbitrary shell commands to any of <span class="kw-slate">25+ lifecycle events</span>, including <code>PreToolUse</code>, <code>PostToolUse</code>, <code>SessionStart</code>, <code>Stop</code>, <code>Notification</code>, and others defined in the hooks configuration. When a lifecycle event fires, the registered hook command executes, and any stdout it produces is captured by the runtime and injected as a system reminder on the next turn. This makes the reminder system user-extensible without modifying Claude Code’s source.</p>
+<p>The practical implications are significant. A team can enforce project-specific invariants (e.g., “always run <code>cargo clippy</code> after editing a Rust file”) by attaching a <code>PostToolUse</code> hook to the Edit tool that runs the linter and pipes warnings back as reminders. A security-conscious organization can attach a <code>PreToolUse</code> hook to Bash that scans proposed commands against a deny-list and returns a warning reminder if a match is found. In each case, the hook’s stdout flows through the same <code>&lt;system-reminder&gt;</code> XML injection path as the built-in reminders, so the model treats hook-generated context with the same visibility as a direct user instruction.</p>
 <p>For a full treatment of the system reminder architecture and the lifecycle hooks that trigger them, see <a href="./11-hooks-lifecycle.html">Part III.4: Hooks &amp; Lifecycle</a>.</p>
 <hr>
+</section>
 </section>
 <section id="summary" class="level2">
 <h2 class="anchored" data-anchor-id="summary">Summary</h2>
