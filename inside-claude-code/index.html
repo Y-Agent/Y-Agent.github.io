@@ -611,8 +611,9 @@ window.Quarto = {
 
 
 <p><strong>Author:</strong> <a href="https://zhuoranyang.github.io/">Zhuoran Yang</a></p>
-<p>You use Claude Code every day. This series cracks open the architecture — 512K lines of TypeScript, a React app rendering to your terminal, approximately 40 tools behind a three-tier permission system, and ML classifiers deciding which shell commands are safe.</p>
-<p>The source code analyzed in this series was extracted from the v2.1.88 source map accidentally shipped in the npm package. The extracted output is available at <a href="https://github.com/Exhen/claude-code-2.1.88">github.com/Exhen/claude-code-2.1.88</a>.</p>
+<p><img src="figures/image_front.png" class="hero-image nozoom img-fluid" style="width:100.0%" alt="Post-impressionist illustration of Claude Code's layered architecture"></p>
+<p>Claude Code is Anthropic’s agentic coding assistant — 512K lines of TypeScript, a React-based terminal UI, approximately 40 tools governed by a three-tier permission system, and ML classifiers that gate every shell command. This series provides a systematic, source-level walkthrough of how it all fits together.</p>
+<p>The analysis is based on the v2.1.88 source tree, recovered from a source map that was inadvertently included in the npm package. The full extracted source is available at <a href="https://github.com/Exhen/claude-code-2.1.88">github.com/Exhen/claude-code-2.1.88</a>.</p>
 <div class="callout callout-style-simple callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -1287,7 +1288,7 @@ window.Quarto = {
 <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  document.querySelectorAll('.quarto-figure img[src$=".svg"]').forEach(function(img) {
+  document.querySelectorAll('.quarto-figure img[src$=".svg"]:not(.nozoom)').forEach(function(img) {
     fetch(img.src).then(r => r.text()).then(function(svgText) {
       var div = document.createElement('div');
       div.innerHTML = svgText;

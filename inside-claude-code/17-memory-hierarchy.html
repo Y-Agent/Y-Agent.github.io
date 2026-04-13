@@ -709,7 +709,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr class="odd">
 <td><code>src/services/extractMemories/prompts.ts</code></td>
-<td>Extraction prompt templates (8 sections)</td>
+<td>Extraction prompt templates (10 sections)</td>
 <td>~200 LOC</td>
 </tr>
 <tr class="even">
@@ -903,8 +903,12 @@ Figure&nbsp;1: The five-tier memory hierarchy arranged top-to-bottom from fastes
 </section>
 <section id="structured-template" class="level3">
 <h3 class="anchored" data-anchor-id="structured-template">Structured Template</h3>
-<p>The session memory file follows a fixed template with eight sections (defined in <code>prompts.ts</code>):</p>
+<p>The session memory file is written to a fixed path at <code>~/.claude/sessions/{session}/session_memory.md</code> and follows a fixed template with ten sections (defined in <code>prompts.ts</code>):</p>
 <table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
 <thead>
 <tr class="header">
 <th>Section</th>
@@ -937,8 +941,16 @@ Figure&nbsp;1: The five-tier memory hierarchy arranged top-to-bottom from fastes
 <td>Failures and fixes</td>
 </tr>
 <tr class="odd">
-<td>Codebase Documentation</td>
+<td>Codebase and System Documentation</td>
 <td>System components and architecture</td>
+</tr>
+<tr class="even">
+<td>Learnings</td>
+<td>Insights and patterns discovered during the session</td>
+</tr>
+<tr class="odd">
+<td>Key Results</td>
+<td>Important outputs and deliverables produced</td>
 </tr>
 <tr class="even">
 <td>Worklog</td>
@@ -1076,6 +1088,7 @@ PUT  /api/claude_code/team_memory?repo={owner/repo}      → push (upsert)</code
 </section>
 <section id="secret-scanning" class="level3">
 <h3 class="anchored" data-anchor-id="secret-scanning">Secret Scanning</h3>
+<p>The upload format is JSON, not the local markdown files directly. Memory entries are serialized into a JSON payload before transmission, which decouples the on-disk representation from the wire protocol and allows the server to store and index entries in a structured format.</p>
 <p>Before any file is uploaded, it passes through a <span class="kw-terra">secret scanner</span> (<code>secretScanner.ts</code>) using patterns derived from gitleaks. Files containing detected secrets are silently excluded from the upload – they never leave the machine. Only the rule ID (not the secret value or file path) is logged for analytics.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode typescript code-with-copy"><code class="sourceCode typescript"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> secretMatches <span class="op">=</span> <span class="fu">scanForSecrets</span>(content)</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (secretMatches<span class="op">.</span><span class="at">length</span> <span class="op">&gt;</span> <span class="dv">0</span>) {</span>
