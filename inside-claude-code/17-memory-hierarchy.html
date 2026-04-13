@@ -1035,6 +1035,19 @@ Figure&nbsp;2: Tool permissions for the end-of-turn extraction subagent, organiz
 <section id="tier-4-dream-consolidation-nightly-batch-archival" class="level2">
 <h2 class="anchored" data-anchor-id="tier-4-dream-consolidation-nightly-batch-archival">Tier 4: Dream Consolidation – Nightly Batch Archival</h2>
 <p>The fourth tier is <span class="kw-slate">autoDream</span> – a background consolidation pass that reviews memories accumulated across multiple sessions and reorganizes them. The name is apt: like sleep consolidation in neuroscience, it operates when the agent is not actively processing tasks, synthesizing fragmented observations into coherent long-term knowledge.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Rollout status:</strong> T4 Dream Consolidation is fully implemented in v2.1.88 but in progressive rollout. It is gated by a server-side GrowthBook flag (<code>tengu_onyx_plover</code>) that defaults to off. Users can opt in via the <code>autoDreamEnabled</code> setting in settings.json.</p>
+</div>
+</div>
 <section id="triple-gate" class="level3">
 <h3 class="anchored" data-anchor-id="triple-gate">Triple Gate</h3>
 <p>AutoDream fires only when all three gates pass, evaluated in cheapest-first order to minimize per-turn cost:</p>
@@ -1068,6 +1081,19 @@ Figure&nbsp;2: Tool permissions for the end-of-turn extraction subagent, organiz
 <section id="tier-5-team-memory-sync-the-distributed-cache" class="level2">
 <h2 class="anchored" data-anchor-id="tier-5-team-memory-sync-the-distributed-cache">Tier 5: Team Memory Sync – The Distributed Cache</h2>
 <p>The outermost tier is <span class="kw-slate">team memory sync</span> (<code>teamMemorySync/index.ts</code>), a server-backed system that shares memories across all authenticated organization members working on the same repository. This is the <span class="kw-sage">distributed shared cache</span> of the hierarchy – the slowest, most broadly scoped, and most complex tier.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Rollout status:</strong> T5 Team Memory Sync is fully implemented in v2.1.88 but in progressive rollout. It is double-gated: a compile-time <code>feature('TEAMMEM')</code> flag (enabled in this build) and a server-side GrowthBook flag (<code>tengu_herring_clock</code>) that defaults to off. It also requires OAuth authentication and a GitHub remote, limiting it to Pro/Team/Enterprise users. The codebase contains production bug fixes (e.g., a device that emitted 167K push events over 2.5 days), confirming it has been active for early access users.</p>
+</div>
+</div>
 <section id="sync-semantics" class="level3">
 <h3 class="anchored" data-anchor-id="sync-semantics">Sync Semantics</h3>
 <p>The API contract is built around a single endpoint:</p>
