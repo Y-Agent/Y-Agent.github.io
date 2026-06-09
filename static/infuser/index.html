@@ -4,6 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>INFUSER: Influence-Guided Self-Evolution Improves Reasoning | Y-Agent Research Blog</title>
+  <script>
+    // Set theme before render to avoid a flash of the wrong color scheme.
+    (function () {
+      try {
+        var saved = localStorage.getItem('infuser-theme');
+        var prefersDark = window.matchMedia &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme = saved || (prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
   <style>
     :root {
       color-scheme: light;
@@ -147,9 +159,76 @@
         display: none;
       }
     }
+
+    /* Theme toggle button */
+    .theme-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 11px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--panel);
+      color: var(--fg);
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      line-height: 1.2;
+    }
+    .theme-toggle:hover {
+      border-color: var(--accent);
+    }
+    .theme-toggle svg {
+      width: 15px;
+      height: 15px;
+    }
+    .theme-toggle .icon-sun { display: none; }
+    [data-theme="dark"] .theme-toggle .icon-sun { display: inline; }
+    [data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+
+    /* Dark mode */
+    [data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #141712;
+      --fg: #e7eae1;
+      --muted: #9ba596;
+      --panel: #1d211b;
+      --border: #343b2f;
+      --accent: #e08a6d;
+      --link: #6bb4e6;
+    }
+    [data-theme="dark"] body {
+      background: radial-gradient(circle at top left, #1c2618 0, transparent 34rem), var(--bg);
+    }
+    [data-theme="dark"] header.site {
+      background: rgba(20, 23, 18, .92);
+    }
+    [data-theme="dark"] article {
+      background: rgba(32, 37, 31, .6);
+      border-color: rgba(58, 65, 54, .7);
+    }
   </style>
 
   <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const toggle = document.getElementById('theme-toggle');
+      const label = toggle && toggle.querySelector('.label');
+      const syncLabel = () => {
+        if (!label) return;
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        label.textContent = isDark ? 'Light' : 'Dark';
+      };
+      syncLabel();
+      if (toggle) {
+        toggle.addEventListener('click', () => {
+          const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+          const next = isDark ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', next);
+          try { localStorage.setItem('infuser-theme', next); } catch (e) {}
+          syncLabel();
+        });
+      }
+    });
     window.addEventListener('DOMContentLoaded', () => {
       const toc = document.getElementById('toc');
       document.querySelectorAll('article h2[id], article h3[id]').forEach((heading) => {
@@ -180,7 +259,14 @@
         <div class="brand"><a href="/" style="color:inherit;text-decoration:none">Y-Agent Research Blog</a></div>
         <div class="status">INFUSER: Influence-Guided Self-Evolution Improves Reasoning</div>
       </div>
-      <div class="status"><a href="/posts/" style="color:inherit">Posts</a></div>
+      <div class="status" style="display:flex;align-items:center;gap:14px">
+        <a href="/posts/" style="color:inherit">Posts</a>
+        <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12.3 3a1 1 0 0 0-.2 1.95A7 7 0 1 1 4.95 12.1 1 1 0 0 0 3 12.3 9 9 0 1 0 12.3 3z"/></svg>
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0-5a1 1 0 0 1 1 1v2a1 1 0 1 1-2 0V3a1 1 0 0 1 1-1zm0 17a1 1 0 0 1 1 1v2a1 1 0 1 1-2 0v-2a1 1 0 0 1 1-1zM3 11h2a1 1 0 1 1 0 2H3a1 1 0 1 1 0-2zm16 0h2a1 1 0 1 1 0 2h-2a1 1 0 1 1 0-2zM5.6 4.2l1.4 1.4A1 1 0 1 1 5.6 7L4.2 5.6a1 1 0 0 1 1.4-1.4zm11.4 11.4 1.4 1.4a1 1 0 0 1-1.4 1.4L15.6 18a1 1 0 0 1 1.4-1.4zM18.4 4.2A1 1 0 0 1 19.8 5.6L18.4 7A1 1 0 0 1 17 5.6zM7 17a1 1 0 0 1 0 1.4L5.6 19.8A1 1 0 0 1 4.2 18.4L5.6 17A1 1 0 0 1 7 17z"/></svg>
+          <span class="label">Dark</span>
+        </button>
+      </div>
     </div>
   </header>
   <main>
@@ -219,11 +305,24 @@
 @media (max-width:900px){.infuser-findings{grid-template-columns:1fr}}
 @media (max-width:900px){.infuser-extension-panel{grid-template-columns:1fr}}
 @media (max-width:760px){.infuser-two-panel{grid-template-columns:1fr}}
+[data-theme="dark"] .infuser-link{background:#1d211b;color:#e7eae1;border-color:rgba(255,255,255,.18)}
+[data-theme="dark"] .infuser-link:hover{background:rgba(59,157,217,.16);border-color:rgba(59,157,217,.55)}
+[data-theme="dark"] .infuser-link.is-disabled{color:#888;background:rgba(255,255,255,.05)}
+[data-theme="dark"] .infuser-link.is-disabled:hover{border-color:rgba(255,255,255,.18);background:rgba(255,255,255,.05)}
+[data-theme="dark"] .infuser-box{background:rgba(255,255,255,.06)}
+[data-theme="dark"] .infuser-tldr{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.14)}
+[data-theme="dark"] .infuser-finding{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.12)}
+[data-theme="dark"] .infuser-finding strong,[data-theme="dark"] .infuser-centered-intuition{color:#e7eae1}
+[data-theme="dark"] .infuser-gain{color:#9ba596}
+[data-theme="dark"] .infuser-purple,[data-theme="dark"] .infuser-hybrid-red{color:#ff6b6b}
+[data-theme="dark"] .infuser-blue,[data-theme="dark"] .infuser-hybrid-blue{color:#6bb4e6}
+[data-theme="dark"] .infuser-citation pre{background:#11150f!important;color:#dfe6d8!important;border-color:rgba(255,255,255,.12)}
+[data-theme="dark"] .infuser-citation code{color:#dfe6d8!important}
 </style>
 
 <h1>INFUSER: Influence-Guided Self-Evolution Improves Reasoning</h1>
 
-<p><strong style="font-size:.85em;letter-spacing:1px;color:#000000">AUTHORS:</strong>
+<p><strong style="font-size:.85em;letter-spacing:1px;color:var(--fg)">AUTHORS:</strong>
 <small>Siyu Chen, Miao Lu, Beining Wu, Heejune Sheen, Fengzhuo Zhang, Shuangning Li, Zhiyuan Li, Jose Blanchet, Tianhao Wang, and Zhuoran Yang.</small></p>
 
 <div class="infuser-links" aria-label="Paper resources">
@@ -293,11 +392,11 @@ INFUSER: Influence-Guided Self-Evolution Improves Reasoning</p> -->
   <figcaption>Detailed INFUSER loop from the paper: the solver is updated with generated questions, while the generator is updated by optimizer-aware influence scores.</figcaption>
 </figure>
 
-<p>At each iteration, INFUSER estimates a development reference gradient \(\hat g_{\mathrm{dev}}\) as an RL gradient on a fixed dev-set. This gradient encodes the question:</p>
+<p>At each iteration, INFUSER estimates a solver-side development reference gradient \(\hat g_{\mathrm{dev}}\) as an RL gradient of the current solver on a fixed dev-set. This gradient encodes the question:</p>
 
 <p class="infuser-centered-intuition">If the solver wants to improve on the dev-set, which direction should it move in parameter space?</p>
 
-<p>For each generated pair \((q, a_\phi)\), INFUSER asks the solver to sample rollouts on \(q\) and uses the generated answer \(a_\phi\) as the reference for RL rewards. From those rollouts, INFUSER estimates the <span class="infuser-blue">optimizer-aware</span> RL update direction \(\hat\Gamma(q, a_\phi)\). This direction encodes the question:</p>
+<p>For each generated pair \((q, a_\phi)\), INFUSER asks the solver to sample rollouts on \(q\) and uses the generated answer \(a_\phi\) as the reference for solver-side RL rewards. From those rollouts, INFUSER estimates the solver-side <span class="infuser-blue">optimizer-aware</span> RL update direction \(\hat\Gamma(q, a_\phi)\). This direction encodes the question:</p>
 
 <p class="infuser-centered-intuition">If the solver trains on this generated question, which direction would the optimizer move it?</p>
 
@@ -363,7 +462,7 @@ J_{\mathcal{D}_{\mathrm{dev}}}(\theta_t)
 \rangle.
 $$
 
-<p>This gives a per-question contribution: questions whose RL gradient aligns with \(\hat g_{\mathrm{dev}}\) are useful for the dev-set objective. Therefore, optimizing \(J_{\mathcal{D}_{\mathrm{dev}}}\bigl(\theta_t+\Delta\theta_{\mathrm{SGD}}(\mathcal{Q}_\phi)\bigr)\) is equivalent to optimizing the average inner-product term, which means we can treat that inner product as the generator reward and apply RL optimization. INFUSER applies the same idea by replacing the raw SGD gradient \(\hat g(q,a_\phi)\) with the optimizer-aware RL update direction \(\hat\Gamma(q,a_\phi)\):</p>
+<p>This gives a per-question contribution: questions whose solver-side RL gradient aligns with \(\hat g_{\mathrm{dev}}\) are useful for the dev-set objective. Therefore, optimizing \(J_{\mathcal{D}_{\mathrm{dev}}}\bigl(\theta_t+\Delta\theta_{\mathrm{SGD}}(\mathcal{Q}_\phi)\bigr)\) is equivalent to optimizing the average inner-product term, which means we can treat that inner product as the generator reward and apply RL optimization. INFUSER applies the same idea by replacing the raw solver-side SGD gradient \(\hat g(q,a_\phi)\) with the solver-side optimizer-aware RL update direction \(\hat\Gamma(q,a_\phi)\):</p>
 
 $$
 \hat s(q,a_\phi)
