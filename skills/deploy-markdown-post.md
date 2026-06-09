@@ -100,16 +100,18 @@ Confirm the run succeeded, then tell the user the post is live at `https://Y-Age
 - Reference with absolute paths: `/images/<slug>/image.png`
 - Never use relative paths
 - **Always use inline `style` for sizing, never bare HTML attributes** (`height="250"` or `width="70%"` get overridden by the theme CSS). Use `style="height: 250px;"` or `style="width: 70%;"` instead.
+- **Always use flex divs for figure layout** — `<p align="center">` does NOT render side-by-side on this theme. Every figure block (single, paired, or triple) must use a flex `<div>`.
+- Always add `min-width: 0;` on each `<img>` inside a flex container to prevent overflow.
 - For side-by-side images with fixed height (preferred for paired figures):
 
 ```html
-<p align="center">
-<img src="/images/<slug>/fig_a.png" style="height: 280px;">
-<img src="/images/<slug>/fig_b.png" style="height: 280px;">
-</p>
+<div style="display: flex; justify-content: center; gap: 4px; flex-wrap: nowrap;">
+<img src="/images/<slug>/fig_a.png" style="height: 280px; min-width: 0;">
+<img src="/images/<slug>/fig_b.png" style="height: 280px; min-width: 0;">
+</div>
 ```
 
-- For side-by-side images using flex layout:
+- For side-by-side images using percentage width:
 
 ```html
 <div style="display: flex; justify-content: center; gap: 4px; flex-wrap: nowrap;">
@@ -121,16 +123,34 @@ Confirm the run succeeded, then tell the user the post is live at `https://Y-Age
 - For three-across panels (e.g., training curves):
 
 ```html
-<p align="center">
-<img src="/images/<slug>/fig_a.png" style="width: 30%;">
-<img src="/images/<slug>/fig_b.png" style="width: 30%;">
-<img src="/images/<slug>/fig_c.png" style="width: 30%;">
-</p>
+<div style="display: flex; justify-content: center; gap: 4px; flex-wrap: nowrap;">
+<img src="/images/<slug>/fig_a.png" style="width: 30%; min-width: 0;">
+<img src="/images/<slug>/fig_b.png" style="width: 30%; min-width: 0;">
+<img src="/images/<slug>/fig_c.png" style="width: 30%; min-width: 0;">
+</div>
+```
+
+- For a single centered image:
+
+```html
+<div style="display: flex; justify-content: center;">
+<img src="/images/<slug>/fig.png" style="width: 70%; min-width: 0;">
+</div>
 ```
 
 ## LaTeX
 
 Set `math: true` in frontmatter. Use `$...$` for inline, `$$...$$` for display. Underscores inside math delimiters are safe (passthrough enabled in hugo.toml).
+
+## Important: Markdown inside HTML blocks
+
+Hugo does NOT render markdown syntax inside raw HTML `<div>` or `<span>` tags. If you need bold, italic, or links inside an HTML block (e.g., figure captions, styled boxes), use HTML tags directly:
+
+- Bold: `<strong>text</strong>` (NOT `**text**`)
+- Italic: `<em>text</em>` (NOT `*text*`)
+- Links: `<a href="...">text</a>` (NOT `[text](...)`)
+
+This is especially relevant for figure captions wrapped in `<div class="fig-caption">`.
 
 ## Styled Boxes
 
