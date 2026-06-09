@@ -110,7 +110,7 @@ In our prior work (<a href="https://arxiv.org/abs/2602.16849">He et al., 2026</a
 3. **Diversification.** The $M$ neurons collectively cover all $(p-1)/2$ non-trivial frequencies uniformly, and within each frequency group, the phases $\phi_m$ are spread evenly around the unit circle. This enables noise cancellation via a majority-voting mechanism that produces the correct answer.
 
 <p align="center">
-<img src="/images/group_composition_learning/module_addition_main.png" width="85%">
+<img src="/images/group_composition_learning/module_addition_main.png" style="width: 85%;">
 </p>
 
 Figure 1. **Overview of modular addition results (He et al., 2026).** (a) The neural network architecture: a two-layer fully-connected network takes one-hot encoded inputs $x, y \in \mathbb{R}^p$, passes them through $M$ hidden neurons with activation $\sigma(\cdot)$, and outputs a logit vector in $\mathbb{R}^p$. We apply the Discrete Fourier Transform to each neuron's weight vectors. (b) The DFT in action on a single neuron: the raw weight vector (left) is projected onto the Fourier basis of cosine and sine waves (center), yielding a sparse set of Fourier coefficients (right). After training, each neuron's energy concentrates at a single frequency, so the weight is well-described by a clean cosine $\alpha \cos(2\pi k j / p + \phi)$. (c) Two key mechanistic findings. Top: phase alignment, where the output phase $\psi_m$ locks to exactly $2\phi_m$, ensuring coherent signal production. Bottom: the lottery ticket mechanism during training, where multiple frequencies compete within each neuron, but only one (the "winning frequency," determined at initialization) grows rapidly while all others are suppressed.
@@ -194,8 +194,8 @@ $$(a_1, \ldots, a_d) \star (a_1', \ldots, a_d') = \bigl((a_1 + a_1') \bmod n_1,\
 To visualize what a cyclic group and its Fourier basis look like, consider $\mathbb{Z}_{12}$:
 
 <p align="center">
-<img src="/images/group_composition_learning/cayley_Z12.jpg" height="250">
-<img src="/images/group_composition_learning/Z12_spectral_basis.jpg" height="250">
+<img src="/images/group_composition_learning/cayley_Z12.jpg" style="height: 250px;">
+<img src="/images/group_composition_learning/Z12_spectral_basis.jpg" style="height: 250px;">
 </p>
 
 Figure 2. **A cyclic group and its spectral basis.** Left: Cayley graph of $\mathbb{Z}_{12}$ — each node is a group element, and the arrow $g \mapsto g + 1$ traces the cyclic structure. Right: The spectral basis (irreducible representations) of $\mathbb{Z}_{12}$, displayed as heatmaps. Top panel: real parts $\text{Re}(\rho_k[g]) = \cos(2\pi k g / 12)$ for each frequency $k$ (rows) and group element $g$ (columns). Bottom panel: imaginary parts $\text{Im}(\rho_k[g]) = \sin(2\pi k g / 12)$. Each row is one irreducible representation — a cosine/sine wave at a specific frequency. These are the "features" that the network learns.
@@ -261,15 +261,15 @@ This stage sharpens the softmax by increasing the margin of the correct class wh
 We verify the resulting spectral properties experimentally on $\mathbb{Z}_3 \oplus \mathbb{Z}_5$ (order 15, with $15 - 1 = 14$ non-trivial characters grouped into 7 conjugate pairs):
 
 <p align="center">
-<img src="/images/group_composition_learning/modular_addition_xi_heatmap_example.jpeg" height="280">
-<img src="/images/group_composition_learning/modular_addition_phase_alignment.jpg" height="280">
+<img src="/images/group_composition_learning/modular_addition_xi_heatmap_example.jpeg" style="height: 280px;">
+<img src="/images/group_composition_learning/modular_addition_phase_alignment.jpg" style="height: 280px;">
 </p>
 
 Figure 3. **Single-representation structure and phase alignment in $\mathbb{Z}_3 \oplus \mathbb{Z}_5$.** Left: DFT heatmap of the learned output parameter $\xi_m$ for representative neurons, matching the visualization used in the paper. Each row corresponds to one neuron; each column corresponds to a Fourier mode indexed by the frequency tuple $k=(k_1,k_2)$ with $k_1\in\{0,1,2\}$ and $k_2\in\{0,1,2,3,4\}$. The sparse pattern shows that each neuron concentrates on one non-trivial character and its conjugate, the direct analogue of the single-frequency phenomenon from $\mathbb{Z}_p$. Right: scatter plot of $\arg(\hat{\xi}_m[\check\rho_m])$ versus $\arg(\hat{\theta}_{m}^{1}[\check\rho_m])+\arg(\hat{\theta}_{m}^{2}[\check\rho_m])$ for each neuron at its selected character. Points fall tightly on the diagonal, confirming that the output phase equals the sum of input phases.
 
 <p align="center">
-<img src="/images/group_composition_learning/modular_addition_phase_circles.jpg" height="280">
-<img src="/images/group_composition_learning/modular_addition_freq_distribution_histogram.jpg" height="280">
+<img src="/images/group_composition_learning/modular_addition_phase_circles.jpg" style="height: 280px;">
+<img src="/images/group_composition_learning/modular_addition_freq_distribution_histogram.jpg" style="height: 280px;">
 </p>
 
 Figure 4. **Diversification in $\mathbb{Z}_3 \oplus \mathbb{Z}_5$.** Left: For each frequency group (all neurons assigned to the same character $\check\rho$), we plot the phases $\arg(\hat{\theta}_m[\check\rho])$ on the unit circle. The phases are approximately uniformly spread, matching the Haar phase component in $\pi$. Right: Histogram of character assignments across all $M = 512$ neurons. The approximately uniform distribution matches the $\mathrm{Unif}(\mathrm{Irr}(G)_{\neq1})$ component of $\pi$.
@@ -317,8 +317,8 @@ For non-Abelian groups, the representation theory undergoes a qualitative shift:
 To make this concrete, consider the alternating group $A_4$ (the group of even permutations of 4 elements, order 12):
 
 <p align="center">
-<img src="/images/group_composition_learning/cayley_A4.jpg" height="280">
-<img src="/images/group_composition_learning/A4_spectral_basis.jpg" height="280">
+<img src="/images/group_composition_learning/cayley_A4.jpg" style="height: 280px;">
+<img src="/images/group_composition_learning/A4_spectral_basis.jpg" style="height: 280px;">
 </p>
 
 Figure 5. **A non-Abelian group and its spectral basis.** Left: Cayley graph of $A_4$ with two generators: the 3-cycle $(012)$ (dark blue arrows) and the double transposition $(01)(23)$ (red arrows). Unlike the circular structure of cyclic groups, this graph reflects the asymmetry of non-commutativity. Right: The spectral basis of $A_4$. Top two panels show the 1D representations (scalar-valued, like the Abelian case). Bottom panels show the 3D irreducible representation $\rho_3$: each group element maps to a $3 \times 3$ matrix, displayed as a small heatmap. These matrices are the features that the network must learn: no longer cosine waves, but matrix-valued functions on the group.
@@ -434,15 +434,15 @@ We validate the theoretical predictions on the Frobenius group of order 21 descr
 **Experimental setup.** We train with $M = 512$ neurons, quadratic activation, and small initialization $a = 0.01$. Stage I runs projected gradient flow for $10^4$ steps; Stage II optimizes scales for $5 \times 10^4$ steps.
 
 <p align="center">
-<img src="/images/group_composition_learning/frobenius21_dft_heatmap.jpg" width="70%">
+<img src="/images/group_composition_learning/frobenius21_dft_heatmap.jpg" style="width: 70%;">
 </p>
 
 Figure 6. **Block-sparse DFT structure for $C_7 \rtimes C_3$ (order 21).** Heatmap of Fourier coefficient magnitudes across all neurons after Stage I training. Each row is one neuron; columns are grouped by irreducible representation (three 1D blocks of width 1, then two 3D blocks of width 9 each, since $3 \times 3 = 9$ entries per matrix). The salient pattern is that each neuron has energy concentrated in exactly one representation block, with all other blocks dark (near zero). Neurons in the left section (narrow columns) have selected a 1D representation; neurons in the right section (broad columns) have selected a 3D representation. The block-sparsity confirms the single-representation prediction of part (i) of the theorem.
 
 <p align="center">
-<img src="/images/group_composition_learning/frobenius21_accuracy.jpg" width="30%">
-<img src="/images/group_composition_learning/frobenius21_alignment.jpg" width="30%">
-<img src="/images/group_composition_learning/frobenius21_rank1.jpg" width="30%">
+<img src="/images/group_composition_learning/frobenius21_accuracy.jpg" style="width: 30%;">
+<img src="/images/group_composition_learning/frobenius21_alignment.jpg" style="width: 30%;">
+<img src="/images/group_composition_learning/frobenius21_rank1.jpg" style="width: 30%;">
 </p>
 
 Figure 7. **Training dynamics for $C_7 \rtimes C_3$ — three metrics confirm the theory.** (a) **Accuracy:** The network achieves 100% training accuracy, correctly predicting all $21^2 = 441$ group compositions. (b) **Rotational alignment:** We measure cosine similarity between the vectorized matrices appearing in the three proportionality relations, such as $\hat{\xi}_m[\rho]$ and $\hat{\theta}_m^2[\rho]\hat{\theta}_m^1[\rho]$. All curves converge to 1, confirming that the Fourier blocks become asymptotically proportional. (c) **Rank-one compression:** We compute $\sigma_2 / \sigma_1$ — the ratio of second to first singular value of each neuron's surviving Fourier block. A rank-one matrix has $\sigma_2 / \sigma_1 = 0$. The metric decays from near 1 to near 0 for all neurons, confirming that the Fourier blocks collapse to rank one during training.
@@ -473,9 +473,9 @@ The condition says that the Stage I predictor already ranks the correct composit
 The logarithmic growth $a(t) \sim \log(t)$ is natural: the softmax saturates exponentially in $a$, so the loss gradient $\partial \mathcal{L}/\partial a$ decays as $e^{-\mu a} \sim 1/t$, giving $\dot{a} \sim 1/t$ and hence $a \sim \log t$.
 
 <p align="center">
-<img src="/images/group_composition_learning/frobenius21_scale_tied.jpg" width="30%">
-<img src="/images/group_composition_learning/frobenius21_scale_perneuron.jpg" width="30%">
-<img src="/images/group_composition_learning/frobenius21_scale_comparison_loss.jpg" width="30%">
+<img src="/images/group_composition_learning/frobenius21_scale_tied.jpg" style="width: 30%;">
+<img src="/images/group_composition_learning/frobenius21_scale_perneuron.jpg" style="width: 30%;">
+<img src="/images/group_composition_learning/frobenius21_scale_comparison_loss.jpg" style="width: 30%;">
 </p>
 
 Figure 8. **Stage II dynamics for $C_7 \rtimes C_3$.** (a) **Tied scale growth:** The common scale parameter $a(t)$ grows as $\log(t)$, showing the characteristic concave shape on a linear scale — rapid initial growth that gradually decelerates, matching the theoretical prediction. (b) **Per-neuron scales (untied):** When each neuron's scale $a_m$ is optimized independently, they all grow logarithmically but at different rates (each curve is one neuron). The spread reflects differences in the logit margins across neurons — neurons with larger margins grow more slowly because their softmax is already confident. (c) **Loss convergence:** Cross-entropy loss over the full training run. During Stage I (gray dashed, left of the dotted vertical line), the loss plateaus at $\log|G| \approx 3.04$ because the scale is fixed and small. At the Stage I/II transition (dotted line), we begin optimizing the scale, and the loss drops rapidly. Both tied (blue solid) and per-neuron (red dashed) settings converge to zero, with the per-neuron setting converging slightly faster.
