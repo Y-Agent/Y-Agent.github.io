@@ -246,9 +246,12 @@ INFUSER reframes self-evolution as influence-guided curriculum learning. The gen
 
 ## Citation
 
-<pre style="background:#f7f8fa;color:#1f2937;border:1px solid rgba(0,0,0,.12);border-radius:6px;padding:16px 18px;line-height:1.55;box-shadow:0 1px 2px rgba(0,0,0,.04);overflow:auto"><code>@article{chen2026infuser,
+<pre style="background:#f7f8fa;color:#1f2937;border:1px solid rgba(0,0,0,.12);border-radius:6px;padding:16px 18px;line-height:1.55;box-shadow:0 1px 2px rgba(0,0,0,.04);overflow:auto"><code>@misc{chen2026infuser,
   title={INFUSER: Influence-Guided Self-Evolution Improves Reasoning},
-  author={Chen, Siyu and Lu, Miao and Wu, Beining and Sheen, Heejune and Zhang, Fengzhuo and Li, Shuangning and Li, Zhiyuan and Blanchet, Jose and Wang, Tianhao and Yang, Zhuoran},
-  journal={Manuscript},
-  year={2026}
+  author={Siyu Chen and Miao Lu and Beining Wu and Heejune Sheen and Fengzhuo Zhang and Shuangning Li and Zhiyuan Li and Jose Blanchet and Tianhao Wang and Zhuoran Yang},
+  year={2026},
+  eprint={2606.09052},
+  archivePrefix={arXiv},
+  primaryClass={cs.LG},
+  url={https://arxiv.org/abs/2606.09052}
 }</code></pre>
