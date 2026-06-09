@@ -142,6 +142,16 @@ Confirm the run succeeded, then tell the user the post is live at `https://Y-Age
 
 Set `math: true` in frontmatter. Use `$...$` for inline, `$$...$$` for display. Underscores inside math delimiters are safe (passthrough enabled in hugo.toml).
 
+## Important: Markdown inside HTML blocks
+
+Hugo does NOT render markdown syntax inside raw HTML `<div>` or `<span>` tags. If you need bold, italic, or links inside an HTML block (e.g., figure captions, styled boxes), use HTML tags directly:
+
+- Bold: `<strong>text</strong>` (NOT `**text**`)
+- Italic: `<em>text</em>` (NOT `*text*`)
+- Links: `<a href="...">text</a>` (NOT `[text](...)`)
+
+This is especially relevant for figure captions wrapped in `<div class="fig-caption">`.
+
 ## Styled Boxes
 
 ```html
