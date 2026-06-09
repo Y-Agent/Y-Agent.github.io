@@ -99,13 +99,33 @@ Confirm the run succeeded, then tell the user the post is live at `https://Y-Age
 - Store images in `static/images/<slug>/`
 - Reference with absolute paths: `/images/<slug>/image.png`
 - Never use relative paths
-- For side-by-side images:
+- **Always use inline `style` for sizing, never bare HTML attributes** (`height="250"` or `width="70%"` get overridden by the theme CSS). Use `style="height: 250px;"` or `style="width: 70%;"` instead.
+- For side-by-side images with fixed height (preferred for paired figures):
+
+```html
+<p align="center">
+<img src="/images/<slug>/fig_a.png" style="height: 280px;">
+<img src="/images/<slug>/fig_b.png" style="height: 280px;">
+</p>
+```
+
+- For side-by-side images using flex layout:
 
 ```html
 <div style="display: flex; justify-content: center; gap: 4px; flex-wrap: nowrap;">
 <img src="/images/<slug>/fig_a.png" style="width: 48%; min-width: 0;">
 <img src="/images/<slug>/fig_b.png" style="width: 48%; min-width: 0;">
 </div>
+```
+
+- For three-across panels (e.g., training curves):
+
+```html
+<p align="center">
+<img src="/images/<slug>/fig_a.png" style="width: 30%;">
+<img src="/images/<slug>/fig_b.png" style="width: 30%;">
+<img src="/images/<slug>/fig_c.png" style="width: 30%;">
+</p>
 ```
 
 ## LaTeX
