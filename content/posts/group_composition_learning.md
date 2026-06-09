@@ -2,7 +2,7 @@
 title: "Neural Networks Provably Learn Group Representations: From Cyclic to Non-Abelian"
 date: 2026-06-09
 author: "Jianliang He, Leda Wang, Fengzhuo Zhang, Siyu Chen, Zhuoran Yang"
-cover: /images/group_composition_learning/group_representation_hero_v2.png
+cover: ""
 categories:
   - "Research Blog"
 tags:
