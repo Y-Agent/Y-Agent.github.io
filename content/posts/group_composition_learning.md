@@ -26,6 +26,30 @@ toc: true
     --neutral: #6b7280;
   }
 
+  /* --- Typography improvements --- */
+  #dream-single-post-content {
+    line-height: 1.72;
+  }
+  #dream-single-post-content h2 {
+    margin-top: 2.4rem;
+    padding-top: 1.4rem;
+    border-top: 1px solid rgba(128, 128, 128, 0.2);
+  }
+  #dream-single-post-content h3 {
+    margin-top: 1.8rem;
+  }
+  #dream-single-post-content img {
+    border-radius: 6px;
+  }
+
+  /* --- Figure captions --- */
+  .fig-caption {
+    margin-top: 10px;
+    font-size: 0.88em;
+    color: #9ca3af;
+    line-height: 1.5;
+  }
+
   /* --- Inline colored text --- */
   .hl-blue { color: var(--spectral); font-weight: 700; }
   .hl-purple { color: var(--alignment); font-weight: 700; }
@@ -35,25 +59,25 @@ toc: true
   .question-box {
     background: rgba(166, 101, 42, 0.10);
     border-left: 4px solid var(--dynamics);
-    padding: 12px 16px; margin: 12px 0; border-radius: 0 6px 6px 0;
+    padding: 14px 18px; margin: 18px 0; border-radius: 0 6px 6px 0;
   }
   .question-box strong { color: var(--dynamics); }
 
   .theorem-box {
     background: rgba(107, 114, 128, 0.10);
     border-left: 4px solid var(--neutral);
-    padding: 12px 16px; margin: 12px 0; border-radius: 0 6px 6px 0;
+    padding: 14px 18px; margin: 18px 0; border-radius: 0 6px 6px 0;
   }
 
   .result-box {
     background: rgba(47, 125, 98, 0.10);
     border: 1px solid rgba(47, 125, 98, 0.25);
     border-left: 4px solid var(--result);
-    padding: 14px 16px; margin: 14px 0; border-radius: 0 6px 6px 0;
+    padding: 16px 18px; margin: 20px 0; border-radius: 0 6px 6px 0;
   }
 
   .contrib-box {
-    padding: 14px 18px; margin: 14px 0; border-radius: 6px;
+    padding: 16px 20px; margin: 16px 0; border-radius: 6px;
   }
   .contrib-1 {
     background: rgba(47, 111, 159, 0.10);
@@ -107,7 +131,7 @@ In our prior work (<a href="https://arxiv.org/abs/2602.16849">He et al., 2026</a
 <img src="/images/group_composition_learning/module_addition_main.png" style="width: 85%; min-width: 0;">
 </div>
 
-Figure 1. **Overview of modular addition results (He et al., 2026).** (a) The neural network architecture: a two-layer fully-connected network takes one-hot encoded inputs $x, y \in \mathbb{R}^p$, passes them through $M$ hidden neurons with activation $\sigma(\cdot)$, and outputs a logit vector in $\mathbb{R}^p$. We apply the Discrete Fourier Transform to each neuron's weight vectors. (b) The DFT in action on a single neuron: the raw weight vector (left) is projected onto the Fourier basis of cosine and sine waves (center), yielding a sparse set of Fourier coefficients (right). After training, each neuron's energy concentrates at a single frequency, so the weight is well-described by a clean cosine $\alpha \cos(2\pi k j / p + \phi)$. (c) Two key mechanistic findings. Top: phase alignment, where the output phase $\psi_m$ locks to exactly $2\phi_m$, ensuring coherent signal production. Bottom: the lottery ticket mechanism during training, where multiple frequencies compete within each neuron, but only one (the "winning frequency," determined at initialization) grows rapidly while all others are suppressed.
+<div class="fig-caption">Figure 1. **Overview of modular addition results (He et al., 2026).** (a) The neural network architecture: a two-layer fully-connected network takes one-hot encoded inputs $x, y \in \mathbb{R}^p$, passes them through $M$ hidden neurons with activation $\sigma(\cdot)$, and outputs a logit vector in $\mathbb{R}^p$. We apply the Discrete Fourier Transform to each neuron's weight vectors. (b) The DFT in action on a single neuron: the raw weight vector (left) is projected onto the Fourier basis of cosine and sine waves (center), yielding a sparse set of Fourier coefficients (right). After training, each neuron's energy concentrates at a single frequency, so the weight is well-described by a clean cosine $\alpha \cos(2\pi k j / p + \phi)$. (c) Two key mechanistic findings. Top: phase alignment, where the output phase $\psi_m$ locks to exactly $2\phi_m$, ensuring coherent signal production. Bottom: the lottery ticket mechanism during training, where multiple frequencies compete within each neuron, but only one (the "winning frequency," determined at initialization) grows rapidly while all others are suppressed.</div>
 
 These results raise two immediate questions:
 
@@ -192,7 +216,7 @@ To visualize what a cyclic group and its Fourier basis look like, consider $\mat
 <img src="/images/group_composition_learning/Z12_spectral_basis.jpg" style="height: 250px; min-width: 0;">
 </div>
 
-Figure 2. **A cyclic group and its spectral basis.** Left: Cayley graph of $\mathbb{Z}_{12}$ — each node is a group element, and the arrow $g \mapsto g + 1$ traces the cyclic structure. Right: The spectral basis (irreducible representations) of $\mathbb{Z}_{12}$, displayed as heatmaps. Top panel: real parts $\text{Re}(\rho_k[g]) = \cos(2\pi k g / 12)$ for each frequency $k$ (rows) and group element $g$ (columns). Bottom panel: imaginary parts $\text{Im}(\rho_k[g]) = \sin(2\pi k g / 12)$. Each row is one irreducible representation — a cosine/sine wave at a specific frequency. These are the "features" that the network learns.
+<div class="fig-caption">Figure 2. **A cyclic group and its spectral basis.** Left: Cayley graph of $\mathbb{Z}_{12}$ — each node is a group element, and the arrow $g \mapsto g + 1$ traces the cyclic structure. Right: The spectral basis (irreducible representations) of $\mathbb{Z}_{12}$, displayed as heatmaps. Top panel: real parts $\text{Re}(\rho_k[g]) = \cos(2\pi k g / 12)$ for each frequency $k$ (rows) and group element $g$ (columns). Bottom panel: imaginary parts $\text{Im}(\rho_k[g]) = \sin(2\pi k g / 12)$. Each row is one irreducible representation — a cosine/sine wave at a specific frequency. These are the "features" that the network learns.</div>
 
 ### 2.2 Irreducible Representations of Abelian Groups
 
@@ -259,14 +283,14 @@ We verify the resulting spectral properties experimentally on $\mathbb{Z}_3 \opl
 <img src="/images/group_composition_learning/modular_addition_phase_alignment.jpg" style="height: 280px; min-width: 0;">
 </div>
 
-Figure 3. **Single-representation structure and phase alignment in $\mathbb{Z}_3 \oplus \mathbb{Z}_5$.** Left: DFT heatmap of the learned output parameter $\xi_m$ for representative neurons, matching the visualization used in the paper. Each row corresponds to one neuron; each column corresponds to a Fourier mode indexed by the frequency tuple $k=(k_1,k_2)$ with $k_1\in\{0,1,2\}$ and $k_2\in\{0,1,2,3,4\}$. The sparse pattern shows that each neuron concentrates on one non-trivial character and its conjugate, the direct analogue of the single-frequency phenomenon from $\mathbb{Z}_p$. Right: scatter plot of $\arg(\hat{\xi}_m[\check\rho_m])$ versus $\arg(\hat{\theta}_{m}^{1}[\check\rho_m])+\arg(\hat{\theta}_{m}^{2}[\check\rho_m])$ for each neuron at its selected character. Points fall tightly on the diagonal, confirming that the output phase equals the sum of input phases.
+<div class="fig-caption">Figure 3. **Single-representation structure and phase alignment in $\mathbb{Z}_3 \oplus \mathbb{Z}_5$.** Left: DFT heatmap of the learned output parameter $\xi_m$ for representative neurons, matching the visualization used in the paper. Each row corresponds to one neuron; each column corresponds to a Fourier mode indexed by the frequency tuple $k=(k_1,k_2)$ with $k_1\in\{0,1,2\}$ and $k_2\in\{0,1,2,3,4\}$. The sparse pattern shows that each neuron concentrates on one non-trivial character and its conjugate, the direct analogue of the single-frequency phenomenon from $\mathbb{Z}_p$. Right: scatter plot of $\arg(\hat{\xi}_m[\check\rho_m])$ versus $\arg(\hat{\theta}_{m}^{1}[\check\rho_m])+\arg(\hat{\theta}_{m}^{2}[\check\rho_m])$ for each neuron at its selected character. Points fall tightly on the diagonal, confirming that the output phase equals the sum of input phases.</div>
 
 <div style="display: flex; justify-content: center; gap: 4px; flex-wrap: nowrap;">
 <img src="/images/group_composition_learning/modular_addition_phase_circles.jpg" style="height: 280px; min-width: 0;">
 <img src="/images/group_composition_learning/modular_addition_freq_distribution_histogram.jpg" style="height: 280px; min-width: 0;">
 </div>
 
-Figure 4. **Diversification in $\mathbb{Z}_3 \oplus \mathbb{Z}_5$.** Left: For each frequency group (all neurons assigned to the same character $\check\rho$), we plot the phases $\arg(\hat{\theta}_m[\check\rho])$ on the unit circle. The phases are approximately uniformly spread, matching the Haar phase component in $\pi$. Right: Histogram of character assignments across all $M = 512$ neurons. The approximately uniform distribution matches the $\mathrm{Unif}(\mathrm{Irr}(G)_{\neq1})$ component of $\pi$.
+<div class="fig-caption">Figure 4. **Diversification in $\mathbb{Z}_3 \oplus \mathbb{Z}_5$.** Left: For each frequency group (all neurons assigned to the same character $\check\rho$), we plot the phases $\arg(\hat{\theta}_m[\check\rho])$ on the unit circle. The phases are approximately uniformly spread, matching the Haar phase component in $\pi$. Right: Histogram of character assignments across all $M = 512$ neurons. The approximately uniform distribution matches the $\mathrm{Unif}(\mathrm{Irr}(G)_{\neq1})$ component of $\pi$.</div>
 
 ### 2.4 The Flawed Indicator Mechanism
 
@@ -315,7 +339,7 @@ To make this concrete, consider the alternating group $A_4$ (the group of even p
 <img src="/images/group_composition_learning/A4_spectral_basis.jpg" style="height: 280px; min-width: 0;">
 </div>
 
-Figure 5. **A non-Abelian group and its spectral basis.** Left: Cayley graph of $A_4$ with two generators: the 3-cycle $(012)$ (dark blue arrows) and the double transposition $(01)(23)$ (red arrows). Unlike the circular structure of cyclic groups, this graph reflects the asymmetry of non-commutativity. Right: The spectral basis of $A_4$. Top two panels show the 1D representations (scalar-valued, like the Abelian case). Bottom panels show the 3D irreducible representation $\rho_3$: each group element maps to a $3 \times 3$ matrix, displayed as a small heatmap. These matrices are the features that the network must learn: no longer cosine waves, but matrix-valued functions on the group.
+<div class="fig-caption">Figure 5. **A non-Abelian group and its spectral basis.** Left: Cayley graph of $A_4$ with two generators: the 3-cycle $(012)$ (dark blue arrows) and the double transposition $(01)(23)$ (red arrows). Unlike the circular structure of cyclic groups, this graph reflects the asymmetry of non-commutativity. Right: The spectral basis of $A_4$. Top two panels show the 1D representations (scalar-valued, like the Abelian case). Bottom panels show the 3D irreducible representation $\rho_3$: each group element maps to a $3 \times 3$ matrix, displayed as a small heatmap. These matrices are the features that the network must learn: no longer cosine waves, but matrix-valued functions on the group.</div>
 
 <div class="question-box">
 
@@ -431,7 +455,7 @@ We validate the theoretical predictions on the Frobenius group of order 21 descr
 <img src="/images/group_composition_learning/frobenius21_dft_heatmap.jpg" style="width: 70%; min-width: 0;">
 </div>
 
-Figure 6. **Block-sparse DFT structure for $C_7 \rtimes C_3$ (order 21).** Heatmap of Fourier coefficient magnitudes across all neurons after Stage I training. Each row is one neuron; columns are grouped by irreducible representation (three 1D blocks of width 1, then two 3D blocks of width 9 each, since $3 \times 3 = 9$ entries per matrix). The salient pattern is that each neuron has energy concentrated in exactly one representation block, with all other blocks dark (near zero). Neurons in the left section (narrow columns) have selected a 1D representation; neurons in the right section (broad columns) have selected a 3D representation. The block-sparsity confirms the single-representation prediction of part (i) of the theorem.
+<div class="fig-caption">Figure 6. **Block-sparse DFT structure for $C_7 \rtimes C_3$ (order 21).** Heatmap of Fourier coefficient magnitudes across all neurons after Stage I training. Each row is one neuron; columns are grouped by irreducible representation (three 1D blocks of width 1, then two 3D blocks of width 9 each, since $3 \times 3 = 9$ entries per matrix). The salient pattern is that each neuron has energy concentrated in exactly one representation block, with all other blocks dark (near zero). Neurons in the left section (narrow columns) have selected a 1D representation; neurons in the right section (broad columns) have selected a 3D representation. The block-sparsity confirms the single-representation prediction of part (i) of the theorem.</div>
 
 <div style="display: flex; justify-content: center; gap: 4px; flex-wrap: nowrap;">
 <img src="/images/group_composition_learning/frobenius21_accuracy.jpg" style="width: 30%; min-width: 0;">
@@ -439,7 +463,7 @@ Figure 6. **Block-sparse DFT structure for $C_7 \rtimes C_3$ (order 21).** Heatm
 <img src="/images/group_composition_learning/frobenius21_rank1.jpg" style="width: 30%; min-width: 0;">
 </div>
 
-Figure 7. **Training dynamics for $C_7 \rtimes C_3$ — three metrics confirm the theory.** (a) **Accuracy:** The network achieves 100% training accuracy, correctly predicting all $21^2 = 441$ group compositions. (b) **Rotational alignment:** We measure cosine similarity between the vectorized matrices appearing in the three proportionality relations, such as $\hat{\xi}_m[\rho]$ and $\hat{\theta}_m^2[\rho]\hat{\theta}_m^1[\rho]$. All curves converge to 1, confirming that the Fourier blocks become asymptotically proportional. (c) **Rank-one compression:** We compute $\sigma_2 / \sigma_1$ — the ratio of second to first singular value of each neuron's surviving Fourier block. A rank-one matrix has $\sigma_2 / \sigma_1 = 0$. The metric decays from near 1 to near 0 for all neurons, confirming that the Fourier blocks collapse to rank one during training.
+<div class="fig-caption">Figure 7. **Training dynamics for $C_7 \rtimes C_3$ — three metrics confirm the theory.** (a) **Accuracy:** The network achieves 100% training accuracy, correctly predicting all $21^2 = 441$ group compositions. (b) **Rotational alignment:** We measure cosine similarity between the vectorized matrices appearing in the three proportionality relations, such as $\hat{\xi}_m[\rho]$ and $\hat{\theta}_m^2[\rho]\hat{\theta}_m^1[\rho]$. All curves converge to 1, confirming that the Fourier blocks become asymptotically proportional. (c) **Rank-one compression:** We compute $\sigma_2 / \sigma_1$ — the ratio of second to first singular value of each neuron's surviving Fourier block. A rank-one matrix has $\sigma_2 / \sigma_1 = 0$. The metric decays from near 1 to near 0 for all neurons, confirming that the Fourier blocks collapse to rank one during training.</div>
 
 ### 3.6 Stage II: Scale Growth Sharpens Predictions
 
@@ -472,7 +496,7 @@ The logarithmic growth $a(t) \sim \log(t)$ is natural: the softmax saturates exp
 <img src="/images/group_composition_learning/frobenius21_scale_comparison_loss.jpg" style="width: 30%; min-width: 0;">
 </div>
 
-Figure 8. **Stage II dynamics for $C_7 \rtimes C_3$.** (a) **Tied scale growth:** The common scale parameter $a(t)$ grows as $\log(t)$, showing the characteristic concave shape on a linear scale — rapid initial growth that gradually decelerates, matching the theoretical prediction. (b) **Per-neuron scales (untied):** When each neuron's scale $a_m$ is optimized independently, they all grow logarithmically but at different rates (each curve is one neuron). The spread reflects differences in the logit margins across neurons — neurons with larger margins grow more slowly because their softmax is already confident. (c) **Loss convergence:** Cross-entropy loss over the full training run. During Stage I (gray dashed, left of the dotted vertical line), the loss plateaus at $\log|G| \approx 3.04$ because the scale is fixed and small. At the Stage I/II transition (dotted line), we begin optimizing the scale, and the loss drops rapidly. Both tied (blue solid) and per-neuron (red dashed) settings converge to zero, with the per-neuron setting converging slightly faster.
+<div class="fig-caption">Figure 8. **Stage II dynamics for $C_7 \rtimes C_3$.** (a) **Tied scale growth:** The common scale parameter $a(t)$ grows as $\log(t)$, showing the characteristic concave shape on a linear scale — rapid initial growth that gradually decelerates, matching the theoretical prediction. (b) **Per-neuron scales (untied):** When each neuron's scale $a_m$ is optimized independently, they all grow logarithmically but at different rates (each curve is one neuron). The spread reflects differences in the logit margins across neurons — neurons with larger margins grow more slowly because their softmax is already confident. (c) **Loss convergence:** Cross-entropy loss over the full training run. During Stage I (gray dashed, left of the dotted vertical line), the loss plateaus at $\log|G| \approx 3.04$ because the scale is fixed and small. At the Stage I/II transition (dotted line), we begin optimizing the scale, and the loss drops rapidly. Both tied (blue solid) and per-neuron (red dashed) settings converge to zero, with the per-neuron setting converging slightly faster.</div>
 
 ---
 
