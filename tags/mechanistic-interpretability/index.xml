@@ -6,9 +6,6 @@
  --dynamics: #a6652a;
  --result: #2f7d62;
  --neutral: #6b7280;
- --hero-link: #dbeafe;
- --hero-muted: #e5e7eb;
- --hero-subtle: #d1d5db;
  }
 
  /* --- Inline colored text --- */
@@ -49,19 +46,14 @@
  border-left: 5px solid var(--alignment);
  }
 &lt;/style&gt;
-&lt;div style="position: relative; width: 100%; margin-bottom: 2em;"&gt;
- &lt;!-- Background image --&gt;
- &lt;img src="https://Y-Agent.github.io/images/group_composition_learning/group_representation_hero_v2.png" style="width: 100%; display: block; filter: brightness(0.62);" alt=""&gt;
- &lt;!-- Overlay text --&gt;
- &lt;div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white; padding: 2em;"&gt;
- &lt;h1 style="font-size: 2em; margin: 0 0 0.3em 0; color: white; line-height: 1.2;"&gt;Neural Networks Provably Learn Group Representations:&lt;br&gt;From Cyclic to Non-Abelian&lt;/h1&gt;
- &lt;p style="font-size: 1.1em; margin: 0.3em 0; color: var(--hero-muted);"&gt;
- &lt;a href="https://jlianghe.github.io/" style="color: var(--hero-link);"&gt;Jianliang He&lt;/a&gt;,
- &lt;a href="https://futwangalerda.github.io/" style="color: var(--hero-link);"&gt;Leda Wang&lt;/a&gt;,
- &lt;a href="https://fengzhuo-zhang.github.io/" style="color: var(--hero-link);"&gt;Fengzhuo Zhang&lt;/a&gt;,
- &lt;a href="https://ffishy-git.github.io/" style="color: var(--hero-link);"&gt;Siyu Chen&lt;/a&gt;,
- &lt;a href="https://zhuoranyang.github.io/" style="color: var(--hero-link);"&gt;Zhuoran Yang&lt;/a&gt;
- &lt;/p&gt;</description></item><item><title>On the Mechanism and Dynamics of Modular Addition: Fourier Features, Lottery Ticket, and Grokking</title><link>https://Y-Agent.github.io/posts/modular_addition_feature_learning/</link><pubDate>Wed, 18 Jun 2025 00:00:00 +0000</pubDate><guid>https://Y-Agent.github.io/posts/modular_addition_feature_learning/</guid><description>&lt;style&gt;
+&lt;p&gt;&lt;strong style="font-size: 0.85em; letter-spacing: 1px; color: #3B9DD9;"&gt;AUTHORS:&lt;/strong&gt;
+&lt;small&gt;
+&lt;a href="https://jlianghe.github.io/"&gt;Jianliang He&lt;/a&gt;,
+&lt;a href="https://futwangalerda.github.io/"&gt;Leda Wang&lt;/a&gt;,
+&lt;a href="https://fengzhuo-zhang.github.io/"&gt;Fengzhuo Zhang&lt;/a&gt;,
+&lt;a href="https://ffishy-git.github.io/"&gt;Siyu Chen&lt;/a&gt;,
+&lt;a href="https://zhuoranyang.github.io/"&gt;Zhuoran Yang&lt;/a&gt;
+&lt;/small&gt;&lt;/p&gt;</description></item><item><title>On the Mechanism and Dynamics of Modular Addition: Fourier Features, Lottery Ticket, and Grokking</title><link>https://Y-Agent.github.io/posts/modular_addition_feature_learning/</link><pubDate>Wed, 18 Jun 2025 00:00:00 +0000</pubDate><guid>https://Y-Agent.github.io/posts/modular_addition_feature_learning/</guid><description>&lt;style&gt;
  /* --- Inline colored text --- */
  .hl-blue { color: #3B9DD9; font-weight: bold; }
  .hl-purple { color: #A96CD5; font-weight: bold; }
